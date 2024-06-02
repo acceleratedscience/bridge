@@ -2,7 +2,7 @@ use actix_web::{
     get,
     http::{header::ContentType, StatusCode},
     web::{self, Data},
-    HttpMessage, HttpRequest, HttpResponse,
+    HttpRequest, HttpResponse,
 };
 use tera::{Context, Tera};
 use tracing::instrument;
@@ -25,7 +25,10 @@ async fn status(req: HttpRequest) -> HttpResponse {
             if val == "true" {
                 HttpResponse::Ok()
                     .content_type(ContentType::form_url_encoded())
-                    .body("<p>OK</p>")
+                    .body(r##"
+                        <button type="button" class="btn btn-primary" hx-get="/pulse/status" hx-target="#status" hx-swap="innerHTML">Refresh Status</button>
+                        <p class="text-success mt-3">OK</p>
+                    "##)
             } else {
                 HttpResponse::BadRequest().finish()
             }
