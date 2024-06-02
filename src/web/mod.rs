@@ -1,5 +1,7 @@
 use actix_web::{
-    middleware::{self, Logger}, web::Data, App, HttpServer
+    middleware::{self, Logger},
+    web::Data,
+    App, HttpServer,
 };
 
 use crate::templating;
@@ -9,14 +11,14 @@ mod route;
 mod tls;
 
 pub async fn start_server(with_tls: bool) -> std::io::Result<()> {
-
     let server = HttpServer::new(move || {
         let tera = templating::start_template_eng();
+        let data = Data::new(tera);
 
         App::new()
             // .wrap(guardian_middleware::HttpRedirect)
-            .app_data(Data::new(tera))
-            .wrap(guardian_middleware::custom_404_handle())
+            .app_data(data.clone())
+            .wrap(guardian_middleware::custom_404_handle(data))
             .wrap(middleware::NormalizePath::trim())
             .wrap(Logger::default())
             .wrap(middleware::Compress::default())
