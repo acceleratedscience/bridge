@@ -37,6 +37,7 @@ serde_json = "~1.0.81"
 # DB
 redis = { version = "0.25", features = ["tokio-comp"] }
 thiserror = "1.0.61"
+futures-util = "0.3.30"
 
 [profile.dev]
 opt-level = 0

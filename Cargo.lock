@@ -839,6 +839,7 @@ dependencies = [
  "argon2",
  "chrono",
  "futures",
+ "futures-util",
  "jsonwebtoken",
  "openssl",
  "parking_lot",

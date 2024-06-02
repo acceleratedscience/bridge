@@ -8,5 +8,5 @@ async fn main() {
     } else {
         Logger::start(LevelFilter::WARN);
     }
-    let _ = start_server(false).await;
+    let _ = start_server(true).await;
 }

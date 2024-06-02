@@ -3,14 +3,19 @@ use actix_web::{
     App, HttpServer,
 };
 
+mod guardian_middleware;
+mod route;
 mod tls;
 
 pub async fn start_server(with_tls: bool) -> std::io::Result<()> {
     let server = HttpServer::new(move || {
         App::new()
+            // .wrap(guardian_middleware::HttpRedirect)
+            .wrap(guardian_middleware::custom_404_handle())
             .wrap(middleware::NormalizePath::trim())
             .wrap(Logger::default())
             .wrap(middleware::Compress::default())
+            .configure(route::health::config_status)
     });
     if with_tls {
         server
