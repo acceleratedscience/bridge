@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Pulse{% endblock title %}
+{% block head %}
+<script src="https://unpkg.com/htmx.org@1.9.12"></script>
+{% endblock head %}
+{% block body %}
+	<div class="container">
+		<div class="row">
+			<div class="col-md-12">
+				<h1>Status Page</h1>
+				<button type="button" class="btn btn-primary" hx-get="/pulse/status" hx-target="#status">Check Status</button>
+				<div id="status"></div>
+			</div>
+		</div>
+	</div>
+{% endblock body %}
