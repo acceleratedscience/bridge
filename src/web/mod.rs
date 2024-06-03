@@ -22,6 +22,7 @@ pub async fn start_server(with_tls: bool) -> std::io::Result<()> {
             .wrap(middleware::NormalizePath::trim())
             .wrap(Logger::default())
             .wrap(middleware::Compress::default())
+            .wrap(guardian_middleware::SecurityHeader)
             .configure(route::health::config_status)
             .configure(route::foo::config_foo)
     });
