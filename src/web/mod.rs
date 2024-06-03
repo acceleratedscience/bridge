@@ -23,6 +23,7 @@ pub async fn start_server(with_tls: bool) -> std::io::Result<()> {
             .wrap(Logger::default())
             .wrap(middleware::Compress::default())
             .configure(route::health::config_status)
+            .configure(route::foo::config_foo)
     });
     if with_tls {
         server
