@@ -1,17 +1,13 @@
-use actix_web::http::header::ContentType;
-use actix_web::http::StatusCode;
-use actix_web::web::{self, Data};
-use actix_web::{get, HttpResponse};
-use tera::{Context, Tera};
+use actix_web::{get, web::{self, Data}, HttpResponse, Result};
+use tera::Tera;
 use tracing::instrument;
+
+use crate::errors::GuardianError;
 
 #[get("")]
 #[instrument]
-async fn foo(data: Data<Tera>) -> HttpResponse {
-    let bod = data.render("500.html", &Context::new()).unwrap();
-    HttpResponse::build(StatusCode::INTERNAL_SERVER_ERROR)
-        .content_type(ContentType::html())
-        .body(bod)
+async fn foo(data: Data<Tera>) -> Result<HttpResponse> {
+    Err(GuardianError::GeneralError("Foo!".to_string()))?
 }
 
 pub fn config_foo(cfg: &mut web::ServiceConfig) {

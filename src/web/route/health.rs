@@ -2,10 +2,12 @@ use actix_web::{
     get,
     http::{header::ContentType, StatusCode},
     web::{self, Data},
-    HttpRequest, HttpResponse,
+    HttpRequest, HttpResponse, Result,
 };
 use tera::{Context, Tera};
 use tracing::instrument;
+
+use crate::errors::GuardianError;
 
 #[get("")]
 #[instrument]
@@ -18,22 +20,21 @@ async fn pulse(data: Data<Tera>) -> HttpResponse {
 
 #[get("/status")]
 #[instrument]
-async fn status(req: HttpRequest) -> HttpResponse {
-    req.headers().get("hx-request").map_or_else(
-        || HttpResponse::BadRequest().finish(),
-        |val| {
-            if val == "true" {
-                HttpResponse::Ok()
+async fn status(req: HttpRequest) -> Result<HttpResponse> {
+    let header = req
+        .headers()
+        .get("hx-request")
+        .ok_or(GuardianError::HtmxTagNotFound)?;
+    if header == "true" {
+        Ok(HttpResponse::Ok()
                     .content_type(ContentType::form_url_encoded())
                     .body(r##"
                         <button type="button" class="btn btn-primary" hx-get="/pulse/status" hx-target="#status" hx-swap="innerHTML">Refresh Status</button>
                         <p class="text-success mt-3">OK</p>
-                    "##)
-            } else {
-                HttpResponse::BadRequest().finish()
-            }
-        },
-    )
+                    "##))
+    } else {
+        Err(GuardianError::HtmxTagNotFound)?
+    }
 }
 
 pub fn config_status(cfg: &mut web::ServiceConfig) {

@@ -1,9 +1,13 @@
 use std::str::FromStr;
 
-use actix_web::http::header::{HeaderName, HeaderValue};
-use actix_web::http::StatusCode;
 use actix_web::{
-    dev::PeerAddr, error, web, Error, HttpRequest, HttpResponse,
+    dev::PeerAddr,
+    error,
+    http::{
+        header::{HeaderName, HeaderValue},
+        StatusCode,
+    },
+    web, Error, HttpRequest, HttpResponse,
 };
 use futures_util::StreamExt as _;
 use reqwest::Method;

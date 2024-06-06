@@ -18,7 +18,7 @@ pub async fn start_server(with_tls: bool) -> std::io::Result<()> {
         App::new()
             // .wrap(guardian_middleware::HttpRedirect)
             .app_data(data.clone())
-            .wrap(guardian_middleware::custom_404_handle(data))
+            .wrap(guardian_middleware::custom_code_handle(data))
             .wrap(middleware::NormalizePath::trim())
             .wrap(Logger::default())
             .wrap(middleware::Compress::default())
