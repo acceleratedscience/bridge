@@ -7,6 +7,7 @@ use actix_web::{
     HttpResponse,
 };
 use tera::{Context, Tera};
+use tracing::warn;
 
 pub fn custom_code_handle(data: Data<Tera>) -> ErrorHandlers<BoxBody> {
     let body = data.render("404.html", &Context::new()).unwrap();

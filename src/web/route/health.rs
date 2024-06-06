@@ -2,38 +2,42 @@ use actix_web::{
     get,
     http::{header::ContentType, StatusCode},
     web::{self, Data},
-    HttpRequest, HttpResponse, Result,
+    HttpRequest, HttpResponse,
 };
 use tera::{Context, Tera};
 use tracing::instrument;
 
-use crate::errors::GuardianError;
+use crate::{
+    errors::{GuardianError, Result},
+    web::helper,
+};
 
 #[get("")]
-#[instrument]
-async fn pulse(data: Data<Tera>) -> HttpResponse {
-    let bod = data.render("pulse.html", &Context::new()).unwrap();
-    HttpResponse::build(StatusCode::OK)
+#[instrument(skip(data))]
+async fn pulse(data: Data<Tera>) -> Result<HttpResponse> {
+    let bod = helper::log_errors(data.render("pulse.html", &Context::new()))?;
+    Ok(HttpResponse::build(StatusCode::OK)
         .content_type(ContentType::html())
-        .body(bod)
+        .body(bod))
 }
 
 #[get("/status")]
 #[instrument]
 async fn status(req: HttpRequest) -> Result<HttpResponse> {
-    let header = req
-        .headers()
-        .get("hx-request")
-        .ok_or(GuardianError::HtmxTagNotFound)?;
+    let header = helper::log_errors(
+        req.headers()
+            .get("hx-request")
+            .ok_or(GuardianError::HtmxTagNotFound),
+    )?;
     if header == "true" {
         Ok(HttpResponse::Ok()
-                    .content_type(ContentType::form_url_encoded())
-                    .body(r##"
-                        <button type="button" class="btn btn-primary" hx-get="/pulse/status" hx-target="#status" hx-swap="innerHTML">Refresh Status</button>
-                        <p class="text-success mt-3">OK</p>
-                    "##))
+            .content_type(ContentType::form_url_encoded())
+            .body(r##"
+                <button type="button" class="btn btn-primary" hx-get="/pulse/status" hx-target="#status" hx-swap="innerHTML">Refresh Status</button>
+                <p class="text-success mt-3">OK</p>
+            "##))
     } else {
-        Err(GuardianError::HtmxTagNotFound)?
+        helper::log_errors(Err(GuardianError::HtmxTagNotFound))?
     }
 }
 

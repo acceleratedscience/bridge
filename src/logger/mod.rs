@@ -8,7 +8,7 @@ impl Logger {
         tracing_subscriber::registry()
             .with(
                 tracing_subscriber::fmt::layer()
-                    .pretty()
+                    .compact()
                     .with_thread_ids(true)
                     // .with_writer(Arc::new(file))
                     .with_filter(level),
