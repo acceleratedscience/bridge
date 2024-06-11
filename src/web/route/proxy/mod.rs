@@ -2,18 +2,21 @@ use std::str::FromStr;
 
 use actix_web::{
     dev::PeerAddr,
-    error,
+    error, get,
     http::{
         header::{HeaderName, HeaderValue},
         StatusCode,
     },
     web, Error, HttpRequest, HttpResponse,
 };
+use actix_web_httpauth::middleware::HttpAuthentication;
 use futures_util::StreamExt as _;
 use reqwest::Method;
 use tokio::sync::mpsc;
 use tokio_stream::wrappers::UnboundedReceiverStream;
 use url::Url;
+
+use crate::web::guardian_middleware::{self, validator};
 
 const REQWEST_PREFIX: &str = "/using-reqwest";
 
@@ -76,4 +79,18 @@ async fn forward_reqwest(
     }
 
     Ok(client_resp.streaming(res.bytes_stream()))
+}
+
+#[get("")]
+async fn test() -> HttpResponse {
+    HttpResponse::Ok().body("Hello, world!")
+}
+
+pub fn config_proxy(cfg: &mut web::ServiceConfig) {
+    let auth_validator = HttpAuthentication::bearer(validator);
+    cfg.service(
+        web::scope("/proxy")
+            .wrap(auth_validator)
+            .service(test),
+    );
 }

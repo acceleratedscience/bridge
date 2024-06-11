@@ -10,8 +10,7 @@ use tera::{Context, Tera};
 use tracing::instrument;
 
 use crate::{
-    errors::{GuardianError, Result as GResult},
-    web::helper,
+    auth::jwt, config::CONFIG, errors::{GuardianError, Result as GResult}, web::helper
 };
 
 #[derive(Debug)]
@@ -52,9 +51,10 @@ impl<'de> Visitor<'de> for TokenRequestVisitor {
         let admin = pairs
             .get("admin")
             .ok_or_else(|| E::custom("Missing admin"))?;
-        let gui = pairs
-            .get("gui")
-            .map(|&v| v.parse::<bool>().unwrap_or(false));
+        let gui = match pairs.get("gui") {
+            Some(v) => Some(v.parse().map_err(E::custom)?),
+            None => None,
+        };
 
         Ok(TokenRequest {
             username: username.to_string(),
@@ -89,14 +89,23 @@ async fn get_token(data: Data<Tera>, req: HttpRequest) -> GResult<HttpResponse> 
         }
     };
 
+    dbg!(&q.admin);
+
+    if q.admin != "thisisbadsecurity" {
+        return helper::log_errors(Err(GuardianError::NotAdmin));
+    }
+
+    // generate token
+    let token = jwt::get_token(&CONFIG.get().unwrap().encoder, 60 * 60 * 24 * 30, q.username)?;
+
     if let Some(true) = q.gui {
         let mut ctx = Context::new();
-        ctx.insert("token", "123456789");
+        ctx.insert("token", &token);
         let rendered = helper::log_errors(data.render("token.html", &ctx))?;
 
         Ok(HttpResponse::Ok().content_type("text/html").body(rendered))
     } else {
-        Ok(HttpResponse::Ok().json("123456789"))
+        Ok(HttpResponse::Ok().json(token))
     }
 }
 

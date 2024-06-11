@@ -19,6 +19,10 @@ pub enum GuardianError {
     JsonWebTokenError(#[from] jsonwebtoken::errors::Error),
     #[error("The query could not be deserialized: {0}")]
     QueryDeserializeError(String),
+    #[error("Not admin")]
+    NotAdmin,
+    #[error("{0}")]
+    Unauthorized(String),
 }
 
 impl ResponseError for GuardianError {
@@ -41,8 +45,12 @@ impl ResponseError for GuardianError {
                     jsonwebtoken::errors::ErrorKind::ExpiredSignature => StatusCode::UNAUTHORIZED,
                     jsonwebtoken::errors::ErrorKind::ImmatureSignature => StatusCode::UNAUTHORIZED,
                     // Bad request errors
-                    jsonwebtoken::errors::ErrorKind::MissingRequiredClaim(_) => StatusCode::BAD_REQUEST,
-                    jsonwebtoken::errors::ErrorKind::InvalidAlgorithmName => StatusCode::BAD_REQUEST,
+                    jsonwebtoken::errors::ErrorKind::MissingRequiredClaim(_) => {
+                        StatusCode::BAD_REQUEST
+                    }
+                    jsonwebtoken::errors::ErrorKind::InvalidAlgorithmName => {
+                        StatusCode::BAD_REQUEST
+                    }
                     jsonwebtoken::errors::ErrorKind::InvalidAlgorithm => StatusCode::BAD_REQUEST,
                     jsonwebtoken::errors::ErrorKind::MissingAlgorithm => StatusCode::BAD_REQUEST,
                     jsonwebtoken::errors::ErrorKind::InvalidKeyFormat => StatusCode::BAD_REQUEST,
@@ -50,12 +58,18 @@ impl ResponseError for GuardianError {
                     // Internal errors
                     jsonwebtoken::errors::ErrorKind::Utf8(_) => StatusCode::INTERNAL_SERVER_ERROR,
                     jsonwebtoken::errors::ErrorKind::Crypto(_) => StatusCode::INTERNAL_SERVER_ERROR,
-                    jsonwebtoken::errors::ErrorKind::InvalidEcdsaKey => StatusCode::INTERNAL_SERVER_ERROR,
-                    jsonwebtoken::errors::ErrorKind::InvalidRsaKey(_) => StatusCode::INTERNAL_SERVER_ERROR,
+                    jsonwebtoken::errors::ErrorKind::InvalidEcdsaKey => {
+                        StatusCode::INTERNAL_SERVER_ERROR
+                    }
+                    jsonwebtoken::errors::ErrorKind::InvalidRsaKey(_) => {
+                        StatusCode::INTERNAL_SERVER_ERROR
+                    }
                     jsonwebtoken::errors::ErrorKind::Base64(_) => StatusCode::INTERNAL_SERVER_ERROR,
                     _ => StatusCode::INTERNAL_SERVER_ERROR,
                 }
             }
+            GuardianError::NotAdmin => StatusCode::UNAUTHORIZED,
+            GuardianError::Unauthorized(_) => StatusCode::UNAUTHORIZED,
         }
     }
 }

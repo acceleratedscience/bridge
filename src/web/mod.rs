@@ -26,6 +26,7 @@ pub async fn start_server(with_tls: bool) -> std::io::Result<()> {
             .configure(route::auth::config_auth)
             .configure(route::health::config_status)
             .configure(route::foo::config_foo)
+            .configure(route::proxy::config_proxy)
     });
 
     if with_tls {

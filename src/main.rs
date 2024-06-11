@@ -1,3 +1,4 @@
+use guardian::config;
 use guardian::{logger::Logger, web::start_server};
 use tracing_subscriber::filter::LevelFilter;
 
@@ -8,5 +9,6 @@ async fn main() {
     } else {
         Logger::start(LevelFilter::WARN);
     }
+    config::init_once();
     let _ = start_server(true).await;
 }
