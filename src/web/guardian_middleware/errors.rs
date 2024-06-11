@@ -60,7 +60,7 @@ pub fn custom_code_handle(data: Data<Tera>) -> ErrorHandlers<BoxBody> {
                     {
                         HttpResponse::build(StatusCode::INTERNAL_SERVER_ERROR)
                             .content_type(ContentType::html())
-                        .body(template.get("500").unwrap().to_string())
+                            .body(template.get("500").unwrap().to_string())
                             .map_into_left_body()
                     },
                 )))
@@ -77,16 +77,17 @@ pub fn custom_code_handle(data: Data<Tera>) -> ErrorHandlers<BoxBody> {
                         .map_into_left_body()
                 },
             )))
-        }).handler(StatusCode::UNAUTHORIZED, move |res: ServiceResponse| {
-            let request = res.into_parts().0;
-            Ok(ErrorHandlerResponse::Response(ServiceResponse::new(
-                request,
-                {
-                    HttpResponse::build(StatusCode::UNAUTHORIZED)
-                        .content_type(ContentType::html())
-                        .body(template.get("401").unwrap().to_string())
-                        .map_into_left_body()
-                },
-            )))
         })
+        // .handler(StatusCode::UNAUTHORIZED, move |res: ServiceResponse| {
+        //     let request = res.into_parts().0;
+        //     Ok(ErrorHandlerResponse::Response(ServiceResponse::new(
+        //         request,
+        //         {
+        //             HttpResponse::build(StatusCode::UNAUTHORIZED)
+        //                 .content_type(ContentType::html())
+        //                 .body(template.get("401").unwrap().to_string())
+        //                 .map_into_left_body()
+        //         },
+        //     )))
+        // })
 }

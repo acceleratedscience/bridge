@@ -17,7 +17,7 @@ pub async fn validator(
     ) {
         Ok(_) => Ok(req),
         Err(e) => {
-            let config = req.app_data::<bearer::Config>().cloned().unwrap_or_default().scope("bearer");
+            let config = req.app_data::<bearer::Config>().cloned().unwrap_or_default().realm("proxy");
             Err((AuthenticationError::from(config).into(), req))
         }
     }
