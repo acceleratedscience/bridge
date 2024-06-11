@@ -1,0 +1,8 @@
+[services]
+version = "0.1.0"
+
+	[services.postman]
+	url = "https://postman-echo.com/"
+
+	[services.transformer]
+	url = "http://localhost:8080/pulse"

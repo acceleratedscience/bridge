@@ -23,6 +23,10 @@ pub enum GuardianError {
     NotAdmin,
     #[error("{0}")]
     Unauthorized(String),
+    #[error("Inference-Service header not found")]
+    InferenceServiceHeaderNotFound,
+    #[error("Service {0} does does not exist")]
+    ServiceDoesNotExist(String),
 }
 
 impl ResponseError for GuardianError {
@@ -33,6 +37,8 @@ impl ResponseError for GuardianError {
             GuardianError::TeraError(_) => StatusCode::INTERNAL_SERVER_ERROR,
             GuardianError::SystemTimeError(_) => StatusCode::INTERNAL_SERVER_ERROR,
             GuardianError::QueryDeserializeError(_) => StatusCode::BAD_REQUEST,
+            GuardianError::InferenceServiceHeaderNotFound => StatusCode::BAD_REQUEST,
+            GuardianError::ServiceDoesNotExist(_) => StatusCode::BAD_REQUEST,
             GuardianError::JsonWebTokenError(e) => {
                 match e.kind() {
                     // Unauthorized errors

@@ -11,15 +11,20 @@ mod route;
 mod tls;
 mod helper;
 
+pub use route::proxy::services;
+
 pub async fn start_server(with_tls: bool) -> std::io::Result<()> {
     let server = HttpServer::new(move || {
         let tera = templating::start_template_eng();
-        let data = Data::new(tera);
+        let tera_data = Data::new(tera);
+        let client = reqwest::Client::new();
+        let client_data = Data::new(client);
 
         App::new()
             // .wrap(guardian_middleware::HttpRedirect)
-            .app_data(data.clone())
-            .wrap(guardian_middleware::custom_code_handle(data))
+            .app_data(tera_data.clone())
+            .app_data(client_data)
+            .wrap(guardian_middleware::custom_code_handle(tera_data))
             .wrap(middleware::NormalizePath::trim())
             .wrap(middleware::Compress::default())
             .wrap(guardian_middleware::SecurityHeader)

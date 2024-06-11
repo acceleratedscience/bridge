@@ -2,39 +2,63 @@ use std::str::FromStr;
 
 use actix_web::{
     dev::PeerAddr,
-    error, get,
     http::{
         header::{HeaderName, HeaderValue},
-        StatusCode,
+        Method, StatusCode,
     },
-    web, Error, HttpRequest, HttpResponse,
+    web, HttpRequest, HttpResponse,
 };
 use actix_web_httpauth::middleware::HttpAuthentication;
 use futures_util::StreamExt as _;
-use reqwest::Method;
 use tokio::sync::mpsc;
 use tokio_stream::wrappers::UnboundedReceiverStream;
-use url::Url;
+use tracing::{error, warn};
 
-use crate::web::guardian_middleware::{self, validator};
+use crate::{
+    errors::{GuardianError, Result},
+    web::{guardian_middleware::validator, helper},
+};
 
-const REQWEST_PREFIX: &str = "/using-reqwest";
+use self::services::CATALOG;
 
-async fn forward_reqwest(
+pub mod services;
+
+const GUARDIAN_PREFIX: &str = "/proxy";
+
+async fn forward(
     req: HttpRequest,
     mut payload: web::Payload,
     method: Method,
     peer_addr: Option<PeerAddr>,
-    url: web::Data<Url>,
     client: web::Data<reqwest::Client>,
-) -> Result<HttpResponse, Error> {
+) -> Result<HttpResponse> {
     let path = req
         .uri()
         .path()
-        .strip_prefix(REQWEST_PREFIX)
+        .strip_prefix(GUARDIAN_PREFIX)
         .unwrap_or(req.uri().path());
 
-    let mut new_url = (**url).clone();
+    dbg!(path);
+
+    // get header for which infernce service to forward to
+    let service = req
+        .headers()
+        .get("Inference-Service")
+        .ok_or_else(|| {
+            warn!("Inference-Service header not found in request");
+            GuardianError::InferenceServiceHeaderNotFound
+        })?
+        .to_str()
+        .map_err(|e| {
+            error!("{:?}", e);
+            GuardianError::InferenceServiceHeaderNotFound
+        })?;
+
+    // look up service and get url
+    let catalog = helper::log_errors(CATALOG.get().ok_or_else(|| {
+        GuardianError::GeneralError("Could not get catalog of services".to_string())
+    }))?;
+    let mut new_url = catalog.get(service)?;
     new_url.set_path(path);
     new_url.set_query(req.uri().query());
 
@@ -46,6 +70,24 @@ async fn forward_reqwest(
         }
     });
 
+    // sigh...
+    let method = match method.as_str() {
+        "OPTIONS" => reqwest::Method::OPTIONS,
+        "GET" => reqwest::Method::GET,
+        "POST" => reqwest::Method::POST,
+        "PUT" => reqwest::Method::PUT,
+        "DELETE" => reqwest::Method::DELETE,
+        "HEAD" => reqwest::Method::HEAD,
+        "TRACE" => reqwest::Method::TRACE,
+        "CONNECT" => reqwest::Method::CONNECT,
+        "PATCH" => reqwest::Method::PATCH,
+        _ => {
+            return Err(GuardianError::GeneralError(
+                "Unsupported HTTP method".to_string(),
+            ))
+        }
+    };
+
     let forwarded_req = client
         .request(method, new_url)
         .body(reqwest::Body::wrap_stream(UnboundedReceiverStream::new(rx)));
@@ -53,14 +95,14 @@ async fn forward_reqwest(
     // TODO: This forwarded implementation is incomplete as it only handles the unofficial
     // X-Forwarded-For header but not the official Forwarded one.
     let forwarded_req = match peer_addr {
-        Some(PeerAddr(addr)) => forwarded_req.header("x-forwarded-for", addr.ip().to_string()),
+        Some(PeerAddr(addr)) => forwarded_req.header("X-Forwarded-For", addr.ip().to_string()),
         None => forwarded_req,
     };
 
     let res = forwarded_req
         .send()
         .await
-        .map_err(error::ErrorInternalServerError)?;
+        .map_err(|e| GuardianError::GeneralError(e.to_string()))?;
 
     let status = res.status().as_u16();
     let status = StatusCode::from_u16(status).unwrap();
@@ -81,16 +123,11 @@ async fn forward_reqwest(
     Ok(client_resp.streaming(res.bytes_stream()))
 }
 
-#[get("")]
-async fn test() -> HttpResponse {
-    HttpResponse::Ok().body("Hello, world!")
-}
-
 pub fn config_proxy(cfg: &mut web::ServiceConfig) {
     let auth_validator = HttpAuthentication::bearer(validator);
     cfg.service(
         web::scope("/proxy")
             .wrap(auth_validator)
-            .service(test),
+            .default_service(web::to(forward)),
     );
 }

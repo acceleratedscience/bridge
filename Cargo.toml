@@ -42,6 +42,7 @@ tera = "1.20.0"
 reqwest = { version = "0.12", features = ["stream"] }
 tokio-stream = { version = "0.1.15", features = ["sync"] }
 url = "2.5.0"
+toml = "0.8.14"
 
 [profile.dev]
 opt-level = 0

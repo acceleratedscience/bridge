@@ -15,6 +15,7 @@ use tera::{Context, Tera};
 
 static ERROR_HTMLS: OnceLock<HashMap<&str, String>> = OnceLock::new();
 
+// TODO: refactor this using middleware pattern
 pub fn custom_code_handle(data: Data<Tera>) -> ErrorHandlers<BoxBody> {
     let template = ERROR_HTMLS.get_or_init(|| {
         let mut map = HashMap::new();
