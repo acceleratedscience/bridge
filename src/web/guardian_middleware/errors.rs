@@ -3,7 +3,10 @@ use std::{collections::HashMap, sync::OnceLock};
 use actix_web::{
     body::BoxBody,
     dev::ServiceResponse,
-    http::{header::ContentType, StatusCode},
+    http::{
+        header::{ContentType, HeaderName},
+        StatusCode,
+    },
     middleware::{ErrorHandlerResponse, ErrorHandlers},
     web::Data,
     HttpResponse,
@@ -78,16 +81,23 @@ pub fn custom_code_handle(data: Data<Tera>) -> ErrorHandlers<BoxBody> {
                 },
             )))
         })
-        // .handler(StatusCode::UNAUTHORIZED, move |res: ServiceResponse| {
-        //     let request = res.into_parts().0;
-        //     Ok(ErrorHandlerResponse::Response(ServiceResponse::new(
-        //         request,
-        //         {
-        //             HttpResponse::build(StatusCode::UNAUTHORIZED)
-        //                 .content_type(ContentType::html())
-        //                 .body(template.get("401").unwrap().to_string())
-        //                 .map_into_left_body()
-        //         },
-        //     )))
-        // })
+        .handler(StatusCode::UNAUTHORIZED, move |res: ServiceResponse| {
+            let response = res.response();
+            let headers = response.headers();
+            let request = res.request().clone();
+            Ok(ErrorHandlerResponse::Response(ServiceResponse::new(
+                request,
+                {
+                    let mut response = HttpResponse::build(StatusCode::UNAUTHORIZED);
+
+                    for (key, value) in headers.iter() {
+                        response.insert_header((key.clone(), value.clone()));
+                    }
+                    response
+                        .content_type(ContentType::html())
+                        .body(template.get("401").unwrap().to_string())
+                        .map_into_left_body()
+                },
+            )))
+        })
 }
