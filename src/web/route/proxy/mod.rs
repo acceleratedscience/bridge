@@ -38,8 +38,6 @@ async fn forward(
         .strip_prefix(GUARDIAN_PREFIX)
         .unwrap_or(req.uri().path());
 
-    dbg!(path);
-
     // get header for which infernce service to forward to
     let service = req
         .headers()
