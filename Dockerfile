@@ -12,7 +12,7 @@ FROM debian:stable
 
 WORKDIR /app
 
-RUN apt update -y && apt install openssl -y
+RUN apt update -y && apt install openssl -y && apt install ca-certificates
 
 COPY --from=builder /app/target/release/guardian .
 COPY ./certs ./certs

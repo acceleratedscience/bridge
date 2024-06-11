@@ -56,7 +56,7 @@ async fn forward(
     let catalog = helper::log_errors(CATALOG.get().ok_or_else(|| {
         GuardianError::GeneralError("Could not get catalog of services".to_string())
     }))?;
-    let mut new_url = catalog.get(service)?;
+    let mut new_url = helper::log_errors(catalog.get(service))?;
     new_url.set_path(path);
     new_url.set_query(req.uri().query());
 
@@ -97,10 +97,10 @@ async fn forward(
         None => forwarded_req,
     };
 
-    let res = forwarded_req
-        .send()
-        .await
-        .map_err(|e| GuardianError::GeneralError(e.to_string()))?;
+    let res = helper::log_errors(forwarded_req.send().await.map_err(|e| {
+        error!("{:?}", e);
+        GuardianError::GeneralError(e.to_string())
+    }))?;
 
     let status = res.status().as_u16();
     let status = StatusCode::from_u16(status).unwrap();

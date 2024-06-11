@@ -16,7 +16,8 @@ pub async fn validator(
         &CONFIG.get().unwrap().validation.clone(),
     ) {
         Ok(_) => Ok(req),
-        Err(e) => {
+        Err(_e) => {
+            // TODO: handler the error better
             let config = req.app_data::<bearer::Config>().cloned().unwrap_or_default().realm("proxy");
             Err((AuthenticationError::from(config).into(), req))
         }

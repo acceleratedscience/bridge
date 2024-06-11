@@ -2,7 +2,6 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use jsonwebtoken::{decode, encode, Algorithm, DecodingKey, EncodingKey, Header, Validation};
 use serde::{Deserialize, Serialize};
-use tracing::log::info;
 
 use crate::errors::Result;
 

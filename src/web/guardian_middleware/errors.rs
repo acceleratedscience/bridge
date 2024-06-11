@@ -4,7 +4,7 @@ use actix_web::{
     body::BoxBody,
     dev::ServiceResponse,
     http::{
-        header::{ContentType, HeaderName},
+        header::ContentType,
         StatusCode,
     },
     middleware::{ErrorHandlerResponse, ErrorHandlers},
