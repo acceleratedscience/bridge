@@ -89,8 +89,6 @@ async fn get_token(data: Data<Tera>, req: HttpRequest) -> GResult<HttpResponse> 
         }
     };
 
-    dbg!(&q.admin);
-
     if q.admin != "thisisbadsecurity" {
         return helper::log_errors(Err(GuardianError::NotAdmin));
     }
