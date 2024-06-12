@@ -6,17 +6,19 @@ use serde::{Deserialize, Serialize};
 use crate::errors::Result;
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct Claims {
+pub struct Claims<T>
+    where T: AsRef<str>,
+{
     iss: String,
     exp: usize,
-    sub: String,
+    sub: T,
 }
 
 const ISSUER: &str = "guardian";
 
 /// Generate a token with the given lifetime and uuid. This is an expensive operation, cache as
 /// much as possible
-pub fn get_token(key: &EncodingKey, token_lifetime: usize, sub: String) -> Result<String> {
+pub fn get_token(key: &EncodingKey, token_lifetime: usize, sub: &str) -> Result<String> {
     // Get exp UNIX EPOC
     let start = SystemTime::now();
     let since_epoc = start.duration_since(UNIX_EPOCH)?;
@@ -32,7 +34,7 @@ pub fn get_token(key: &EncodingKey, token_lifetime: usize, sub: String) -> Resul
 }
 
 /// Validate token. If token is valid, return the claims, is not return an error
-pub fn validate_token(token: &str, decode_key: &DecodingKey, val: &Validation) -> Result<Claims> {
-    let token = decode::<Claims>(token, decode_key, val)?;
+pub fn validate_token(token: &str, decode_key: &DecodingKey, val: &Validation) -> Result<Claims<String>> {
+    let token = decode::<Claims<String>>(token, decode_key, val)?;
     Ok(token.claims)
 }

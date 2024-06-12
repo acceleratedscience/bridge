@@ -19,6 +19,10 @@ COPY ./certs ./certs
 COPY ./config ./config
 COPY ./templates ./templates
 
+RUN chgrp -R 0 /app && \
+	chmod -R g=u /app
+USER 1001
+
 EXPOSE 8080
 
 CMD ["./guardian"]

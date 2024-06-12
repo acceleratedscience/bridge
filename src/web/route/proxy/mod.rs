@@ -12,7 +12,7 @@ use actix_web_httpauth::middleware::HttpAuthentication;
 use futures_util::StreamExt as _;
 use tokio::sync::mpsc;
 use tokio_stream::wrappers::UnboundedReceiverStream;
-use tracing::{error, warn};
+use tracing::{error, instrument, warn};
 
 use crate::{
     errors::{GuardianError, Result},
@@ -25,6 +25,7 @@ pub mod services;
 
 const GUARDIAN_PREFIX: &str = "/proxy";
 
+#[instrument(skip(payload))]
 async fn forward(
     req: HttpRequest,
     mut payload: web::Payload,

@@ -10,7 +10,10 @@ use tera::{Context, Tera};
 use tracing::instrument;
 
 use crate::{
-    auth::jwt, config::CONFIG, errors::{GuardianError, Result as GResult}, web::helper
+    auth::jwt,
+    config::CONFIG,
+    errors::{GuardianError, Result as GResult},
+    web::helper,
 };
 
 #[derive(Debug)]
@@ -93,12 +96,15 @@ async fn get_token(data: Data<Tera>, req: HttpRequest) -> GResult<HttpResponse> 
         return helper::log_errors(Err(GuardianError::NotAdmin));
     }
 
+    const TOKEN_LIFETIME: usize = 60 * 60 * 24 * 30;
+
     // generate token
-    let token = jwt::get_token(&CONFIG.get().unwrap().encoder, 60 * 60 * 24 * 30, q.username)?;
+    let token = jwt::get_token(&CONFIG.get().unwrap().encoder, TOKEN_LIFETIME, &q.username)?;
 
     if let Some(true) = q.gui {
         let mut ctx = Context::new();
         ctx.insert("token", &token);
+        ctx.insert("name", &q.username);
         let rendered = helper::log_errors(data.render("token.html", &ctx))?;
 
         Ok(HttpResponse::Ok().content_type("text/html").body(rendered))
