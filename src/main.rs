@@ -1,6 +1,8 @@
-use guardian::config;
-use guardian::web::services::{self};
-use guardian::{logger::Logger, web::start_server};
+use guardian::{
+    config,
+    logger::Logger,
+    web::{services, start_server},
+};
 use tracing_subscriber::filter::LevelFilter;
 
 #[tokio::main]
