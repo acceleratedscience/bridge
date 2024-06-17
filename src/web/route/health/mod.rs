@@ -12,6 +12,8 @@ use crate::{
     web::helper,
 };
 
+mod inference_services;
+
 #[get("")]
 #[instrument(skip(data))]
 async fn pulse(data: Data<Tera>) -> Result<HttpResponse> {

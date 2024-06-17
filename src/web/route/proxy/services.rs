@@ -35,4 +35,22 @@ impl Catalog {
         )
         .map_err(|e| GuardianError::GeneralError(e.to_string()))
     }
+
+    pub fn list(&self) -> Vec<Url> {
+        self.0.get("services");
+        todo!();
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_catalog() {
+        init_once();
+        let catalog = CATALOG.get().unwrap();
+        let service = catalog.get("postman").unwrap();
+        assert_eq!(service.as_str(), "https://postman-echo.com/");
+    }
 }
