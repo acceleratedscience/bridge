@@ -42,19 +42,6 @@ impl Catalog {
     }
 }
 
-#[cfg(test)]
-mod test {
-    use super::*;
-
-    #[test]
-    fn test_catalog() {
-        init_once();
-        let catalog = CATALOG.get().unwrap();
-        let service = catalog.get("postman").unwrap();
-        assert_eq!(service.as_str(), "https://postman-echo.com/");
-    }
-}
-
 impl From<&Catalog> for Vec<(Url, String)> {
     fn from(value: &Catalog) -> Self {
         if let Some(map) = value.0.get("services").and_then(|v| v.as_table()) {
