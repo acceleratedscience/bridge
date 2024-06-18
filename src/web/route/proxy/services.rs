@@ -1,6 +1,6 @@
-use std::str::FromStr;
-use std::{fs::read_to_string, path::PathBuf, sync::OnceLock};
+use std::{fs::read_to_string, path::PathBuf, str::FromStr, sync::OnceLock};
 
+use toml::Value;
 use url::Url;
 
 use crate::errors::{GuardianError, Result};
@@ -52,5 +52,47 @@ mod test {
         let catalog = CATALOG.get().unwrap();
         let service = catalog.get("postman").unwrap();
         assert_eq!(service.as_str(), "https://postman-echo.com/");
+    }
+}
+
+impl From<&Catalog> for Vec<(Url, String)> {
+    fn from(value: &Catalog) -> Self {
+        if let Some(map) = value.0.get("services").and_then(|v| v.as_table()) {
+            return map
+                .iter()
+                .filter_map(|(name, service)| {
+                    let url = service
+                        .get("url")
+                        .and_then(Value::as_str)
+                        .and_then(|url| Url::parse(url).ok());
+                    url.map(|url| (url, name.to_string()))
+                })
+                .collect();
+        }
+        vec![]
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_catalog() {
+        init_once();
+        let catalog = CATALOG.get().unwrap();
+        let service = catalog.get("postman").unwrap();
+        assert_eq!(service.as_str(), "https://postman-echo.com/");
+    }
+
+    #[test]
+    fn test_catalog_into() {
+        init_once();
+        let catalog = CATALOG.get().unwrap();
+        let services: Vec<(Url, String)> = catalog.into();
+        assert_eq!(services.len(), 5);
+
+        let postman = services.iter().find(|(_, name)| name == "postman");
+        assert!(postman.is_some());
     }
 }

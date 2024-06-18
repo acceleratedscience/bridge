@@ -1,10 +1,12 @@
-mod https;
-mod errors;
-mod security_header;
 mod authenicate;
+mod errors;
+mod https;
+mod htmx;
+mod security_header;
 
+pub use authenicate::validator;
+pub use errors::custom_code_handle;
 #[allow(unused_imports)]
 pub use https::HttpRedirect;
-pub use errors::custom_code_handle;
 pub use security_header::SecurityHeader;
-pub use authenicate::validator;
+pub use htmx::Htmx;
