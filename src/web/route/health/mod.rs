@@ -4,12 +4,14 @@ use actix_web::{
     web::{self, Data},
     HttpRequest, HttpResponse,
 };
+use futures::StreamExt;
+use reqwest::Client;
 use tera::{Context, Tera};
-use tracing::instrument;
+use tracing::{error, instrument};
 
 use crate::{
-    errors::Result,
-    web::{guardian_middleware::Htmx, helper},
+    errors::{GuardianError, Result},
+    web::{guardian_middleware::Htmx, helper, services::CATALOG_URLS},
 };
 
 mod inference_services;
@@ -25,13 +27,37 @@ async fn pulse(data: Data<Tera>) -> Result<HttpResponse> {
 
 #[get("")]
 #[instrument]
-async fn status(req: HttpRequest) -> Result<HttpResponse> {
-    Ok(HttpResponse::Ok()
-        .content_type(ContentType::form_url_encoded())
-        .body(r##"
-            <button type="button" class="btn btn-primary" hx-get="/pulse/status" hx-target="#status" hx-swap="innerHTML">Refresh Status</button>
-            <p class="text-success mt-3">OK</p>
-        "##))
+async fn status(req: HttpRequest, client: Data<Client>) -> Result<HttpResponse> {
+    match CATALOG_URLS.get() {
+        Some(col) => {
+            let is = inference_services::InferenceServicesHealth::new(col, client.as_ref().clone());
+
+            let mut stream = is.create_stream();
+            let mut builder = is.builder();
+
+            while let Some(item) = stream.next().await {
+                match item {
+                    Ok((up, name, elapsed)) => {
+                        if !cfg!(debug_assertions) && name == "postman" {
+                            continue;
+                        };
+                        builder.add_inner_body(up, &name, elapsed);
+                    }
+                    Err(e) => {
+                        // log and continue
+                        error!("Error: {:?}", e);
+                    }
+                }
+            }
+
+            Ok(HttpResponse::Ok()
+                .content_type(ContentType::form_url_encoded())
+                .body(builder.render()))
+        }
+        None => Err(GuardianError::GeneralError(
+            "CATALOG was not initialized".to_string(),
+        )),
+    }
 }
 
 pub fn config_status(cfg: &mut web::ServiceConfig) {

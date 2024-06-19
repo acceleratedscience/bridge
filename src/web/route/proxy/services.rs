@@ -8,6 +8,7 @@ use crate::errors::{GuardianError, Result};
 pub struct Catalog(pub toml::Table);
 
 pub static CATALOG: OnceLock<Catalog> = OnceLock::new();
+pub static CATALOG_URLS: OnceLock<Vec<(Url, String)>> = OnceLock::new();
 
 pub fn init_once() {
     let table = toml::from_str(
@@ -15,6 +16,7 @@ pub fn init_once() {
     )
     .unwrap();
     CATALOG.get_or_init(|| Catalog(table));
+    CATALOG_URLS.get_or_init(|| CATALOG.get().unwrap().into());
 }
 
 impl Catalog {
@@ -35,11 +37,6 @@ impl Catalog {
         )
         .map_err(|e| GuardianError::GeneralError(e.to_string()))
     }
-
-    pub fn list(&self) -> Vec<Url> {
-        self.0.get("services");
-        todo!();
-    }
 }
 
 impl From<&Catalog> for Vec<(Url, String)> {
@@ -48,10 +45,16 @@ impl From<&Catalog> for Vec<(Url, String)> {
             return map
                 .iter()
                 .filter_map(|(name, service)| {
+                    let health_endpoint = service
+                        .get("readiness")
+                        .and_then(Value::as_str)
+                        .unwrap_or("health");
+
                     let url = service
                         .get("url")
                         .and_then(Value::as_str)
-                        .and_then(|url| Url::parse(url).ok());
+                        .and_then(|url| Url::parse(url).ok())
+                        .and_then(|url| url.join(health_endpoint).ok());
                     url.map(|url| (url, name.to_string()))
                 })
                 .collect();
@@ -78,6 +81,8 @@ mod test {
         let catalog = CATALOG.get().unwrap();
         let services: Vec<(Url, String)> = catalog.into();
         assert_eq!(services.len(), 5);
+
+        dbg!(&services);
 
         let postman = services.iter().find(|(_, name)| name == "postman");
         assert!(postman.is_some());
