@@ -1,0 +1,23 @@
+[services]
+version = "0.1.0"
+
+	[services.postman]
+	url = "https://postman-echo.com"
+	readiness = "/get"
+
+	[services.properties]
+	url = "http://property-inference-service.openad-models.svc.cluster.local"
+	readiness = "/health"
+
+	[services.generation]
+	url = "http://generation-inference-service.openad-models.svc.cluster.local"
+	readiness = "/health"
+
+	[services.molformer]
+	url = "http://molformer-inference-service.openad-models.svc.cluster.local"
+	readiness = "/health"
+
+	[services.moler]
+	url = "http://moler-inference-service.openad-models.svc.cluster.local"
+	readiness = "/health"
+

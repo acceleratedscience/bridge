@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Pulse{% endblock title %}
+{% block head %}
+  <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+{% endblock head %}
+{% block body %}
+  <div class="container d-flex flex-column w-100" style="height:100vh">
+    <header class="mb-auto"></header>
+    <main class="mx-auto">
+      <h1 class="text-center">Pulse!</h1>
+      <p class="lead">Check the status of services from Accelerated Discovery platform.</p>
+      <div class="text-center">
+        <div id="status" class="lead">
+          <button type="button" class="btn btn-primary" hx-get="/pulse/status" hx-target="#status" hx-swap="innerHTML">Check Status</button>
+        </div>
+      </div>
+    </main>
+    <footer class="mt-auto"></footer>
+  </div>
+{% endblock body %}
