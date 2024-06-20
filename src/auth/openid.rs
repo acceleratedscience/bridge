@@ -44,6 +44,18 @@ type OIDC = Client<
     StandardErrorResponse<RevocationErrorResponseType>,
 >;
 
+type Token = StandardTokenResponse<
+    IdTokenFields<
+        EmptyAdditionalClaims,
+        EmptyExtraTokenFields,
+        core::CoreGenderClaim,
+        core::CoreJweContentEncryptionAlgorithm,
+        core::CoreJwsSigningAlgorithm,
+        core::CoreJsonWebKeyType,
+    >,
+    core::CoreTokenType,
+>;
+
 pub struct OpenID {
     client: OIDC,
 }
@@ -123,22 +135,7 @@ impl OpenID {
         (u, c, n)
     }
 
-    pub async fn get_token(
-        &self,
-        code: String,
-    ) -> Result<
-        StandardTokenResponse<
-            IdTokenFields<
-                EmptyAdditionalClaims,
-                EmptyExtraTokenFields,
-                core::CoreGenderClaim,
-                core::CoreJweContentEncryptionAlgorithm,
-                core::CoreJwsSigningAlgorithm,
-                core::CoreJsonWebKeyType,
-            >,
-            core::CoreTokenType,
-        >,
-    > {
+    pub async fn get_token(&self, code: String) -> Result<Token> {
         let token = self
             .client
             .exchange_code(AuthorizationCode::new(code))
@@ -146,6 +143,17 @@ impl OpenID {
             .await
             .map_err(|e| GuardianError::GeneralError(e.to_string()))?;
         Ok(token)
+    }
+
+    pub fn get_verifier(
+        &self,
+    ) -> openidconnect::IdTokenVerifier<
+        core::CoreJwsSigningAlgorithm,
+        core::CoreJsonWebKeyType,
+        core::CoreJsonWebKeyUse,
+        core::CoreJsonWebKey,
+    > {
+        self.client.id_token_verifier()
     }
 }
 

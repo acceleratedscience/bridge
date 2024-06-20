@@ -98,9 +98,17 @@ async fn redirect(req: HttpRequest) -> GResult<HttpResponse> {
     let nonce = req
         .cookie("nonce")
         .ok_or_else(|| GuardianError::GeneralError("Nonce cookie not found".to_string()))?;
-    let nonce = Nonce::new(nonce.to_string());
-
+    let nonce = Nonce::new(nonce.value().to_string());
     dbg!(&nonce.secret());
+
+    let verifier = openid.get_verifier();
+    let x = token
+        .extra_fields()
+        .id_token()
+        .unwrap()
+        .claims(&verifier, &nonce)
+        .unwrap();
+    dbg!(x);
 
     let mut cookie = Cookie::build("nonce", "")
         .http_only(true)
