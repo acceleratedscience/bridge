@@ -27,6 +27,10 @@ pub enum GuardianError {
     InferenceServiceHeaderNotFound,
     #[error("Service {0} does does not exist")]
     ServiceDoesNotExist(String),
+    #[error("Toml lookup error")]
+    TomlLookupError,
+    #[error("String conversion error")]
+    StringConversionError,
 }
 
 impl ResponseError for GuardianError {
@@ -74,6 +78,8 @@ impl ResponseError for GuardianError {
                     _ => StatusCode::INTERNAL_SERVER_ERROR,
                 }
             }
+            GuardianError::TomlLookupError => StatusCode::INTERNAL_SERVER_ERROR,
+            GuardianError::StringConversionError => StatusCode::INTERNAL_SERVER_ERROR,
             GuardianError::NotAdmin => StatusCode::UNAUTHORIZED,
             GuardianError::Unauthorized(_) => StatusCode::UNAUTHORIZED,
         }

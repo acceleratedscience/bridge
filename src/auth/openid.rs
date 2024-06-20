@@ -5,10 +5,14 @@ use std::{fs::read_to_string, path::PathBuf, str::FromStr, sync::OnceLock};
 use openidconnect::{
     core::{self, CoreClient, CoreResponseType},
     reqwest, AuthenticationFlow, Client, ClientId, ClientSecret, CsrfToken, EmptyAdditionalClaims,
-    EmptyExtraTokenFields, IdTokenFields, IssuerUrl, Nonce, RevocationErrorResponseType, Scope,
-    StandardErrorResponse, StandardTokenIntrospectionResponse, StandardTokenResponse,
+    EmptyExtraTokenFields, IdTokenFields, IssuerUrl, Nonce, RedirectUrl,
+    RevocationErrorResponseType, Scope, StandardErrorResponse, StandardTokenIntrospectionResponse,
+    StandardTokenResponse,
 };
+use tracing::error;
 use url::Url;
+
+use crate::errors::{GuardianError, Result};
 
 #[allow(clippy::upper_case_acronyms)]
 // LMFAO
@@ -40,60 +44,71 @@ type OIDC = Client<
     StandardErrorResponse<RevocationErrorResponseType>,
 >;
 
-struct OpenID {
+pub struct OpenID {
     client: OIDC,
 }
 
-static OPENID: OnceLock<OpenID> = OnceLock::new();
+pub static OPENID: OnceLock<OpenID> = OnceLock::new();
 
 impl OpenID {
-    fn new() -> Self {
+    async fn new() -> Result<Self> {
         let table = toml::from_str::<toml::Table>(
             &read_to_string(PathBuf::from_str("config/configurations.toml").unwrap()).unwrap(),
         )
         .unwrap();
         let url = table
             .get("openid")
-            .unwrap()
+            .ok_or_else(|| GuardianError::TomlLookupError)?
             .get("url")
-            .unwrap()
+            .ok_or_else(|| GuardianError::TomlLookupError)?
             .as_str()
-            .unwrap();
+            .ok_or_else(|| GuardianError::StringConversionError)?;
+        let redirect = table
+            .get("openid")
+            .ok_or_else(|| GuardianError::TomlLookupError)?
+            .get("redirect_url")
+            .ok_or_else(|| GuardianError::TomlLookupError)?
+            .as_str()
+            .ok_or_else(|| GuardianError::StringConversionError)?;
         let client_id = table
             .get("openid")
-            .unwrap()
+            .ok_or_else(|| GuardianError::TomlLookupError)?
             .get("client")
-            .unwrap()
+            .ok_or_else(|| GuardianError::TomlLookupError)?
             .get("client_id")
-            .unwrap()
+            .ok_or_else(|| GuardianError::TomlLookupError)?
             .as_str()
-            .unwrap();
+            .ok_or_else(|| GuardianError::StringConversionError)?;
         let client_secret = table
             .get("openid")
-            .unwrap()
+            .ok_or_else(|| GuardianError::TomlLookupError)?
             .get("client")
-            .unwrap()
+            .ok_or_else(|| GuardianError::TomlLookupError)?
             .get("client_secret")
-            .unwrap()
+            .ok_or_else(|| GuardianError::TomlLookupError)?
             .as_str()
-            .unwrap();
+            .ok_or_else(|| GuardianError::StringConversionError)?;
 
-        let provider_metadata = core::CoreProviderMetadata::discover(
-            &IssuerUrl::new(url.to_owned()).unwrap(),
-            reqwest::http_client,
-        )
-        .unwrap();
+        let provider_metadata = core::CoreProviderMetadata::discover_async(
+            IssuerUrl::new(url.to_owned()).unwrap(),
+            reqwest::async_http_client,
+        ).await
+        .map_err(|e| GuardianError::GeneralError(e.to_string()))?;
 
         let client = CoreClient::from_provider_metadata(
             provider_metadata,
             ClientId::new(client_id.to_string()),
             Some(ClientSecret::new(client_secret.to_string())),
+        )
+        .set_redirect_uri(
+            RedirectUrl::new(redirect.to_string())
+                .map_err(|e| GuardianError::GeneralError(e.to_string()))?,
         );
 
-        OpenID { client }
+        Ok(OpenID { client })
     }
 
-    fn get_client_resources(&self) -> (Url, CsrfToken, Nonce) {
+    pub fn get_client_resources(&self) -> (Url, CsrfToken, Nonce) {
         let (u, c, n) = self
             .client
             .authorize_url(
@@ -108,17 +123,24 @@ impl OpenID {
     }
 }
 
-pub fn init_once() {
-    OPENID.get_or_init(OpenID::new);
+pub async fn init_once() {
+    if let Ok(openid) = OpenID::new().await {
+        OPENID.get_or_init(|| openid);
+        return;
+    }
+    error!("Failed to initialize OpenID");
+    std::process::exit(1);
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    #[test]
-    fn test_openid() {
-        init_once();
-        let _ = OPENID.get().unwrap();
+    #[tokio::test]
+    async fn test_openid() {
+        init_once().await;
+        let openid = OPENID.get().unwrap();
+        let (u, c, n) = openid.get_client_resources();
+        println!("{:?} {:?} {:?}", u, c, n);
     }
 }
