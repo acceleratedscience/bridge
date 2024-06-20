@@ -1,0 +1,6 @@
+[auth]
+url = "https://preprod.login.w3.ibm.com/oidc/endpoint/default"
+
+	[auth.openid]
+	client_id = "some id"
+	client_secret = "some key"
