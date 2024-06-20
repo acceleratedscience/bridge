@@ -4,8 +4,8 @@ use std::{fs::read_to_string, path::PathBuf, str::FromStr, sync::OnceLock};
 
 use openidconnect::{
     core::{self, CoreClient, CoreResponseType},
-    reqwest, AuthenticationFlow, Client, ClientId, ClientSecret, CsrfToken, EmptyAdditionalClaims,
-    EmptyExtraTokenFields, IdTokenFields, IssuerUrl, Nonce, RedirectUrl,
+    reqwest, AuthenticationFlow, AuthorizationCode, Client, ClientId, ClientSecret, CsrfToken,
+    EmptyAdditionalClaims, EmptyExtraTokenFields, IdTokenFields, IssuerUrl, Nonce, RedirectUrl,
     RevocationErrorResponseType, Scope, StandardErrorResponse, StandardTokenIntrospectionResponse,
     StandardTokenResponse,
 };
@@ -92,7 +92,8 @@ impl OpenID {
         let provider_metadata = core::CoreProviderMetadata::discover_async(
             IssuerUrl::new(url.to_owned()).unwrap(),
             reqwest::async_http_client,
-        ).await
+        )
+        .await
         .map_err(|e| GuardianError::GeneralError(e.to_string()))?;
 
         let client = CoreClient::from_provider_metadata(
@@ -120,6 +121,31 @@ impl OpenID {
             .add_scope(Scope::new("profile".to_string()))
             .url();
         (u, c, n)
+    }
+
+    pub async fn get_token(
+        &self,
+        code: String,
+    ) -> Result<
+        StandardTokenResponse<
+            IdTokenFields<
+                EmptyAdditionalClaims,
+                EmptyExtraTokenFields,
+                core::CoreGenderClaim,
+                core::CoreJweContentEncryptionAlgorithm,
+                core::CoreJwsSigningAlgorithm,
+                core::CoreJsonWebKeyType,
+            >,
+            core::CoreTokenType,
+        >,
+    > {
+        let token = self
+            .client
+            .exchange_code(AuthorizationCode::new(code))
+            .request_async(reqwest::async_http_client)
+            .await
+            .map_err(|e| GuardianError::GeneralError(e.to_string()))?;
+        Ok(token)
     }
 }
 
