@@ -5,10 +5,9 @@ use actix_web::{
     web::{self, Data},
     HttpRequest, HttpResponse,
 };
-use openidconnect::Nonce;
+use openidconnect::{EndUserEmail, Nonce};
 use serde::Deserialize;
 use tera::{Context, Tera};
-use tracing::instrument;
 
 use crate::{
     auth::{jwt, openid},
@@ -17,42 +16,42 @@ use crate::{
     web::helper,
 };
 
-use self::deserialize::{CallBackResponse, TokenRequest};
+use self::deserialize::CallBackResponse;
 
 mod deserialize;
 
-#[get("/get_token")]
-#[instrument(skip(data))]
-async fn get_token(data: Data<Tera>, req: HttpRequest) -> GResult<HttpResponse> {
-    let query = req.query_string();
-    let deserializer = serde::de::value::StrDeserializer::<serde::de::value::Error>::new(query);
-    let q = match TokenRequest::deserialize(deserializer) {
-        Ok(q) => q,
-        Err(e) => {
-            return helper::log_errors(Err(GuardianError::QueryDeserializeError(e.to_string())))
-        }
-    };
-
-    if q.admin != "thisisbadsecurity" {
-        return helper::log_errors(Err(GuardianError::NotAdmin));
-    }
-
-    const TOKEN_LIFETIME: usize = const { 60 * 60 * 24 * 30 };
-
-    // generate token
-    let token = jwt::get_token(&CONFIG.get().unwrap().encoder, TOKEN_LIFETIME, &q.username)?;
-
-    if let Some(true) = q.gui {
-        let mut ctx = Context::new();
-        ctx.insert("token", &token);
-        ctx.insert("name", &q.username);
-        let rendered = helper::log_errors(data.render("token.html", &ctx))?;
-
-        Ok(HttpResponse::Ok().content_type("text/html").body(rendered))
-    } else {
-        Ok(HttpResponse::Ok().json(token))
-    }
-}
+// #[get("/get_token")]
+// #[instrument(skip(data))]
+// async fn get_token(data: Data<Tera>, req: HttpRequest) -> GResult<HttpResponse> {
+//     let query = req.query_string();
+//     let deserializer = serde::de::value::StrDeserializer::<serde::de::value::Error>::new(query);
+//     let q = match TokenRequest::deserialize(deserializer) {
+//         Ok(q) => q,
+//         Err(e) => {
+//             return helper::log_errors(Err(GuardianError::QueryDeserializeError(e.to_string())))
+//         }
+//     };
+//
+//     if q.admin != "thisisbadsecurity" {
+//         return helper::log_errors(Err(GuardianError::NotAdmin));
+//     }
+//
+//     const TOKEN_LIFETIME: usize = const { 60 * 60 * 24 * 30 };
+//
+//     // generate token
+//     let token = jwt::get_token(&CONFIG.get().unwrap().encoder, TOKEN_LIFETIME, &q.username)?;
+//
+//     if let Some(true) = q.gui {
+//         let mut ctx = Context::new();
+//         ctx.insert("token", &token);
+//         ctx.insert("name", &q.username);
+//         let rendered = helper::log_errors(data.render("token.html", &ctx))?;
+//
+//         Ok(HttpResponse::Ok().content_type("text/html").body(rendered))
+//     } else {
+//         Ok(HttpResponse::Ok().json(token))
+//     }
+// }
 
 #[get("/login")]
 async fn login() -> GResult<HttpResponse> {
@@ -78,7 +77,7 @@ async fn login() -> GResult<HttpResponse> {
 }
 
 #[get("/redirect")]
-async fn redirect(req: HttpRequest) -> GResult<HttpResponse> {
+async fn redirect(req: HttpRequest, data: Data<Tera>) -> GResult<HttpResponse> {
     let query = req.query_string();
     let deserializer = serde::de::value::StrDeserializer::<serde::de::value::Error>::new(query);
     let q = match CallBackResponse::deserialize(deserializer) {
@@ -99,16 +98,36 @@ async fn redirect(req: HttpRequest) -> GResult<HttpResponse> {
         .cookie("nonce")
         .ok_or_else(|| GuardianError::GeneralError("Nonce cookie not found".to_string()))?;
     let nonce = Nonce::new(nonce.value().to_string());
-    dbg!(&nonce.secret());
 
     let verifier = openid.get_verifier();
-    let x = token
+    let claims = token
         .extra_fields()
         .id_token()
         .unwrap()
         .claims(&verifier, &nonce)
         .unwrap();
-    dbg!(x);
+
+    let email = claims
+        .email()
+        .unwrap_or(&EndUserEmail::new("".to_string()))
+        .to_string();
+    let name = if let Some(name) = claims.given_name() {
+        match name.get(None) {
+            Some(name) => name.to_string(),
+            None => return Err(GuardianError::GeneralError("Name not found".to_string())),
+        }
+    } else {
+        return Err(GuardianError::GeneralError("Name not found".to_string()));
+    };
+
+    const TOKEN_LIFETIME: usize = const { 60 * 60 * 24 * 30 };
+    // generate token
+    let token = jwt::get_token(&CONFIG.get().unwrap().encoder, TOKEN_LIFETIME, &email)?;
+
+    let mut ctx = Context::new();
+    ctx.insert("token", &token);
+    ctx.insert("name", &name);
+    let rendered = helper::log_errors(data.render("token.html", &ctx))?;
 
     let mut cookie = Cookie::build("nonce", "")
         .http_only(true)
@@ -116,13 +135,15 @@ async fn redirect(req: HttpRequest) -> GResult<HttpResponse> {
         .finish();
     cookie.make_removal();
 
-    Ok(HttpResponse::Ok().cookie(cookie).finish())
+    Ok(HttpResponse::Ok()
+        .cookie(cookie)
+        .content_type("text/html")
+        .body(rendered))
 }
 
 pub fn config_auth(cfg: &mut web::ServiceConfig) {
     cfg.service(
         web::scope("/auth")
-            .service(get_token)
             .service(login)
             .service(redirect),
     );

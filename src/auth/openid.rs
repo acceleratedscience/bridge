@@ -129,6 +129,7 @@ impl OpenID {
                 CsrfToken::new_random,
                 Nonce::new_random,
             )
+            .add_scope(Scope::new("openid".to_string()))
             .add_scope(Scope::new("email".to_string()))
             .add_scope(Scope::new("profile".to_string()))
             .url();
@@ -142,6 +143,7 @@ impl OpenID {
             .request_async(reqwest::async_http_client)
             .await
             .map_err(|e| GuardianError::GeneralError(e.to_string()))?;
+        dbg!(&token);
         Ok(token)
     }
 
