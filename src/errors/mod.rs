@@ -1,6 +1,7 @@
 use std::time;
 
 use actix_web::{http::StatusCode, ResponseError};
+use openidconnect::ClaimsVerificationError;
 use thiserror::Error;
 
 pub type Result<T> = std::result::Result<T, GuardianError>;
@@ -31,6 +32,10 @@ pub enum GuardianError {
     TomlLookupError,
     #[error("String conversion error")]
     StringConversionError,
+    #[error("{0}")]
+    DeserializationError(#[from] serde::de::value::Error),
+    #[error("{0}")]
+    ClaimsVerificationError(#[from] ClaimsVerificationError),
 }
 
 impl ResponseError for GuardianError {
@@ -80,8 +85,10 @@ impl ResponseError for GuardianError {
             }
             GuardianError::TomlLookupError => StatusCode::INTERNAL_SERVER_ERROR,
             GuardianError::StringConversionError => StatusCode::INTERNAL_SERVER_ERROR,
+            GuardianError::DeserializationError(_) => StatusCode::INTERNAL_SERVER_ERROR,
             GuardianError::NotAdmin => StatusCode::UNAUTHORIZED,
             GuardianError::Unauthorized(_) => StatusCode::UNAUTHORIZED,
+            GuardianError::ClaimsVerificationError(_) => StatusCode::UNAUTHORIZED,
         }
     }
 }

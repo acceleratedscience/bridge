@@ -143,7 +143,6 @@ impl OpenID {
             .request_async(reqwest::async_http_client)
             .await
             .map_err(|e| GuardianError::GeneralError(e.to_string()))?;
-        dbg!(&token);
         Ok(token)
     }
 

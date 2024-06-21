@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use serde::{de::Visitor, Deserialize};
 
+#[allow(dead_code)]
 #[derive(Debug)]
 pub struct CallBackResponse {
     pub code: String,
@@ -51,5 +52,20 @@ impl<'de> Deserialize<'de> for CallBackResponse {
         D: serde::Deserializer<'de>,
     {
         deserializer.deserialize_struct("CallBackResponse", &["code", "state"], CallBackVisitor)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_deserialize() {
+        let query = "code=123&state=456";
+        let deserializer = serde::de::value::StrDeserializer::<serde::de::value::Error>::new(query);
+        let callback_response = CallBackResponse::deserialize(deserializer).unwrap();
+
+        assert_eq!(callback_response.code, "123");
+        assert_eq!(callback_response.state, "456");
     }
 }

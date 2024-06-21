@@ -29,7 +29,9 @@ async fn login() -> GResult<HttpResponse> {
     )?;
     let url = openid.get_client_resources();
 
-    // store nonce as a cookie on client
+    // TODO: use the CsrfToken to protect against CSRF attacks
+
+    // store nonce with the client
     let cookie = Cookie::build("nonce", url.2.secret())
         .expires(time::OffsetDateTime::now_utc() + time::Duration::minutes(5))
         .http_only(true)
@@ -47,18 +49,16 @@ async fn login() -> GResult<HttpResponse> {
 async fn redirect(req: HttpRequest, data: Data<Tera>) -> GResult<HttpResponse> {
     let query = req.query_string();
     let deserializer = serde::de::value::StrDeserializer::<serde::de::value::Error>::new(query);
-    let q = match CallBackResponse::deserialize(deserializer) {
-        Ok(q) => q,
-        Err(e) => {
-            return helper::log_errors(Err(GuardianError::QueryDeserializeError(e.to_string())))
-        }
-    };
+    let callback_response = helper::log_errors(CallBackResponse::deserialize(deserializer))?;
+
     let openid = helper::log_errors(
         openid::OPENID
             .get()
             .ok_or_else(|| GuardianError::GeneralError("Openid not configured".to_string())),
     )?;
-    let token = openid.get_token(q.code).await?;
+
+    // get token from auth server
+    let token = openid.get_token(callback_response.code).await?;
 
     // get nonce cookie from client
     let nonce = req
@@ -66,29 +66,31 @@ async fn redirect(req: HttpRequest, data: Data<Tera>) -> GResult<HttpResponse> {
         .ok_or_else(|| GuardianError::GeneralError("Nonce cookie not found".to_string()))?;
     let nonce = Nonce::new(nonce.value().to_string());
 
+    // verify token
     let verifier = openid.get_verifier();
     let claims = token
         .extra_fields()
         .id_token()
-        .unwrap()
-        .claims(&verifier, &nonce)
-        .unwrap();
+        .ok_or_else(|| GuardianError::GeneralError("No ID Token".to_string()))?
+        .claims(&verifier, &nonce)?;
 
+    // get information from claims
     let email = claims
         .email()
         .unwrap_or(&EndUserEmail::new("".to_string()))
         .to_string();
-    let name = if let Some(name) = claims.given_name() {
-        match name.get(None) {
-            Some(name) => name.to_string(),
-            None => return Err(GuardianError::GeneralError("Name not found".to_string())),
-        }
-    } else {
-        return Err(GuardianError::GeneralError("Name not found".to_string()));
-    };
+    let name = || -> GResult<String> {
+        let name = claims
+            .given_name()
+            .ok_or_else(|| GuardianError::GeneralError("No name in claims".to_string()))?;
+        Ok(name
+            .get(None)
+            .ok_or_else(|| GuardianError::GeneralError("locale error".to_string()))?
+            .to_string())
+    }()?;
 
+    // Generate guardian token
     const TOKEN_LIFETIME: usize = const { 60 * 60 * 24 * 30 };
-    // generate token
     let token = jwt::get_token(&CONFIG.get().unwrap().encoder, TOKEN_LIFETIME, &email)?;
 
     let mut ctx = Context::new();
@@ -109,9 +111,5 @@ async fn redirect(req: HttpRequest, data: Data<Tera>) -> GResult<HttpResponse> {
 }
 
 pub fn config_auth(cfg: &mut web::ServiceConfig) {
-    cfg.service(
-        web::scope("/auth")
-            .service(login)
-            .service(redirect),
-    );
+    cfg.service(web::scope("/auth").service(login).service(redirect));
 }
