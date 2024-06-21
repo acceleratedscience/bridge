@@ -1,7 +1,4 @@
-use std::time;
-
 use actix_web::{http::StatusCode, ResponseError};
-use openidconnect::{ClaimsVerificationError, RequestTokenError};
 use thiserror::Error;
 
 pub type Result<T> = std::result::Result<T, GuardianError>;
@@ -15,7 +12,7 @@ pub enum GuardianError {
     #[error("{0}")]
     TeraError(#[from] tera::Error),
     #[error("{0}")]
-    SystemTimeError(#[from] time::SystemTimeError),
+    SystemTimeError(#[from] std::time::SystemTimeError),
     #[error("{0}")]
     JsonWebTokenError(#[from] jsonwebtoken::errors::Error),
     #[error("The query could not be deserialized: {0}")]
@@ -35,7 +32,7 @@ pub enum GuardianError {
     #[error("{0}")]
     DeserializationError(#[from] serde::de::value::Error),
     #[error("{0}")]
-    ClaimsVerificationError(#[from] ClaimsVerificationError),
+    ClaimsVerificationError(#[from] openidconnect::ClaimsVerificationError),
     #[error("Nonce cookie not found")]
     NonceCookieNotFound,
     #[error("Error when requesting token from Auth server: {0}")]
