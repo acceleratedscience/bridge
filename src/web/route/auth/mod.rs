@@ -1,7 +1,7 @@
 use actix_web::{
     cookie::{time, Cookie},
     get,
-    http::header,
+    http::header::{self, ContentType},
     web::{self, Data},
     HttpRequest, HttpResponse,
 };
@@ -106,7 +106,7 @@ async fn redirect(req: HttpRequest, data: Data<Tera>) -> GResult<HttpResponse> {
 
     Ok(HttpResponse::Ok()
         .cookie(cookie)
-        .content_type("text/html")
+        .content_type(ContentType::html())
         .body(rendered))
 }
 
