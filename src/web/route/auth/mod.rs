@@ -58,28 +58,31 @@ async fn redirect(req: HttpRequest, data: Data<Tera>) -> GResult<HttpResponse> {
     )?;
 
     // get token from auth server
-    let token = openid.get_token(callback_response.code).await?;
+    let token = helper::log_errors(openid.get_token(callback_response.code).await)?;
 
     // get nonce cookie from client
-    let nonce = req
-        .cookie("nonce")
-        .ok_or_else(|| GuardianError::GeneralError("Nonce cookie not found".to_string()))?;
+    let nonce = helper::log_errors(
+        req.cookie("nonce")
+            .ok_or_else(|| GuardianError::NonceCookieNotFound),
+    )?;
     let nonce = Nonce::new(nonce.value().to_string());
 
     // verify token
     let verifier = openid.get_verifier();
-    let claims = token
-        .extra_fields()
-        .id_token()
-        .ok_or_else(|| GuardianError::GeneralError("No ID Token".to_string()))?
-        .claims(&verifier, &nonce)?;
+    let claims = helper::log_errors(
+        token
+            .extra_fields()
+            .id_token()
+            .ok_or_else(|| GuardianError::GeneralError("No ID Token".to_string()))?
+            .claims(&verifier, &nonce),
+    )?;
 
     // get information from claims
     let email = claims
         .email()
         .unwrap_or(&EndUserEmail::new("".to_string()))
         .to_string();
-    let name = || -> GResult<String> {
+    let name = helper::log_errors(|| -> GResult<String> {
         let name = claims
             .given_name()
             .ok_or_else(|| GuardianError::GeneralError("No name in claims".to_string()))?;
@@ -87,7 +90,7 @@ async fn redirect(req: HttpRequest, data: Data<Tera>) -> GResult<HttpResponse> {
             .get(None)
             .ok_or_else(|| GuardianError::GeneralError("locale error".to_string()))?
             .to_string())
-    }()?;
+    }())?;
 
     // Generate guardian token
     const TOKEN_LIFETIME: usize = const { 60 * 60 * 24 * 30 };

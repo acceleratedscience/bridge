@@ -142,7 +142,7 @@ impl OpenID {
             .exchange_code(AuthorizationCode::new(code))
             .request_async(reqwest::async_http_client)
             .await
-            .map_err(|e| GuardianError::GeneralError(e.to_string()))?;
+            .map_err(|e| GuardianError::TokenRequestError(e.to_string()))?;
         Ok(token)
     }
 

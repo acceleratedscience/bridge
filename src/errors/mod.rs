@@ -1,7 +1,7 @@
 use std::time;
 
 use actix_web::{http::StatusCode, ResponseError};
-use openidconnect::ClaimsVerificationError;
+use openidconnect::{ClaimsVerificationError, RequestTokenError};
 use thiserror::Error;
 
 pub type Result<T> = std::result::Result<T, GuardianError>;
@@ -36,6 +36,10 @@ pub enum GuardianError {
     DeserializationError(#[from] serde::de::value::Error),
     #[error("{0}")]
     ClaimsVerificationError(#[from] ClaimsVerificationError),
+    #[error("Nonce cookie not found")]
+    NonceCookieNotFound,
+    #[error("Error when requesting token from Auth server: {0}")]
+    TokenRequestError(String),
 }
 
 impl ResponseError for GuardianError {
@@ -89,6 +93,8 @@ impl ResponseError for GuardianError {
             GuardianError::NotAdmin => StatusCode::UNAUTHORIZED,
             GuardianError::Unauthorized(_) => StatusCode::UNAUTHORIZED,
             GuardianError::ClaimsVerificationError(_) => StatusCode::UNAUTHORIZED,
+            GuardianError::NonceCookieNotFound => StatusCode::UNAUTHORIZED,
+            GuardianError::TokenRequestError(_) => StatusCode::UNAUTHORIZED,
         }
     }
 }
