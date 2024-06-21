@@ -12,7 +12,7 @@ use tera::{Context, Tera};
 use crate::{
     auth::{jwt, openid},
     config::CONFIG,
-    errors::{GuardianError, Result as GResult},
+    errors::{GuardianError, Result},
     web::helper,
 };
 
@@ -21,7 +21,7 @@ use self::deserialize::CallBackResponse;
 mod deserialize;
 
 #[get("/login")]
-async fn login() -> GResult<HttpResponse> {
+async fn login() -> Result<HttpResponse> {
     let openid = helper::log_errors(
         openid::OPENID
             .get()
@@ -46,7 +46,7 @@ async fn login() -> GResult<HttpResponse> {
 }
 
 #[get("/redirect")]
-async fn redirect(req: HttpRequest, data: Data<Tera>) -> GResult<HttpResponse> {
+async fn redirect(req: HttpRequest, data: Data<Tera>) -> Result<HttpResponse> {
     let query = req.query_string();
     let deserializer = serde::de::value::StrDeserializer::<serde::de::value::Error>::new(query);
     let callback_response = helper::log_errors(CallBackResponse::deserialize(deserializer))?;
@@ -82,7 +82,7 @@ async fn redirect(req: HttpRequest, data: Data<Tera>) -> GResult<HttpResponse> {
         .email()
         .unwrap_or(&EndUserEmail::new("".to_string()))
         .to_string();
-    let name = helper::log_errors(|| -> GResult<String> {
+    let name = helper::log_errors(|| -> Result<String> {
         let name = claims
             .given_name()
             .ok_or_else(|| GuardianError::GeneralError("No name in claims".to_string()))?;
