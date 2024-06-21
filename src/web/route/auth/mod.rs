@@ -20,39 +20,6 @@ use self::deserialize::CallBackResponse;
 
 mod deserialize;
 
-// #[get("/get_token")]
-// #[instrument(skip(data))]
-// async fn get_token(data: Data<Tera>, req: HttpRequest) -> GResult<HttpResponse> {
-//     let query = req.query_string();
-//     let deserializer = serde::de::value::StrDeserializer::<serde::de::value::Error>::new(query);
-//     let q = match TokenRequest::deserialize(deserializer) {
-//         Ok(q) => q,
-//         Err(e) => {
-//             return helper::log_errors(Err(GuardianError::QueryDeserializeError(e.to_string())))
-//         }
-//     };
-//
-//     if q.admin != "thisisbadsecurity" {
-//         return helper::log_errors(Err(GuardianError::NotAdmin));
-//     }
-//
-//     const TOKEN_LIFETIME: usize = const { 60 * 60 * 24 * 30 };
-//
-//     // generate token
-//     let token = jwt::get_token(&CONFIG.get().unwrap().encoder, TOKEN_LIFETIME, &q.username)?;
-//
-//     if let Some(true) = q.gui {
-//         let mut ctx = Context::new();
-//         ctx.insert("token", &token);
-//         ctx.insert("name", &q.username);
-//         let rendered = helper::log_errors(data.render("token.html", &ctx))?;
-//
-//         Ok(HttpResponse::Ok().content_type("text/html").body(rendered))
-//     } else {
-//         Ok(HttpResponse::Ok().json(token))
-//     }
-// }
-
 #[get("/login")]
 async fn login() -> GResult<HttpResponse> {
     let openid = helper::log_errors(
@@ -61,7 +28,7 @@ async fn login() -> GResult<HttpResponse> {
             .ok_or_else(|| GuardianError::GeneralError("Openid not configured".to_string())),
     )?;
     let url = openid.get_client_resources();
-    dbg!(&url.2.secret());
+
     // store nonce as a cookie on client
     let cookie = Cookie::build("nonce", url.2.secret())
         .expires(time::OffsetDateTime::now_utc() + time::Duration::minutes(5))
