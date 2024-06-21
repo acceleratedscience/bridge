@@ -64,38 +64,34 @@ pub static OPENID: OnceLock<OpenID> = OnceLock::new();
 
 impl OpenID {
     async fn new() -> Result<Self> {
-        let table = toml::from_str::<toml::Table>(
-            &read_to_string(PathBuf::from_str("config/configurations.toml").unwrap()).unwrap(),
-        )
-        .unwrap();
-        let url = table
+        let table = toml::from_str::<toml::Table>(&read_to_string(PathBuf::from_str(
+            "config/configurations.toml",
+        )?)?)?;
+        let openid_table = table
             .get("openid")
-            .ok_or_else(|| GuardianError::TomlLookupError)?
+            .ok_or_else(|| GuardianError::TomlLookupError)?;
+
+        let url = openid_table
             .get("url")
             .ok_or_else(|| GuardianError::TomlLookupError)?
             .as_str()
             .ok_or_else(|| GuardianError::StringConversionError)?;
-        let redirect = table
-            .get("openid")
-            .ok_or_else(|| GuardianError::TomlLookupError)?
+        let redirect = openid_table
             .get("redirect_url")
             .ok_or_else(|| GuardianError::TomlLookupError)?
             .as_str()
             .ok_or_else(|| GuardianError::StringConversionError)?;
-        let client_id = table
-            .get("openid")
-            .ok_or_else(|| GuardianError::TomlLookupError)?
+
+        let client = openid_table
             .get("client")
-            .ok_or_else(|| GuardianError::TomlLookupError)?
+            .ok_or_else(|| GuardianError::TomlLookupError)?;
+
+        let client_id = client
             .get("client_id")
             .ok_or_else(|| GuardianError::TomlLookupError)?
             .as_str()
             .ok_or_else(|| GuardianError::StringConversionError)?;
-        let client_secret = table
-            .get("openid")
-            .ok_or_else(|| GuardianError::TomlLookupError)?
-            .get("client")
-            .ok_or_else(|| GuardianError::TomlLookupError)?
+        let client_secret = client
             .get("client_secret")
             .ok_or_else(|| GuardianError::TomlLookupError)?
             .as_str()

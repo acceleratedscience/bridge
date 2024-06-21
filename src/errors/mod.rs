@@ -1,3 +1,5 @@
+use std::convert::Infallible;
+
 use actix_web::{http::StatusCode, ResponseError};
 use thiserror::Error;
 
@@ -27,6 +29,8 @@ pub enum GuardianError {
     ServiceDoesNotExist(String),
     #[error("Toml lookup error")]
     TomlLookupError,
+    #[error("{0}")]
+    TomlError(#[from] toml::de::Error),
     #[error("String conversion error")]
     StringConversionError,
     #[error("{0}")]
@@ -37,6 +41,15 @@ pub enum GuardianError {
     NonceCookieNotFound,
     #[error("Error when requesting token from Auth server: {0}")]
     TokenRequestError(String),
+    #[error("{0}")]
+    IOError(#[from] std::io::Error),
+}
+
+// Workaround for Infallible, which may get solved by rust-lang: https://github.com/rust-lang/rust/issues/64715
+impl From<Infallible> for GuardianError {
+    fn from(_: Infallible) -> Self {
+        unreachable!()
+    }
 }
 
 impl ResponseError for GuardianError {
@@ -87,6 +100,8 @@ impl ResponseError for GuardianError {
             GuardianError::TomlLookupError => StatusCode::INTERNAL_SERVER_ERROR,
             GuardianError::StringConversionError => StatusCode::INTERNAL_SERVER_ERROR,
             GuardianError::DeserializationError(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            GuardianError::IOError(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            GuardianError::TomlError(_) => StatusCode::INTERNAL_SERVER_ERROR,
             GuardianError::NotAdmin => StatusCode::UNAUTHORIZED,
             GuardianError::Unauthorized(_) => StatusCode::UNAUTHORIZED,
             GuardianError::ClaimsVerificationError(_) => StatusCode::UNAUTHORIZED,
