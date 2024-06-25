@@ -43,6 +43,10 @@ pub enum GuardianError {
     TokenRequestError(String),
     #[error("{0}")]
     IOError(#[from] std::io::Error),
+    #[error("{0}")]
+    URLParseError(#[from] url::ParseError),
+    #[error("Authorization server not supported")]
+    AuthorizationServerNotSupported,
 }
 
 // Workaround for Infallible, which may get solved by rust-lang: https://github.com/rust-lang/rust/issues/64715
@@ -56,12 +60,13 @@ impl ResponseError for GuardianError {
     fn status_code(&self) -> StatusCode {
         match self {
             GuardianError::GeneralError(_) => StatusCode::INTERNAL_SERVER_ERROR,
-            GuardianError::HtmxTagNotFound => StatusCode::BAD_REQUEST,
             GuardianError::TeraError(_) => StatusCode::INTERNAL_SERVER_ERROR,
             GuardianError::SystemTimeError(_) => StatusCode::INTERNAL_SERVER_ERROR,
             GuardianError::QueryDeserializeError(_) => StatusCode::BAD_REQUEST,
             GuardianError::InferenceServiceHeaderNotFound => StatusCode::BAD_REQUEST,
             GuardianError::ServiceDoesNotExist(_) => StatusCode::BAD_REQUEST,
+            GuardianError::HtmxTagNotFound => StatusCode::BAD_REQUEST,
+            GuardianError::AuthorizationServerNotSupported => StatusCode::BAD_REQUEST,
             GuardianError::JsonWebTokenError(e) => {
                 match e.kind() {
                     // Unauthorized errors
@@ -102,6 +107,7 @@ impl ResponseError for GuardianError {
             GuardianError::DeserializationError(_) => StatusCode::INTERNAL_SERVER_ERROR,
             GuardianError::IOError(_) => StatusCode::INTERNAL_SERVER_ERROR,
             GuardianError::TomlError(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            GuardianError::URLParseError(_) => StatusCode::INTERNAL_SERVER_ERROR,
             GuardianError::NotAdmin => StatusCode::UNAUTHORIZED,
             GuardianError::Unauthorized(_) => StatusCode::UNAUTHORIZED,
             GuardianError::ClaimsVerificationError(_) => StatusCode::UNAUTHORIZED,

@@ -8,9 +8,13 @@ use actix_web::{
 use openidconnect::{EndUserEmail, Nonce};
 use serde::Deserialize;
 use tera::{Context, Tera};
+use tracing::instrument;
 
 use crate::{
-    auth::{jwt, openid},
+    auth::{
+        jwt,
+        openid::{self, get_openid_provider, OpenID},
+    },
     config::CONFIG,
     errors::{GuardianError, Result},
     web::helper,
@@ -21,12 +25,12 @@ use self::deserialize::CallBackResponse;
 mod deserialize;
 
 #[get("/login")]
-async fn login() -> Result<HttpResponse> {
-    let openid = helper::log_errors(
-        openid::OPENID
-            .get()
-            .ok_or_else(|| GuardianError::GeneralError("Openid not configured".to_string())),
-    )?;
+#[instrument]
+async fn login(req: HttpRequest) -> Result<HttpResponse> {
+    // get openid provider
+    let provider = req.query_string();
+
+    let openid = helper::log_errors(get_openid_provider(provider.into()))?;
     let url = openid.get_client_resources();
 
     // TODO: use the CsrfToken to protect against CSRF attacks
@@ -46,19 +50,38 @@ async fn login() -> Result<HttpResponse> {
 }
 
 #[get("/redirect")]
+#[instrument]
 async fn redirect(req: HttpRequest, data: Data<Tera>) -> Result<HttpResponse> {
     let query = req.query_string();
     let deserializer = serde::de::value::StrDeserializer::<serde::de::value::Error>::new(query);
     let callback_response = helper::log_errors(CallBackResponse::deserialize(deserializer))?;
 
-    let openid = helper::log_errors(
-        openid::OPENID
-            .get()
-            .ok_or_else(|| GuardianError::GeneralError("Openid not configured".to_string())),
-    )?;
+    let openid = helper::log_errors(get_openid_provider(openid::OpenIDProvider::W3))?;
 
     // get token from auth server
-    let token = helper::log_errors(openid.get_token(callback_response.code).await)?;
+    code_to_response(callback_response.code, req, openid, data).await
+}
+
+#[get("/callback")]
+#[instrument]
+async fn callback(req: HttpRequest, data: Data<Tera>) -> Result<HttpResponse> {
+    let query = req.query_string();
+    let deserializer = serde::de::value::StrDeserializer::<serde::de::value::Error>::new(query);
+    let callback_response = helper::log_errors(CallBackResponse::deserialize(deserializer))?;
+
+    let openid = helper::log_errors(get_openid_provider(openid::OpenIDProvider::IbmId))?;
+
+    // get token from auth server
+    code_to_response(callback_response.code, req, openid, data).await
+}
+
+async fn code_to_response(
+    code: String,
+    req: HttpRequest,
+    openid: &OpenID,
+    data: Data<Tera>,
+) -> Result<HttpResponse> {
+    let token = helper::log_errors(openid.get_token(code).await)?;
 
     // get nonce cookie from client
     let nonce = helper::log_errors(
@@ -114,5 +137,10 @@ async fn redirect(req: HttpRequest, data: Data<Tera>) -> Result<HttpResponse> {
 }
 
 pub fn config_auth(cfg: &mut web::ServiceConfig) {
-    cfg.service(web::scope("/auth").service(login).service(redirect));
+    cfg.service(
+        web::scope("/auth")
+            .service(login)
+            .service(redirect)
+            .service(callback),
+    );
 }

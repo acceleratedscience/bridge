@@ -56,19 +56,55 @@ type Token = StandardTokenResponse<
     core::CoreTokenType,
 >;
 
+pub enum OpenIDProvider {
+    W3,
+    IbmId,
+    None,
+}
+
+impl From<OpenIDProvider> for &'static str {
+    fn from(provider: OpenIDProvider) -> Self {
+        match provider {
+            OpenIDProvider::W3 => "openid-w3",
+            OpenIDProvider::IbmId => "openid-ibmid",
+            OpenIDProvider::None => "",
+        }
+    }
+}
+
+impl From<&str> for OpenIDProvider {
+    fn from(provider: &str) -> Self {
+        match provider {
+            "w3" => OpenIDProvider::W3,
+            "ibm" => OpenIDProvider::IbmId,
+            _ => OpenIDProvider::None,
+        }
+    }
+}
+
+pub fn get_openid_provider(provider: OpenIDProvider) -> Result<&'static OpenID> {
+    match provider {
+        OpenIDProvider::W3 => OPENID_W3.get(),
+        OpenIDProvider::IbmId => OPENID_IBM.get(),
+        OpenIDProvider::None => None,
+    }
+    .ok_or_else(|| GuardianError::AuthorizationServerNotSupported)
+}
+
 pub struct OpenID {
     client: OIDC,
 }
 
-pub static OPENID: OnceLock<OpenID> = OnceLock::new();
+pub static OPENID_W3: OnceLock<OpenID> = OnceLock::new();
+pub static OPENID_IBM: OnceLock<OpenID> = OnceLock::new();
 
 impl OpenID {
-    async fn new() -> Result<Self> {
+    async fn new(table_name: OpenIDProvider) -> Result<Self> {
         let table = toml::from_str::<toml::Table>(&read_to_string(PathBuf::from_str(
             "config/configurations.toml",
         )?)?)?;
         let openid_table = table
-            .get("openid-w3")
+            .get(table_name.into())
             .ok_or_else(|| GuardianError::TomlLookupError)?;
 
         let url = openid_table
@@ -155,8 +191,12 @@ impl OpenID {
 }
 
 pub async fn init_once() {
-    if let Ok(openid) = OpenID::new().await {
-        OPENID.get_or_init(|| openid);
+    if let (Ok(openidw3), Ok(openidibmid)) = (
+        OpenID::new(OpenIDProvider::W3).await,
+        OpenID::new(OpenIDProvider::IbmId).await,
+    ) {
+        OPENID_W3.get_or_init(|| openidw3);
+        OPENID_IBM.get_or_init(|| openidibmid);
         return;
     }
     error!("Failed to initialize OpenID");
@@ -170,7 +210,7 @@ mod tests {
     #[tokio::test]
     async fn test_openid() {
         init_once().await;
-        let openid = OPENID.get().unwrap();
+        let openid = OPENID_W3.get().unwrap();
         let (u, c, n) = openid.get_client_resources();
         println!("{:?} {:?} {:?}", u, c, n);
     }
