@@ -68,7 +68,7 @@ impl OpenID {
             "config/configurations.toml",
         )?)?)?;
         let openid_table = table
-            .get("openid")
+            .get("openid-w3")
             .ok_or_else(|| GuardianError::TomlLookupError)?;
 
         let url = openid_table
