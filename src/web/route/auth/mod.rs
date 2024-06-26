@@ -33,9 +33,10 @@ async fn login(req: HttpRequest) -> Result<HttpResponse> {
     let openid = helper::log_errors(get_openid_provider(provider.into()))?;
     let url = openid.get_client_resources();
 
-    // TODO: use the CsrfToken to protect against CSRF attacks
+    // TODO: use the CsrfToken to protect against CSRF attacks, but since we use PCKE, we are ok
 
-    // store nonce with the client
+    // store nonce with the client that expires in 5 minutes, if the user does not complete the
+    // authentication process in 5 minutes, they will be required to start over
     let cookie = Cookie::build("nonce", url.2.secret())
         .expires(time::OffsetDateTime::now_utc() + time::Duration::minutes(5))
         .http_only(true)
@@ -101,6 +102,7 @@ async fn code_to_response(
     )?;
 
     // get information from claims
+    let subject = claims.subject().to_string();
     let email = claims
         .email()
         .unwrap_or(&EndUserEmail::new("".to_string()))
@@ -117,7 +119,13 @@ async fn code_to_response(
 
     // Generate guardian token
     const TOKEN_LIFETIME: usize = const { 60 * 60 * 24 * 30 };
-    let token = jwt::get_token(&CONFIG.get().unwrap().encoder, TOKEN_LIFETIME, &email)?;
+    let token = jwt::get_token(
+        &CONFIG.get().unwrap().encoder,
+        TOKEN_LIFETIME,
+        &subject,
+        &email,
+        vec!["all"],
+    )?;
 
     let mut ctx = Context::new();
     ctx.insert("token", &token);

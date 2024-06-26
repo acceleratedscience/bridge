@@ -134,7 +134,7 @@ impl OpenID {
             .ok_or_else(|| GuardianError::StringConversionError)?;
 
         let provider_metadata = core::CoreProviderMetadata::discover_async(
-            IssuerUrl::new(url.to_owned()).unwrap(),
+            IssuerUrl::new(url.to_owned())?,
             reqwest::async_http_client,
         )
         .await
