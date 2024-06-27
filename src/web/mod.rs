@@ -7,9 +7,9 @@ use actix_web::{
 use crate::templating;
 
 mod guardian_middleware;
+mod helper;
 mod route;
 mod tls;
-mod helper;
 
 pub use route::proxy::services;
 
@@ -32,6 +32,7 @@ pub async fn start_server(with_tls: bool) -> std::io::Result<()> {
             .configure(route::health::config_status)
             .configure(route::foo::config_foo)
             .configure(route::proxy::config_proxy)
+            .configure(route::config_index)
     });
 
     if with_tls {
