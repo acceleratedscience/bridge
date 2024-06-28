@@ -1,118 +1,154 @@
-use std::collections::HashMap;
-
 use actix_web::{
+    cookie::{time, Cookie},
     get,
+    http::header::{self, ContentType},
     web::{self, Data},
     HttpRequest, HttpResponse,
 };
-use serde::{de::Visitor, Deserialize};
+use openidconnect::{EndUserEmail, Nonce};
+use serde::Deserialize;
 use tera::{Context, Tera};
 use tracing::instrument;
 
 use crate::{
-    auth::jwt,
+    auth::{
+        jwt,
+        openid::{self, get_openid_provider, OpenID},
+    },
     config::CONFIG,
-    errors::{GuardianError, Result as GResult},
+    errors::{GuardianError, Result},
     web::helper,
 };
 
-#[derive(Debug)]
-struct TokenRequest {
-    username: String,
-    admin: String,
-    gui: Option<bool>,
+use self::deserialize::CallBackResponse;
+
+mod deserialize;
+
+#[get("/login")]
+#[instrument]
+async fn login(req: HttpRequest) -> Result<HttpResponse> {
+    // get openid provider
+    let provider = req.query_string();
+
+    let openid = helper::log_errors(get_openid_provider(provider.into()))?;
+    let url = openid.get_client_resources();
+
+    // TODO: use the CsrfToken to protect against CSRF attacks, but since we use PCKE, we are ok
+
+    // store nonce with the client that expires in 5 minutes, if the user does not complete the
+    // authentication process in 5 minutes, they will be required to start over
+    let cookie = Cookie::build("nonce", url.2.secret())
+        .expires(time::OffsetDateTime::now_utc() + time::Duration::minutes(5))
+        .http_only(true)
+        .secure(true)
+        .finish();
+
+    // redirect to auth server
+    Ok(HttpResponse::TemporaryRedirect()
+        .append_header((header::LOCATION, url.0.to_string()))
+        .cookie(cookie)
+        .finish())
 }
 
-struct TokenRequestVisitor;
-
-impl<'de> Visitor<'de> for TokenRequestVisitor {
-    type Value = TokenRequest;
-
-    fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
-        formatter.write_str("TokenRequest")
-    }
-
-    fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
-    where
-        E: serde::de::Error,
-    {
-        let pairs: HashMap<&str, &str> = v
-            .split('&')
-            .filter_map(|s| {
-                let mut parts = s.split('=');
-                if let (Some(key), Some(value)) = (parts.next(), parts.next()) {
-                    Some((key.trim(), value.trim_matches('"')))
-                } else {
-                    None
-                }
-            })
-            .collect();
-
-        let username = pairs
-            .get("username")
-            .ok_or_else(|| E::custom("Missing username"))?;
-        let admin = pairs
-            .get("admin")
-            .ok_or_else(|| E::custom("Missing admin"))?;
-        let gui = match pairs.get("gui") {
-            Some(v) => Some(v.parse().map_err(E::custom)?),
-            None => None,
-        };
-
-        Ok(TokenRequest {
-            username: username.to_string(),
-            admin: admin.to_string(),
-            gui,
-        })
-    }
-}
-
-impl<'de> Deserialize<'de> for TokenRequest {
-    fn deserialize<D>(deserializer: D) -> Result<TokenRequest, D::Error>
-    where
-        D: serde::Deserializer<'de>,
-    {
-        deserializer.deserialize_struct(
-            "TokenRequest",
-            &["username", "admin", "gui"],
-            TokenRequestVisitor,
-        )
-    }
-}
-
-#[get("/get_token")]
-#[instrument(skip(data))]
-async fn get_token(data: Data<Tera>, req: HttpRequest) -> GResult<HttpResponse> {
+#[get("/redirect")]
+#[instrument]
+async fn redirect(req: HttpRequest, data: Data<Tera>) -> Result<HttpResponse> {
     let query = req.query_string();
     let deserializer = serde::de::value::StrDeserializer::<serde::de::value::Error>::new(query);
-    let q = match TokenRequest::deserialize(deserializer) {
-        Ok(q) => q,
-        Err(e) => {
-            return helper::log_errors(Err(GuardianError::QueryDeserializeError(e.to_string())))
-        }
-    };
+    let callback_response = helper::log_errors(CallBackResponse::deserialize(deserializer))?;
 
-    if q.admin != "thisisbadsecurity" {
-        return helper::log_errors(Err(GuardianError::NotAdmin));
-    }
+    let openid = helper::log_errors(get_openid_provider(openid::OpenIDProvider::W3))?;
 
-    const TOKEN_LIFETIME: usize = 60 * 60 * 24 * 30;
+    // get token from auth server
+    code_to_response(callback_response.code, req, openid, data).await
+}
 
-    // generate token
-    let token = jwt::get_token(&CONFIG.get().unwrap().encoder, TOKEN_LIFETIME, &q.username)?;
+#[get("/callback")]
+#[instrument]
+async fn callback(req: HttpRequest, data: Data<Tera>) -> Result<HttpResponse> {
+    let query = req.query_string();
+    let deserializer = serde::de::value::StrDeserializer::<serde::de::value::Error>::new(query);
+    let callback_response = helper::log_errors(CallBackResponse::deserialize(deserializer))?;
 
-    if let Some(true) = q.gui {
-        let mut ctx = Context::new();
-        ctx.insert("token", &token);
-        ctx.insert("name", &q.username);
-        let rendered = helper::log_errors(data.render("token.html", &ctx))?;
+    let openid = helper::log_errors(get_openid_provider(openid::OpenIDProvider::IbmId))?;
 
-        Ok(HttpResponse::Ok().content_type("text/html").body(rendered))
-    } else {
-        Ok(HttpResponse::Ok().json(token))
-    }
+    // get token from auth server
+    code_to_response(callback_response.code, req, openid, data).await
+}
+
+async fn code_to_response(
+    code: String,
+    req: HttpRequest,
+    openid: &OpenID,
+    data: Data<Tera>,
+) -> Result<HttpResponse> {
+    let token = helper::log_errors(openid.get_token(code).await)?;
+
+    // get nonce cookie from client
+    let nonce = helper::log_errors(
+        req.cookie("nonce")
+            .ok_or_else(|| GuardianError::NonceCookieNotFound),
+    )?;
+    let nonce = Nonce::new(nonce.value().to_string());
+
+    // verify token
+    let verifier = openid.get_verifier();
+    let claims = helper::log_errors(
+        token
+            .extra_fields()
+            .id_token()
+            .ok_or_else(|| GuardianError::GeneralError("No ID Token".to_string()))?
+            .claims(&verifier, &nonce),
+    )?;
+
+    // get information from claims
+    let subject = claims.subject().to_string();
+    let email = claims
+        .email()
+        .unwrap_or(&EndUserEmail::new("".to_string()))
+        .to_string();
+    let name = helper::log_errors(|| -> Result<String> {
+        let name = claims
+            .given_name()
+            .ok_or_else(|| GuardianError::GeneralError("No name in claims".to_string()))?;
+        Ok(name
+            .get(None)
+            .ok_or_else(|| GuardianError::GeneralError("locale error".to_string()))?
+            .to_string())
+    }())?;
+
+    // Generate guardian token
+    const TOKEN_LIFETIME: usize = const { 60 * 60 * 24 * 30 };
+    let token = jwt::get_token(
+        &CONFIG.get().unwrap().encoder,
+        TOKEN_LIFETIME,
+        &subject,
+        &email,
+        vec!["all"],
+    )?;
+
+    let mut ctx = Context::new();
+    ctx.insert("token", &token);
+    ctx.insert("name", &name);
+    let rendered = helper::log_errors(data.render("token.html", &ctx))?;
+
+    let mut cookie = Cookie::build("nonce", "")
+        .http_only(true)
+        .secure(true)
+        .finish();
+    cookie.make_removal();
+
+    Ok(HttpResponse::Ok()
+        .cookie(cookie)
+        .content_type(ContentType::html())
+        .body(rendered))
 }
 
 pub fn config_auth(cfg: &mut web::ServiceConfig) {
-    cfg.service(web::scope("/auth").service(get_token));
+    cfg.service(
+        web::scope("/auth")
+            .service(login)
+            .service(redirect)
+            .service(callback),
+    );
 }

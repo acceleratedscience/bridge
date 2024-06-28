@@ -1,0 +1,17 @@
+[openid-w3]
+url = "https://preprod.login.w3.ibm.com/oidc/endpoint/default"
+# redirect_url = "https://addd854bed8ac4626b670f95594fd393-1258481263.us-east-2.elb.amazonaws.com:8080/auth/redirect"
+redirect_url = "https://localhost:8080/auth/redirect"
+
+	[openid-w3.client]
+	client_id = ""
+	client_secret = ""
+
+[openid-ibmid]
+url = "https://prepiam.ice.ibmcloud.com/oidc/endpoint/default"
+# redirect_url = "https://addd854bed8ac4626b670f95594fd393-1258481263.us-east-2.elb.amazonaws.com:8080/auth/callback"
+redirect_url = "https://localhost:8080/auth/callback"
+
+	[openid-ibmid.client]
+	client_id = ""
+	client_secret = ""

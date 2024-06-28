@@ -1,7 +1,5 @@
 use guardian::{
-    config,
-    logger::Logger,
-    web::{services, start_server},
+    auth::openid, config, logger::Logger, web::{services, start_server}
 };
 use tracing_subscriber::filter::LevelFilter;
 
@@ -15,6 +13,7 @@ async fn main() {
 
     config::init_once();
     services::init_once();
+    openid::init_once().await;
 
     let _ = start_server(true).await;
 }

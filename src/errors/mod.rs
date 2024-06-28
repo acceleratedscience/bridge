@@ -1,4 +1,4 @@
-use std::time;
+use std::convert::Infallible;
 
 use actix_web::{http::StatusCode, ResponseError};
 use thiserror::Error;
@@ -14,7 +14,7 @@ pub enum GuardianError {
     #[error("{0}")]
     TeraError(#[from] tera::Error),
     #[error("{0}")]
-    SystemTimeError(#[from] time::SystemTimeError),
+    SystemTimeError(#[from] std::time::SystemTimeError),
     #[error("{0}")]
     JsonWebTokenError(#[from] jsonwebtoken::errors::Error),
     #[error("The query could not be deserialized: {0}")]
@@ -27,18 +27,46 @@ pub enum GuardianError {
     InferenceServiceHeaderNotFound,
     #[error("Service {0} does does not exist")]
     ServiceDoesNotExist(String),
+    #[error("Toml lookup error")]
+    TomlLookupError,
+    #[error("{0}")]
+    TomlError(#[from] toml::de::Error),
+    #[error("String conversion error")]
+    StringConversionError,
+    #[error("{0}")]
+    DeserializationError(#[from] serde::de::value::Error),
+    #[error("{0}")]
+    ClaimsVerificationError(#[from] openidconnect::ClaimsVerificationError),
+    #[error("Nonce cookie not found")]
+    NonceCookieNotFound,
+    #[error("Error when requesting token from Auth server: {0}")]
+    TokenRequestError(String),
+    #[error("{0}")]
+    IOError(#[from] std::io::Error),
+    #[error("{0}")]
+    URLParseError(#[from] url::ParseError),
+    #[error("Authorization server not supported")]
+    AuthorizationServerNotSupported,
+}
+
+// Workaround for Infallible, which may get solved by rust-lang: https://github.com/rust-lang/rust/issues/64715
+impl From<Infallible> for GuardianError {
+    fn from(_: Infallible) -> Self {
+        unreachable!()
+    }
 }
 
 impl ResponseError for GuardianError {
     fn status_code(&self) -> StatusCode {
         match self {
             GuardianError::GeneralError(_) => StatusCode::INTERNAL_SERVER_ERROR,
-            GuardianError::HtmxTagNotFound => StatusCode::BAD_REQUEST,
             GuardianError::TeraError(_) => StatusCode::INTERNAL_SERVER_ERROR,
             GuardianError::SystemTimeError(_) => StatusCode::INTERNAL_SERVER_ERROR,
             GuardianError::QueryDeserializeError(_) => StatusCode::BAD_REQUEST,
             GuardianError::InferenceServiceHeaderNotFound => StatusCode::BAD_REQUEST,
             GuardianError::ServiceDoesNotExist(_) => StatusCode::BAD_REQUEST,
+            GuardianError::HtmxTagNotFound => StatusCode::BAD_REQUEST,
+            GuardianError::AuthorizationServerNotSupported => StatusCode::BAD_REQUEST,
             GuardianError::JsonWebTokenError(e) => {
                 match e.kind() {
                     // Unauthorized errors
@@ -74,8 +102,17 @@ impl ResponseError for GuardianError {
                     _ => StatusCode::INTERNAL_SERVER_ERROR,
                 }
             }
+            GuardianError::TomlLookupError => StatusCode::INTERNAL_SERVER_ERROR,
+            GuardianError::StringConversionError => StatusCode::INTERNAL_SERVER_ERROR,
+            GuardianError::DeserializationError(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            GuardianError::IOError(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            GuardianError::TomlError(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            GuardianError::URLParseError(_) => StatusCode::INTERNAL_SERVER_ERROR,
             GuardianError::NotAdmin => StatusCode::UNAUTHORIZED,
             GuardianError::Unauthorized(_) => StatusCode::UNAUTHORIZED,
+            GuardianError::ClaimsVerificationError(_) => StatusCode::UNAUTHORIZED,
+            GuardianError::NonceCookieNotFound => StatusCode::UNAUTHORIZED,
+            GuardianError::TokenRequestError(_) => StatusCode::UNAUTHORIZED,
         }
     }
 }
