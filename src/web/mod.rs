@@ -1,3 +1,5 @@
+use std::io::Result;
+
 use actix_web::{
     middleware::{self},
     web::Data,
@@ -13,7 +15,7 @@ mod tls;
 
 pub use route::proxy::services;
 
-pub async fn start_server(with_tls: bool) -> std::io::Result<()> {
+pub async fn start_server(with_tls: bool) -> Result<()> {
     let server = HttpServer::new(move || {
         let tera = templating::start_template_eng();
         let tera_data = Data::new(tera);
