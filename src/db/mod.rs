@@ -30,7 +30,7 @@ pub trait Database<Q, C, R1, R2, R3> {
     fn insert(&self, query: Q, collection: C) -> impl Future<Output = Result<R2>>;
     fn insert_many(&self, query: Vec<Q>, collection: C) -> impl Future<Output = Result<Vec<R2>>>;
 
-    fn update(&self, query: Q, update: Q, collection: C) -> impl Future<Output = Result<R2>>;
+    fn update(&self, query: Q, update: Q, collection: C) -> impl Future<Output = Result<R3>>;
     fn update_many(
         &self,
         query: Q,
@@ -38,6 +38,6 @@ pub trait Database<Q, C, R1, R2, R3> {
         collection: C,
     ) -> impl Future<Output = Result<R3>>;
 
-    fn delete(&self, filter: Q, collection: C) -> impl Future<Output = Result<R2>>;
+    fn delete(&self, filter: Q, collection: C) -> impl Future<Output = Result<R3>>;
     fn delete_many(&self, filter: Q, collection: C) -> impl Future<Output = Result<R3>>;
 }

@@ -1,7 +1,5 @@
-use std::any::{Any, TypeId};
-
 use futures::TryStreamExt;
-use mongodb::{bson::Document, Client, Collection};
+use mongodb::{bson::{Bson, Document}, Client, Collection};
 use serde::{de::DeserializeOwned, Serialize};
 
 use crate::{
@@ -41,7 +39,7 @@ impl<'d> DB<'d> {
     }
 }
 
-impl<'c, R1> Database<Document, &'c str, R1, TypeId, u64> for DB<'_>
+impl<'c, R1> Database<Document, &'c str, R1, Bson, u64> for DB<'_>
 where
     R1: Send + Sync + Serialize + DeserializeOwned,
 {
@@ -69,18 +67,18 @@ where
         Ok(docs)
     }
 
-    async fn insert(&self, query: Document, collection: &'c str) -> Result<TypeId> {
+    async fn insert(&self, query: Document, collection: &'c str) -> Result<Bson> {
         let col = Self::get_collection(self, collection);
-        Ok(col.insert_one(query).await?.type_id())
+        Ok(col.insert_one(query).await?.inserted_id)
     }
 
-    async fn insert_many(&self, query: Vec<Document>, collection: &'c str) -> Result<Vec<TypeId>> {
+    async fn insert_many(&self, query: Vec<Document>, collection: &'c str) -> Result<Vec<Bson>> {
         let mut types = Vec::new();
         let col = Self::get_collection(self, collection);
         let r = col.insert_many(query).await?;
 
         for id in r.inserted_ids {
-            types.push(id.type_id());
+            types.push(id.1);
         }
         Ok(types)
     }
@@ -90,10 +88,10 @@ where
         query: Document,
         update: Document,
         collection: &'c str,
-    ) -> Result<TypeId> {
+    ) -> Result<u64> {
         let col: Collection<R1> = Self::get_collection(self, collection);
         let r = col.update_one(query, update).await?;
-        Ok(r.type_id())
+        Ok(r.modified_count) // should always be 1
     }
 
     async fn update_many(
@@ -108,11 +106,11 @@ where
         Ok(r.modified_count)
     }
 
-    async fn delete(&self, filter: Document, collection: &'c str) -> Result<TypeId> {
+    async fn delete(&self, filter: Document, collection: &'c str) -> Result<u64> {
         let col: Collection<R1> = Self::get_collection(self, collection);
         let r = col.delete_one(filter).await?;
 
-        Ok(r.type_id())
+        Ok(r.deleted_count)
     }
 
     async fn delete_many(&self, filter: Document, collection: &'c str) -> Result<u64> {
