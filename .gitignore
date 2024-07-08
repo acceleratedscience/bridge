@@ -1,3 +1,4 @@
 /target
 /certs
 /config/configurations.toml
+/config/database.toml

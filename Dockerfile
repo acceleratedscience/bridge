@@ -18,6 +18,7 @@ COPY --from=builder /app/target/release/guardian .
 COPY ./certs ./certs
 COPY ./config ./config
 COPY ./templates ./templates
+COPY ./static ./static
 
 RUN chgrp -R 0 /app && \
 	chmod -R g=u /app

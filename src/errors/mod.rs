@@ -47,6 +47,8 @@ pub enum GuardianError {
     URLParseError(#[from] url::ParseError),
     #[error("Authorization server not supported")]
     AuthorizationServerNotSupported,
+    #[error("{0}")]
+    MongoError(#[from] mongodb::error::Error),
 }
 
 // Workaround for Infallible, which may get solved by rust-lang: https://github.com/rust-lang/rust/issues/64715
@@ -108,6 +110,8 @@ impl ResponseError for GuardianError {
             GuardianError::IOError(_) => StatusCode::INTERNAL_SERVER_ERROR,
             GuardianError::TomlError(_) => StatusCode::INTERNAL_SERVER_ERROR,
             GuardianError::URLParseError(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            GuardianError::MongoError(_) => StatusCode::INTERNAL_SERVER_ERROR,
+
             GuardianError::NotAdmin => StatusCode::UNAUTHORIZED,
             GuardianError::Unauthorized(_) => StatusCode::UNAUTHORIZED,
             GuardianError::ClaimsVerificationError(_) => StatusCode::UNAUTHORIZED,

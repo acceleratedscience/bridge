@@ -15,7 +15,7 @@ use crate::{
         jwt,
         openid::{self, get_openid_provider, OpenID},
     },
-    config::CONFIG,
+    config::{AUD, CONFIG},
     errors::{GuardianError, Result},
     web::helper,
 };
@@ -103,7 +103,7 @@ async fn code_to_response(
 
     // get information from claims
     let subject = claims.subject().to_string();
-    let email = claims
+    let _email = claims
         .email()
         .unwrap_or(&EndUserEmail::new("".to_string()))
         .to_string();
@@ -123,7 +123,7 @@ async fn code_to_response(
         &CONFIG.get().unwrap().encoder,
         TOKEN_LIFETIME,
         &subject,
-        &email,
+        AUD[0],
         vec!["all"],
     )?;
 

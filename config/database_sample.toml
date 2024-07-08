@@ -1,0 +1,12 @@
+[database]
+	url = "mongodb://USER:PASSSWORD@guardian-mongodb.mongodb.svc.cluster.local:27017/?authSource=guardian"
+	url_local = "mongodb://USER:PASSWORD@localhost:27017/?authSource=guardian" # make sure to port forward
+	db = "guardian"
+
+[user]
+
+	[user.admin]
+	sub = "choi@ibm.com"
+	email = "choi@ibm.com"
+	groups = []
+	user_type = "system"

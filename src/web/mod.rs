@@ -35,6 +35,7 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
             .configure(route::foo::config_foo)
             .configure(route::proxy::config_proxy)
             .configure(route::config_index)
+            .service(actix_files::Files::new("/static", "static"))
     });
 
     if with_tls {
