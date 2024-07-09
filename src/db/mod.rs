@@ -19,11 +19,11 @@ impl<'a> DatabaseConn<'a> {
 }
 
 // Database interface
-// Q query type
-// C collection type
-// R1 is the types from the models mod, User and Group
-// R2 insert result type is an some id
-// R3 update result type is a count of effected documents
+// Q is a generic type that represents a query
+// C is a generic type that represents a collection or a table in the DB
+// R1 is a generic type that represents a model, such as User and Group
+// R2 is a generic type that represents some ID that is linked to some record in the DB
+// R3 is a generic type that represents the number of records affected
 pub trait Database<Q, C, R1, R2, R3> {
     fn find(&self, query: Q, collection: C) -> impl Future<Output = Result<R1>>;
     fn find_many(&self, query: Q, collection: C) -> impl Future<Output = Result<Vec<R1>>>;
