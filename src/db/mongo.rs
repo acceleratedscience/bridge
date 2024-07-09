@@ -142,7 +142,7 @@ where
 mod tests {
     use mongodb::bson::doc;
 
-    use crate::db::models::UserType;
+    use crate::db::models::{UserType, USER};
     use crate::{config, db::models::User};
 
     use super::*;
@@ -160,7 +160,7 @@ mod tests {
                     groups: vec![],
                     user_type: UserType::SystemAdmin,
                 },
-                "users",
+                USER,
             )
             .await
             .unwrap();
@@ -169,7 +169,7 @@ mod tests {
             .update(
                 doc! {"sub": "choi.mina@gmail.com"},
                 doc! {"$set": doc! {"email": "someone@gmail.com"}},
-                "users",
+                USER,
                 PhantomData::<User>,
             )
             .await
@@ -181,7 +181,7 @@ mod tests {
                 doc! {
                     "sub": "choi.mina@gmail.com"
                 },
-                "users",
+                USER,
             )
             .await
             .unwrap();
@@ -190,7 +190,7 @@ mod tests {
         let n = db
             .delete(
                 doc! {"sub": "choi.mina@gmail.com"},
-                "users",
+                USER,
                 PhantomData::<User>,
             )
             .await

@@ -10,6 +10,7 @@ pub enum UserType {
     SystemAdmin,
 }
 
+pub static USER: &str = "users";
 #[derive(Debug, Deserialize, Serialize)]
 pub struct User {
     pub sub: String,
@@ -18,6 +19,7 @@ pub struct User {
     pub user_type: UserType,
 }
 
+pub static GROUP: &str = "groups";
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Group {
     pub name: String,
