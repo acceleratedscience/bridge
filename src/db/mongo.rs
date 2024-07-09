@@ -1,5 +1,10 @@
+use std::marker::PhantomData;
+
 use futures::TryStreamExt;
-use mongodb::{bson::{Bson, Document}, Client, Collection};
+use mongodb::{
+    bson::{Bson, Document},
+    Client, Collection,
+};
 use serde::{de::DeserializeOwned, Serialize};
 
 use crate::{
@@ -67,12 +72,12 @@ where
         Ok(docs)
     }
 
-    async fn insert(&self, query: Document, collection: &'c str) -> Result<Bson> {
+    async fn insert(&self, query: R1, collection: &'c str) -> Result<Bson> {
         let col = Self::get_collection(self, collection);
         Ok(col.insert_one(query).await?.inserted_id)
     }
 
-    async fn insert_many(&self, query: Vec<Document>, collection: &'c str) -> Result<Vec<Bson>> {
+    async fn insert_many(&self, query: Vec<R1>, collection: &'c str) -> Result<Vec<Bson>> {
         let mut types = Vec::new();
         let col = Self::get_collection(self, collection);
         let r = col.insert_many(query).await?;
@@ -88,6 +93,7 @@ where
         query: Document,
         update: Document,
         collection: &'c str,
+        _model: PhantomData<R1>,
     ) -> Result<u64> {
         let col: Collection<R1> = Self::get_collection(self, collection);
         let r = col.update_one(query, update).await?;
@@ -99,6 +105,7 @@ where
         query: Document,
         update: Vec<Document>,
         collection: &'c str,
+        _model: PhantomData<R1>,
     ) -> Result<u64> {
         let col: Collection<R1> = Self::get_collection(self, collection);
         let r = col.update_many(query, update).await?;
@@ -106,14 +113,24 @@ where
         Ok(r.modified_count)
     }
 
-    async fn delete(&self, filter: Document, collection: &'c str) -> Result<u64> {
+    async fn delete(
+        &self,
+        filter: Document,
+        collection: &'c str,
+        _model: PhantomData<R1>,
+    ) -> Result<u64> {
         let col: Collection<R1> = Self::get_collection(self, collection);
         let r = col.delete_one(filter).await?;
 
         Ok(r.deleted_count)
     }
 
-    async fn delete_many(&self, filter: Document, collection: &'c str) -> Result<u64> {
+    async fn delete_many(
+        &self,
+        filter: Document,
+        collection: &'c str,
+        _model: PhantomData<R1>,
+    ) -> Result<u64> {
         let col: Collection<R1> = Self::get_collection(self, collection);
         let r = col.delete_many(filter).await?;
 
@@ -125,6 +142,7 @@ where
 mod tests {
     use mongodb::bson::doc;
 
+    use crate::db::models::UserType;
     use crate::{config, db::models::User};
 
     use super::*;
@@ -134,15 +152,49 @@ mod tests {
         config::init_once();
         let db = DB::new("guardian").await.unwrap();
 
-        let result: User = db
-            .find(
-                doc! {
-                    "sub": "choi@ibm.com"
+        let _user = db
+            .insert(
+                User {
+                    sub: "choi.mina@gmail.com".to_string(),
+                    email: "choi.mina@gmail.com".to_string(),
+                    groups: vec![],
+                    user_type: UserType::SystemAdmin,
                 },
                 "users",
             )
             .await
             .unwrap();
-        assert_eq!(result.email, "choi@ibm.com");
+
+        let n = db
+            .update(
+                doc! {"sub": "choi.mina@gmail.com"},
+                doc! {"$set": doc! {"email": "someone@gmail.com"}},
+                "users",
+                PhantomData::<User>,
+            )
+            .await
+            .unwrap();
+        assert_eq!(n, 1);
+
+        let result: User = db
+            .find(
+                doc! {
+                    "sub": "choi.mina@gmail.com"
+                },
+                "users",
+            )
+            .await
+            .unwrap();
+        assert_eq!(result.email, "someone@gmail.com");
+
+        let n = db
+            .delete(
+                doc! {"sub": "choi.mina@gmail.com"},
+                "users",
+                PhantomData::<User>,
+            )
+            .await
+            .unwrap();
+        assert_eq!(n, 1);
     }
 }
