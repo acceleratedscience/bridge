@@ -154,18 +154,24 @@ mod tests {
         config::init_once();
         let db = DB::new("guardian").await.unwrap();
 
-        let _user = db
+        let _id = db
             .insert(
                 User {
                     sub: "choi.mina@gmail.com".to_string(),
                     email: "choi.mina@gmail.com".to_string(),
-                    groups: vec![],
+                    groups: vec!["ibm".to_string()],
                     user_type: UserType::SystemAdmin,
                 },
                 USER,
             )
             .await
             .unwrap();
+
+        let user: User = db.find(doc! {
+            "sub": "choi.mina@gmail.com",
+        }, USER).await.unwrap();
+        let group = user.groups.first().unwrap();
+        assert_eq!(group, "ibm");
 
         let n = db
             .update(

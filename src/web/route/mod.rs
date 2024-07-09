@@ -9,6 +9,7 @@ pub mod auth;
 pub mod foo;
 pub mod health;
 pub mod proxy;
+pub mod portal;
 
 #[get("")]
 async fn index(data: Data<Tera>) -> Result<HttpResponse> {
