@@ -5,6 +5,7 @@ use actix_web::{
     web::{self, Data},
     HttpRequest, HttpResponse,
 };
+use mongodb::bson::doc;
 use openidconnect::{EndUserEmail, Nonce};
 use serde::Deserialize;
 use tera::{Context, Tera};
@@ -16,6 +17,11 @@ use crate::{
         openid::{self, get_openid_provider, OpenID},
     },
     config::{AUD, CONFIG},
+    db::{
+        models::{User, USER},
+        mongo::DB,
+        Database,
+    },
     errors::{GuardianError, Result},
     web::helper,
 };
@@ -51,8 +57,8 @@ async fn login(req: HttpRequest) -> Result<HttpResponse> {
 }
 
 #[get("/redirect")]
-#[instrument]
-async fn redirect(req: HttpRequest, data: Data<Tera>) -> Result<HttpResponse> {
+#[instrument(skip(data, db))]
+async fn redirect(req: HttpRequest, data: Data<Tera>, db: Data<&DB>) -> Result<HttpResponse> {
     let query = req.query_string();
     let deserializer = serde::de::value::StrDeserializer::<serde::de::value::Error>::new(query);
     let callback_response = helper::log_errors(CallBackResponse::deserialize(deserializer))?;
@@ -60,12 +66,12 @@ async fn redirect(req: HttpRequest, data: Data<Tera>) -> Result<HttpResponse> {
     let openid = helper::log_errors(get_openid_provider(openid::OpenIDProvider::W3))?;
 
     // get token from auth server
-    code_to_response(callback_response.code, req, openid, data).await
+    code_to_response(callback_response.code, req, openid, data, db).await
 }
 
 #[get("/callback")]
-#[instrument]
-async fn callback(req: HttpRequest, data: Data<Tera>) -> Result<HttpResponse> {
+#[instrument(skip(data, db))]
+async fn callback(req: HttpRequest, data: Data<Tera>, db: Data<&DB>) -> Result<HttpResponse> {
     let query = req.query_string();
     let deserializer = serde::de::value::StrDeserializer::<serde::de::value::Error>::new(query);
     let callback_response = helper::log_errors(CallBackResponse::deserialize(deserializer))?;
@@ -73,7 +79,7 @@ async fn callback(req: HttpRequest, data: Data<Tera>) -> Result<HttpResponse> {
     let openid = helper::log_errors(get_openid_provider(openid::OpenIDProvider::IbmId))?;
 
     // get token from auth server
-    code_to_response(callback_response.code, req, openid, data).await
+    code_to_response(callback_response.code, req, openid, data, db).await
 }
 
 async fn code_to_response(
@@ -81,6 +87,7 @@ async fn code_to_response(
     req: HttpRequest,
     openid: &OpenID,
     data: Data<Tera>,
+    db: Data<&DB>,
 ) -> Result<HttpResponse> {
     let token = helper::log_errors(openid.get_token(code).await)?;
 
@@ -116,6 +123,26 @@ async fn code_to_response(
             .ok_or_else(|| GuardianError::GeneralError("locale error".to_string()))?
             .to_string())
     }())?;
+
+    // look up user in database
+    let r: Result<User> = db
+        .find(
+            doc! {
+                "sub": subject.clone()
+            },
+            USER,
+        )
+        .await;
+
+    match r {
+        Ok(user) => {
+            dbg!(user);
+        }
+        // user not found, create user
+        Err(err) => {
+            dbg!(err);
+        }
+    }
 
     // Generate guardian token
     const TOKEN_LIFETIME: usize = const { 60 * 60 * 24 * 30 };

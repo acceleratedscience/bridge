@@ -3,20 +3,8 @@ use std::marker::PhantomData;
 
 use crate::errors::Result;
 
-use self::mongo::DB;
-
 pub mod models;
 pub mod mongo;
-
-pub struct DatabaseConn<'a> {
-    pub db: DB<'a>,
-}
-
-impl<'a> DatabaseConn<'a> {
-    pub fn new(db: DB<'a>) -> Self {
-        Self { db }
-    }
-}
 
 // Database interface
 // Q is a generic type that represents a query

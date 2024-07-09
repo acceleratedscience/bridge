@@ -1,4 +1,4 @@
-use std::marker::PhantomData;
+use std::{marker::PhantomData, sync::OnceLock};
 
 use futures::TryStreamExt;
 use mongodb::{
@@ -14,13 +14,16 @@ use crate::{
 
 use super::Database;
 
-pub struct DB<'d> {
+#[derive(Clone)]
+pub struct DB {
     mongo_client: Client,
-    database: &'d str,
+    database: &'static str,
 }
 
-impl<'d> DB<'d> {
-    pub async fn new(database: &'d str) -> Result<Self> {
+pub static DBCONN: OnceLock<DB> = OnceLock::new();
+
+impl DB {
+    pub async fn init_once(database: &'static str) -> Result<()> {
         let db = &CONFIG
             .get()
             .ok_or_else(|| {
@@ -28,10 +31,11 @@ impl<'d> DB<'d> {
             })?
             .db;
         let mongo_client = Client::with_uri_str(&db.url).await?;
-        Ok(Self {
+        DBCONN.get_or_init(|| Self {
             mongo_client,
             database,
-        })
+        });
+        Ok(())
     }
 
     #[inline]
@@ -44,7 +48,7 @@ impl<'d> DB<'d> {
     }
 }
 
-impl<'c, R1> Database<Document, &'c str, R1, Bson, u64> for DB<'_>
+impl<'c, R1> Database<Document, &'c str, R1, Bson, u64> for DB
 where
     R1: Send + Sync + Serialize + DeserializeOwned,
 {
@@ -152,7 +156,9 @@ mod tests {
     // Look into the justfile for the command to run
     async fn test_mongo_connection_n_queries() {
         config::init_once();
-        let db = DB::new("guardian").await.unwrap();
+        DB::init_once("guardian").await.unwrap();
+
+        let db = DBCONN.get().unwrap();
 
         let _id = db
             .insert(
@@ -167,9 +173,15 @@ mod tests {
             .await
             .unwrap();
 
-        let user: User = db.find(doc! {
-            "sub": "choi.mina@gmail.com",
-        }, USER).await.unwrap();
+        let user: User = db
+            .find(
+                doc! {
+                    "sub": "choi.mina@gmail.com",
+                },
+                USER,
+            )
+            .await
+            .unwrap();
         let group = user.groups.first().unwrap();
         assert_eq!(group, "ibm");
 
