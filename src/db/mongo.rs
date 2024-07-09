@@ -148,7 +148,9 @@ mod tests {
     use super::*;
 
     #[tokio::test]
-    async fn test_mongo_connection() {
+    // You will need to have a local instance of MongoDB running to run this test successfully
+    // Look into the justfile for the command to run
+    async fn test_mongo_connection_n_queries() {
         config::init_once();
         let db = DB::new("guardian").await.unwrap();
 
