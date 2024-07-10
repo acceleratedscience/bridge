@@ -39,6 +39,11 @@ pub fn custom_code_handle(data: Data<Tera>) -> ErrorHandlers<BoxBody> {
             data.render("401.html", &Context::new())
                 .expect("Failed to render 401.html"),
         );
+        map.insert(
+            "403",
+            data.render("403.html", &Context::new())
+                .expect("Failed to render 403.html"),
+        );
         map
     });
 
@@ -97,6 +102,18 @@ pub fn custom_code_handle(data: Data<Tera>) -> ErrorHandlers<BoxBody> {
                     response
                         .content_type(ContentType::html())
                         .body(template.get("401").unwrap().to_string())
+                        .map_into_left_body()
+                },
+            )))
+        })
+        .handler(StatusCode::FORBIDDEN, move |res: ServiceResponse| {
+            let request = res.into_parts().0;
+            Ok(ErrorHandlerResponse::Response(ServiceResponse::new(
+                request,
+                {
+                    HttpResponse::build(StatusCode::FORBIDDEN)
+                        .content_type(ContentType::html())
+                        .body(template.get("403").unwrap().to_string())
                         .map_into_left_body()
                 },
             )))

@@ -5,7 +5,7 @@ use actix_web::{
     web::{self, Data},
     HttpRequest, HttpResponse,
 };
-use mongodb::bson::doc;
+use mongodb::bson::{doc, oid::ObjectId};
 use openidconnect::{EndUserEmail, Nonce};
 use serde::Deserialize;
 use tera::{Context, Tera};
@@ -15,10 +15,11 @@ use crate::{
     auth::{
         jwt,
         openid::{self, get_openid_provider, OpenID},
+        COOKIE_NAME,
     },
     config::{AUD, CONFIG},
     db::{
-        models::{User, USER},
+        models::{User, UserType, USER},
         mongo::DB,
         Database,
     },
@@ -110,7 +111,7 @@ async fn code_to_response(
 
     // get information from claims
     let subject = claims.subject().to_string();
-    let _email = claims
+    let email = claims
         .email()
         .unwrap_or(&EndUserEmail::new("".to_string()))
         .to_string();
@@ -128,21 +129,43 @@ async fn code_to_response(
     let r: Result<User> = db
         .find(
             doc! {
-                "sub": subject.clone()
+                "sub": &subject
             },
             USER,
         )
         .await;
 
-    match r {
-        Ok(user) => {
-            dbg!(user);
-        }
+    let id = match r {
+        Ok(user) => user._id,
         // user not found, create user
-        Err(err) => {
-            dbg!(err);
+        Err(_) => {
+            // add user to the DB as a new user
+            let r = db
+                .insert(
+                    User {
+                        _id: ObjectId::new(),
+                        sub: subject.clone(),
+                        email,
+                        groups: vec![],
+                        user_type: UserType::User,
+                    },
+                    USER,
+                )
+                .await?;
+            r.as_object_id().ok_or_else(|| {
+                GuardianError::GeneralError("Could not convert BSON to objectid".to_string())
+            })?
         }
-    }
+    };
+
+    // create cookie for all routes for this user
+    // middleware will check for this cookie and and safeguard specific routes
+    let cookie = Cookie::build(COOKIE_NAME, id.to_string())
+        .expires(time::OffsetDateTime::now_utc() + time::Duration::days(1))
+        .path("/")
+        .http_only(true)
+        .secure(true)
+        .finish();
 
     // Generate guardian token
     const TOKEN_LIFETIME: usize = const { 60 * 60 * 24 * 30 };
@@ -159,13 +182,14 @@ async fn code_to_response(
     ctx.insert("name", &name);
     let rendered = helper::log_errors(data.render("token.html", &ctx))?;
 
-    let mut cookie = Cookie::build("nonce", "")
+    let mut cookie_remove = Cookie::build("nonce", "")
         .http_only(true)
         .secure(true)
         .finish();
-    cookie.make_removal();
+    cookie_remove.make_removal();
 
     Ok(HttpResponse::Ok()
+        .cookie(cookie_remove)
         .cookie(cookie)
         .content_type(ContentType::html())
         .body(rendered))

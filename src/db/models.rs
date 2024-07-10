@@ -1,3 +1,4 @@
+use mongodb::bson::oid::ObjectId;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -13,6 +14,7 @@ pub enum UserType {
 pub static USER: &str = "users";
 #[derive(Debug, Deserialize, Serialize)]
 pub struct User {
+    pub _id: ObjectId,
     pub sub: String,
     pub email: String,
     pub groups: Vec<String>,
@@ -22,6 +24,7 @@ pub struct User {
 pub static GROUP: &str = "groups";
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Group {
+    _id: ObjectId,
     pub name: String,
     pub subscriptions: Vec<String>,
 }
