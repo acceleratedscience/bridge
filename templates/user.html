@@ -7,6 +7,12 @@
       <div class="text-center text-break">
 		  <h1 >Welcome, {{name}}!</h1>
         <p class="lead">Great day we are having!</p>
+		{% if group == "" %}
+      <p class="lead">You are currently not part of any group. Contact your Group Admin to have you added.</p>
+		{% else %}
+      <p class="lead">You are part of group(s): {{group}}.</p>
+      <p class="lead">Consult with you group administrator on what inference models you have access to.</p>
+		{% endif %}
       </div>
     </main>
     <footer class="mt-auto"></footer>

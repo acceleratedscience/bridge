@@ -6,9 +6,9 @@ use actix_web::{
     Error, HttpMessage, HttpResponse,
 };
 use futures::{future::LocalBoxFuture, FutureExt, TryFutureExt};
-use tracing::error;
+use tracing::warn;
 
-use crate::auth::COOKIE_NAME;
+use crate::{auth::COOKIE_NAME, db::models::GuardianCookie};
 
 pub struct CookieCheck;
 
@@ -33,9 +33,6 @@ pub struct CookieCheckMW<S> {
     service: S,
 }
 
-#[derive(Debug, Clone)]
-pub struct CookieSubject(pub String);
-
 impl<S, B> Service<ServiceRequest> for CookieCheckMW<S>
 where
     S: Service<ServiceRequest, Response = ServiceResponse<B>, Error = Error>,
@@ -51,14 +48,26 @@ where
     fn call(&self, req: ServiceRequest) -> Self::Future {
         match req.cookie(COOKIE_NAME).map(|c| c.value().to_string()) {
             Some(v) => {
-                req.extensions_mut().insert(CookieSubject(v));
-                self.service
-                    .call(req)
-                    .map_ok(ServiceResponse::map_into_left_body)
-                    .boxed_local()
+                let guardian_cookie = serde_json::from_str::<GuardianCookie>(&v);
+                match guardian_cookie {
+                    Ok(gc) => {
+                        req.extensions_mut().insert(gc);
+                        self.service
+                            .call(req)
+                            .map_ok(ServiceResponse::map_into_left_body)
+                            .boxed_local()
+                    }
+                    Err(e) => {
+                        warn!("Guardian cookie deserialization error: {:?}", e);
+                        let res = HttpResponse::InternalServerError()
+                            .finish()
+                            .map_into_right_body();
+                        return Box::pin(async { Ok(req.into_response(res)) });
+                    }
+                }
             }
             None => {
-                error!("Guardian cookie not found");
+                warn!("Guardian cookie not found from ip {:?}", req.peer_addr());
                 let res = HttpResponse::Forbidden().finish().map_into_right_body();
                 Box::pin(async { Ok(req.into_response(res)) })
             }

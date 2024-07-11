@@ -49,6 +49,12 @@ pub enum GuardianError {
     AuthorizationServerNotSupported,
     #[error("{0}")]
     MongoError(#[from] mongodb::error::Error),
+    #[error("{0}")]
+    UserNotFound(String),
+    #[error("User cannot access this page {0}")]
+    UserNotAllowedOnPage(String),
+    #[error("{0}")]
+    SerdeJsonError(#[from] serde_json::Error),
 }
 
 // Workaround for Infallible, which may get solved by rust-lang: https://github.com/rust-lang/rust/issues/64715
@@ -111,12 +117,16 @@ impl ResponseError for GuardianError {
             GuardianError::TomlError(_) => StatusCode::INTERNAL_SERVER_ERROR,
             GuardianError::URLParseError(_) => StatusCode::INTERNAL_SERVER_ERROR,
             GuardianError::MongoError(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            GuardianError::SerdeJsonError(_) => StatusCode::INTERNAL_SERVER_ERROR,
 
             GuardianError::NotAdmin => StatusCode::UNAUTHORIZED,
             GuardianError::Unauthorized(_) => StatusCode::UNAUTHORIZED,
             GuardianError::ClaimsVerificationError(_) => StatusCode::UNAUTHORIZED,
             GuardianError::NonceCookieNotFound => StatusCode::UNAUTHORIZED,
             GuardianError::TokenRequestError(_) => StatusCode::UNAUTHORIZED,
+
+            GuardianError::UserNotFound(_) => StatusCode::FORBIDDEN,
+            GuardianError::UserNotAllowedOnPage(_) => StatusCode::FORBIDDEN,
         }
     }
 }

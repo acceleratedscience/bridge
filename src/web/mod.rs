@@ -17,7 +17,7 @@ mod tls;
 pub use route::proxy::services;
 
 pub async fn start_server(with_tls: bool) -> Result<()> {
-    let server = HttpServer::new(|| {
+    let server = HttpServer::new(move || {
         let tera = templating::start_template_eng();
         let tera_data = Data::new(tera);
         let client = reqwest::Client::new();

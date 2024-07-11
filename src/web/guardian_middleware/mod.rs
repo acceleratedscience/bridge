@@ -6,7 +6,7 @@ mod https;
 mod security_header;
 
 pub use authenicate::validator;
-pub use cookie_check::{CookieCheck, CookieSubject};
+pub use cookie_check::CookieCheck;
 pub use errors::custom_code_handle;
 pub use htmx::Htmx;
 #[allow(unused_imports)]

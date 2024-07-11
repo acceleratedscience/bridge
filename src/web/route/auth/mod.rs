@@ -19,7 +19,7 @@ use crate::{
     },
     config::{AUD, CONFIG},
     db::{
-        models::{User, UserType, USER},
+        models::{GuardianCookie, User, UserType, USER},
         mongo::DB,
         Database,
     },
@@ -135,8 +135,8 @@ async fn code_to_response(
         )
         .await;
 
-    let id = match r {
-        Ok(user) => user._id,
+    let (id, user_type) = match r {
+        Ok(user) => (user._id, user.user_type),
         // user not found, create user
         Err(_) => {
             // add user to the DB as a new user
@@ -145,6 +145,7 @@ async fn code_to_response(
                     User {
                         _id: ObjectId::new(),
                         sub: subject.clone(),
+                        user_name: name.clone(),
                         email,
                         groups: vec![],
                         user_type: UserType::User,
@@ -152,15 +153,28 @@ async fn code_to_response(
                     USER,
                 )
                 .await?;
-            r.as_object_id().ok_or_else(|| {
-                GuardianError::GeneralError("Could not convert BSON to objectid".to_string())
-            })?
+            (
+                r.as_object_id().ok_or_else(|| {
+                    GuardianError::GeneralError("Could not convert BSON to objectid".to_string())
+                })?,
+                UserType::User,
+            )
         }
     };
 
+    let guardian_cookie_json = GuardianCookie {
+        subject: id.to_string(),
+        user_type,
+    };
+
+    let content = serde_json::to_string(&guardian_cookie_json).map_err(|e| {
+        GuardianError::GeneralError(format!("Could not serialize guardian cookie: {}", e))
+    })?;
+
     // create cookie for all routes for this user
     // middleware will check for this cookie and and safeguard specific routes
-    let cookie = Cookie::build(COOKIE_NAME, id.to_string())
+    // TODO: look into doing session management that stores a dynamic key into the cookie
+    let cookie = Cookie::build(COOKIE_NAME, content)
         .expires(time::OffsetDateTime::now_utc() + time::Duration::days(1))
         .path("/")
         .http_only(true)

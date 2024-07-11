@@ -145,6 +145,7 @@ where
 #[cfg(test)]
 mod tests {
     use mongodb::bson::doc;
+    use mongodb::bson::oid::ObjectId;
 
     use crate::db::models::{UserType, USER};
     use crate::{config, db::models::User};
@@ -163,7 +164,9 @@ mod tests {
         let _id = db
             .insert(
                 User {
+                    _id: ObjectId::new(),
                     sub: "choi.mina@gmail.com".to_string(),
+                    user_name: "Daniel".to_string(),
                     email: "choi.mina@gmail.com".to_string(),
                     groups: vec!["ibm".to_string()],
                     user_type: UserType::SystemAdmin,

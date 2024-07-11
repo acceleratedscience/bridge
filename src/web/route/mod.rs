@@ -1,10 +1,12 @@
-use actix_web::web::Data;
-use actix_web::{get, web, HttpRequest, HttpResponse};
+use actix_web::{
+    get,
+    http::header,
+    web::{self, Data},
+    HttpRequest, HttpResponse,
+};
 use tera::{Context, Tera};
 
-use crate::auth::COOKIE_NAME;
-use crate::errors::Result;
-use crate::web::helper;
+use crate::{auth::COOKIE_NAME, errors::Result, web::helper};
 
 pub mod auth;
 pub mod foo;
@@ -14,9 +16,11 @@ pub mod proxy;
 
 #[get("")]
 async fn index(data: Data<Tera>, req: HttpRequest) -> Result<HttpResponse> {
-    // get cookie if it exists
-    if let Some(_) = req.cookie(COOKIE_NAME) {
-        dbg!("Welcome back!");
+    // if cookie exists, redirect to portal
+    if req.cookie(COOKIE_NAME).is_some() {
+        return Ok(HttpResponse::PermanentRedirect()
+            .append_header((header::LOCATION, "/portal"))
+            .finish());
     }
 
     let ctx = Context::new();
