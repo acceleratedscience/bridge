@@ -20,6 +20,8 @@ pub struct User {
     pub email: String,
     pub groups: Vec<String>,
     pub user_type: UserType,
+    pub created_at: time::OffsetDateTime,
+    pub updated_at: time::OffsetDateTime,
 }
 
 pub static GROUP: &str = "groups";
@@ -28,6 +30,8 @@ pub struct Group {
     _id: ObjectId,
     pub name: String,
     pub subscriptions: Vec<String>,
+    pub created_at: time::OffsetDateTime,
+    pub updated_at: time::OffsetDateTime,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]

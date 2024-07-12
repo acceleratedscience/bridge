@@ -62,7 +62,7 @@ where
                         let res = HttpResponse::InternalServerError()
                             .finish()
                             .map_into_right_body();
-                        return Box::pin(async { Ok(req.into_response(res)) });
+                        Box::pin(async { Ok(req.into_response(res)) })
                     }
                 }
             }

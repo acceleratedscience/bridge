@@ -24,7 +24,7 @@ use crate::{
         Database,
     },
     errors::{GuardianError, Result},
-    web::helper,
+    web::helper::{self},
 };
 
 use self::deserialize::CallBackResponse;
@@ -139,6 +139,8 @@ async fn code_to_response(
         Ok(user) => (user._id, user.user_type),
         // user not found, create user
         Err(_) => {
+            // get current time in time after unix epoch
+            let time = time::OffsetDateTime::now_utc();
             // add user to the DB as a new user
             let r = db
                 .insert(
@@ -149,6 +151,8 @@ async fn code_to_response(
                         email,
                         groups: vec![],
                         user_type: UserType::User,
+                        created_at: time,
+                        updated_at: time,
                     },
                     USER,
                 )

@@ -7,6 +7,7 @@ use crate::errors::Result;
 use crate::web::guardian_middleware::CookieCheck;
 
 mod group_admin;
+mod system_admin;
 mod user;
 
 #[get("")]
@@ -20,10 +21,10 @@ async fn index(data: Option<ReqData<GuardianCookie>>) -> Result<HttpResponse> {
                     .append_header((header::LOCATION, "/portal/user"))
                     .finish()),
                 UserType::GroupAdmin => Ok(HttpResponse::PermanentRedirect()
-                    .append_header((header::LOCATION, "/portal/user"))
+                    .append_header((header::LOCATION, "/portal/group_admin"))
                     .finish()),
                 UserType::SystemAdmin => Ok(HttpResponse::PermanentRedirect()
-                    .append_header((header::LOCATION, "/portal/user"))
+                    .append_header((header::LOCATION, "/portal/system_admin"))
                     .finish()),
             }
         }
@@ -41,6 +42,8 @@ pub fn config_portal(cfg: &mut web::ServiceConfig) {
         web::scope("/portal")
             .wrap(CookieCheck)
             .service(index)
-            .service(user::user),
+            .service(user::user)
+            .service(system_admin::system)
+            .service(group_admin::group),
     );
 }

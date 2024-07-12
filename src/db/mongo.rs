@@ -144,11 +144,12 @@ where
 
 #[cfg(test)]
 mod tests {
-    use mongodb::bson::doc;
-    use mongodb::bson::oid::ObjectId;
+    use mongodb::bson::{doc, oid::ObjectId};
 
-    use crate::db::models::{UserType, USER};
-    use crate::{config, db::models::User};
+    use crate::{
+        config,
+        db::models::{User, UserType, USER},
+    };
 
     use super::*;
 
@@ -160,6 +161,7 @@ mod tests {
         DB::init_once("guardian").await.unwrap();
 
         let db = DBCONN.get().unwrap();
+        let time = time::OffsetDateTime::now_utc();
 
         let _id = db
             .insert(
@@ -170,6 +172,8 @@ mod tests {
                     email: "choi.mina@gmail.com".to_string(),
                     groups: vec!["ibm".to_string()],
                     user_type: UserType::SystemAdmin,
+                    created_at: time,
+                    updated_at: time,
                 },
                 USER,
             )
