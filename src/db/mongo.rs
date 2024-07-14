@@ -144,7 +144,7 @@ where
 
 #[cfg(test)]
 mod tests {
-    use mongodb::bson::{doc, oid::ObjectId};
+    use mongodb::bson::{doc, oid::ObjectId, to_bson};
 
     use crate::{
         config,
@@ -192,10 +192,11 @@ mod tests {
         let group = user.groups.first().unwrap();
         assert_eq!(group, "ibm");
 
+        let new_time = time::OffsetDateTime::now_utc();
         let n = db
             .update(
                 doc! {"sub": "choi.mina@gmail.com"},
-                doc! {"$set": doc! {"email": "someone@gmail.com"}},
+                doc! {"$set": doc! {"email": "someone@gmail.com", "updated_at": to_bson(&new_time).unwrap()}},
                 USER,
                 PhantomData::<User>,
             )
@@ -213,6 +214,7 @@ mod tests {
             .await
             .unwrap();
         assert_eq!(result.email, "someone@gmail.com");
+        assert_eq!(result.updated_at, new_time);
 
         let n = db
             .delete(

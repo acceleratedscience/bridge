@@ -43,7 +43,7 @@ pub fn config_portal(cfg: &mut web::ServiceConfig) {
             .wrap(CookieCheck)
             .service(index)
             .service(user::user)
-            .service(system_admin::system)
-            .service(group_admin::group),
+            .configure(group_admin::config_group)
+            .configure(system_admin::config_system),
     );
 }

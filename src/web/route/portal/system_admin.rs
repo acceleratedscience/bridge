@@ -2,7 +2,7 @@ use std::{marker::PhantomData, str::FromStr};
 
 use actix_web::web;
 use actix_web::{
-    delete, get,
+    get,
     http::header::ContentType,
     patch, post,
     web::{Data, ReqData},
@@ -12,6 +12,7 @@ use mongodb::bson::{doc, oid::ObjectId};
 use tera::Tera;
 use tracing::instrument;
 
+use crate::web::helper::bson;
 use crate::{
     db::{
         models::{Group, GuardianCookie, User, UserType, GROUP, USER},
@@ -24,7 +25,7 @@ use crate::{
 
 const USER_PAGE: &str = "system_admin.html";
 
-#[get("system_admin")]
+#[get("")]
 #[instrument(skip(data, db, subject))]
 pub(super) async fn system(
     data: Data<Tera>,
@@ -77,6 +78,9 @@ pub(super) async fn system(
 #[post("group")]
 async fn system_create_group(db: Data<&DB>, form: web::Form<Group>) -> Result<HttpResponse> {
     let mut group = form.into_inner();
+    let now = time::OffsetDateTime::now_utc();
+    group.created_at = now;
+    group.updated_at = now;
 
     let id = db.insert(group, GROUP).await?;
     let content = format!("<p>Group created with id: {}</p>", id);
@@ -85,32 +89,70 @@ async fn system_create_group(db: Data<&DB>, form: web::Form<Group>) -> Result<Ht
         .body(content))
 }
 
-#[delete("group")]
-async fn system_delete_group(db: Data<&DB>, form: web::Form<Group>) -> Result<HttpResponse> {
+// #[delete("group")]
+// async fn system_delete_group(db: Data<&DB>, form: web::Form<Group>) -> Result<HttpResponse> {
+//     let group = form.into_inner();
+//     let _ = db
+//         .delete(doc! {"name": &group.name}, GROUP, PhantomData::<Group>)
+//         .await?;
+//
+//     let content = format!("<p>Group named {} has been deleted</p>", group.name);
+//     Ok(HttpResponse::Ok()
+//         .content_type(ContentType::form_url_encoded())
+//         .body(content))
+// }
+
+#[patch("group")]
+async fn system_update_group(db: Data<&DB>, form: web::Form<Group>) -> Result<HttpResponse> {
     let group = form.into_inner();
     let _ = db
-        .delete(doc! {"name": &group.name}, GROUP, PhantomData::<Group>)
+        .update(
+            doc! {"name": &group.name},
+            doc! {"$set": doc! {
+                "name": &group.name,
+                "subscriptions": &group.subscriptions,
+                "updated_at": bson(time::OffsetDateTime::now_utc())?,
+            }},
+            GROUP,
+            PhantomData::<Group>,
+        )
         .await?;
-    let content = format!("<p>Group named {} has been deleted</p>", group.name);
+
+    let content = format!("<p>Group named {} has been updated</p>", group.name);
     Ok(HttpResponse::Ok()
         .content_type(ContentType::form_url_encoded())
         .body(content))
 }
 
-#[patch("group")]
-async fn system_update_group(db: Data<&DB>, form: web::Form<Group>) -> Result<HttpResponse> {
-    // let group = form.into_inner();
-    // let id = db
-    //     .update(
-    //         doc! {"name": &group.name},
-    //         doc! {"$set": doc! {
-    //             "name": &group.name,
-    //             "subscriptions": &group.subscriptions,
-    //             "updated_at": sec_since_unix_epoch()?,
-    //         }},
-    //         GROUP,
-    //         PhantomData::<Group>,
-    //     )
-    //     .await;
-    Ok(HttpResponse::Ok().finish())
+#[patch("user")]
+async fn system_update_user(db: Data<&DB>, form: web::Form<User>) -> Result<HttpResponse> {
+    let user = form.into_inner();
+    let _ = db
+        .update(
+            doc! {"user_name": &user.user_name},
+            doc! {"$set": doc! {
+                "user_name": &user.user_name,
+                "groups": &user.groups,
+                "user_type": bson(&user.user_type)?,
+                "updated_at": time::OffsetDateTime::now_utc().unix_timestamp(),
+            }},
+            USER,
+            PhantomData::<User>,
+        )
+        .await?;
+
+    let content = format!("<p>User named {} has been updated</p>", user.user_name);
+    Ok(HttpResponse::Ok()
+        .content_type(ContentType::form_url_encoded())
+        .body(content))
+}
+
+pub fn config_system(cfg: &mut web::ServiceConfig) {
+    cfg.service(
+        web::scope("/system_admin")
+            .service(system)
+            .service(system_create_group)
+            // .service(system_delete_group)
+            .service(system_update_group),
+    );
 }

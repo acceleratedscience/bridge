@@ -70,3 +70,7 @@ pub(super) async fn group(
         "subject not passed from middleware".to_string(),
     )))
 }
+
+pub fn config_group(cfg: &mut actix_web::web::ServiceConfig) {
+    cfg.service(group);
+}
