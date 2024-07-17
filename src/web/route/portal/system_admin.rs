@@ -11,7 +11,7 @@ use mongodb::bson::{doc, oid::ObjectId};
 use tera::Tera;
 use tracing::instrument;
 
-use crate::web::helper::bson;
+use crate::web::{helper::bson, route::portal::helper::check_admin};
 use crate::{
     db::{
         models::{Group, GuardianCookie, User, UserType, GROUP, USER},
@@ -81,29 +81,14 @@ async fn system_create_group(
     form: web::Form<Group>,
     subject: Option<ReqData<GuardianCookie>>,
 ) -> Result<HttpResponse> {
-    let gc = match subject {
-        // System admin
-        Some(cookie_subject) if cookie_subject.user_type == UserType::SystemAdmin => {
-            cookie_subject.into_inner()
-        }
-        // All other users
-        Some(_) => {
-            return helper::log_errors(Err(GuardianError::UserNotFound(
-                "Not a system admin".to_string(),
-            )))
-        }
-        None => {
-            return helper::log_errors(Err(GuardianError::UserNotFound(
-                "No user passed from middleware... subject not passed from middleware".to_string(),
-            )))
-        }
-    };
+    // TODO: do this at the middleware level
+    let gc = check_admin(subject, UserType::SystemAdmin)?;
 
     let mut group = form.into_inner();
     let now = time::OffsetDateTime::now_utc();
     group.created_at = now;
     group.updated_at = now;
-    group.last_updated_by = "".to_string();
+    group.last_updated_by = gc.subject;
 
     let id = db.insert(group, GROUP).await?;
     let content = format!("<p>Group created with id: {}</p>", id);
@@ -112,7 +97,8 @@ async fn system_create_group(
         .body(content))
 }
 
-// This is commented out because no one should be able to delete a group for now
+// This is commented out because no one should be able to delete a group for now, unless biz
+// requires. For now, you can delete them through the db
 // #[delete("group")]
 // async fn system_delete_group(db: Data<&DB>, form: web::Form<Group>) -> Result<HttpResponse> {
 //     let group = form.into_inner();
@@ -127,7 +113,14 @@ async fn system_create_group(
 // }
 
 #[patch("group")]
-async fn system_update_group(db: Data<&DB>, form: web::Form<Group>) -> Result<HttpResponse> {
+async fn system_update_group(
+    db: Data<&DB>,
+    form: web::Form<Group>,
+    subject: Option<ReqData<GuardianCookie>>,
+) -> Result<HttpResponse> {
+    // TODO: do this at the middleware level
+    let gc = check_admin(subject, UserType::SystemAdmin)?;
+
     let group = form.into_inner();
     let _ = db
         .update(
@@ -136,7 +129,7 @@ async fn system_update_group(db: Data<&DB>, form: web::Form<Group>) -> Result<Ht
                 "name": &group.name,
                 "subscriptions": &group.subscriptions,
                 "updated_at": bson(time::OffsetDateTime::now_utc())?,
-                "last_updated_by": "",
+                "last_updated_by": gc.subject,
             }},
             GROUP,
             PhantomData::<Group>,
@@ -150,7 +143,14 @@ async fn system_update_group(db: Data<&DB>, form: web::Form<Group>) -> Result<Ht
 }
 
 #[patch("user")]
-async fn system_update_user(db: Data<&DB>, form: web::Form<User>) -> Result<HttpResponse> {
+async fn system_update_user(
+    db: Data<&DB>,
+    form: web::Form<User>,
+    subject: Option<ReqData<GuardianCookie>>,
+) -> Result<HttpResponse> {
+    // TODO: do this at the middleware level
+    let gc = check_admin(subject, UserType::SystemAdmin)?;
+
     let user = form.into_inner();
     let _ = db
         .update(
@@ -160,7 +160,7 @@ async fn system_update_user(db: Data<&DB>, form: web::Form<User>) -> Result<Http
                 "groups": &user.groups,
                 "user_type": bson(user.user_type)?,
                 "updated_at": bson(time::OffsetDateTime::now_utc())?,
-                "last_updated_by": "",
+                "last_updated_by": gc.subject,
             }},
             USER,
             PhantomData::<User>,
@@ -174,7 +174,14 @@ async fn system_update_user(db: Data<&DB>, form: web::Form<User>) -> Result<Http
 }
 
 #[delete("user")]
-async fn system_delete_user(db: Data<&DB>, form: web::Form<User>) -> Result<HttpResponse> {
+async fn system_delete_user(
+    db: Data<&DB>,
+    form: web::Form<User>,
+    subject: Option<ReqData<GuardianCookie>>,
+) -> Result<HttpResponse> {
+    // TODO: do this at the middleware level
+    let _ = check_admin(subject, UserType::SystemAdmin)?;
+
     let user = form.into_inner();
     let _ = db
         .delete(

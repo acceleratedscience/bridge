@@ -1,7 +1,12 @@
 use std::any::Any;
 
-use crate::db::models::{Group, GuardianCookie, User};
-use crate::errors::{GuardianError, Result};
+use actix_web::web::ReqData;
+
+use crate::{
+    db::models::{Group, GuardianCookie, User, UserType},
+    errors::{GuardianError, Result},
+    web::helper,
+};
 
 pub(super) fn portal_hygienic_group(gc: &GuardianCookie, doc: &dyn Any) -> Result<bool> {
     // Downcast to Group
@@ -18,4 +23,25 @@ pub(super) fn portal_hygienic_group(gc: &GuardianCookie, doc: &dyn Any) -> Resul
     Err(GuardianError::GeneralError(
         "Portal Hygienic Error".to_string(),
     ))
+}
+
+pub(super) fn check_admin(subject: Option<ReqData<GuardianCookie>>, admin: UserType) -> Result<GuardianCookie> {
+    Ok(match subject {
+        // System admin
+        Some(cookie_subject) if cookie_subject.user_type == admin => {
+            cookie_subject.into_inner()
+        }
+        // All other users
+        Some(g) => {
+            return helper::log_errors(Err(GuardianError::UserNotFound(format!(
+                "User {} is not a system admin",
+                g.into_inner().subject
+            ))))
+        }
+        None => {
+            return helper::log_errors(Err(GuardianError::UserNotFound(
+                "No user passed from middleware... subject not passed from middleware".to_string(),
+            )))
+        }
+    })
 }
