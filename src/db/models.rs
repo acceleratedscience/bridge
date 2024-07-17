@@ -1,7 +1,7 @@
 use mongodb::bson::oid::ObjectId;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Deserialize, Serialize, Clone)]
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 pub enum UserType {
     #[serde(rename = "user")]
     User,
@@ -22,6 +22,7 @@ pub struct User {
     pub user_type: UserType,
     pub created_at: time::OffsetDateTime,
     pub updated_at: time::OffsetDateTime,
+    pub last_updated_by: String,
 }
 
 pub static GROUP: &str = "groups";
@@ -32,10 +33,27 @@ pub struct Group {
     pub subscriptions: Vec<String>,
     pub created_at: time::OffsetDateTime,
     pub updated_at: time::OffsetDateTime,
+    pub last_updated_by: String,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct GuardianCookie {
     pub subject: String,
     pub user_type: UserType,
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::db::models::UserType;
+
+    #[test]
+    fn test_usertype_partial_eq() {
+        let user = UserType::User;
+        let group = UserType::GroupAdmin;
+        let system = UserType::SystemAdmin;
+
+        assert_eq!(user, UserType::User);
+        assert_eq!(group, UserType::GroupAdmin);
+        assert_eq!(system, UserType::SystemAdmin);
+    }
 }

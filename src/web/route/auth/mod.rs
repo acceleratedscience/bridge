@@ -153,6 +153,7 @@ async fn code_to_response(
                         user_type: UserType::User,
                         created_at: time,
                         updated_at: time,
+                        last_updated_by: subject.clone(),
                     },
                     USER,
                 )

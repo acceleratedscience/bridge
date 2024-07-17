@@ -1,8 +1,10 @@
-use std::str::FromStr;
+use std::{marker::PhantomData, str::FromStr};
 
 use actix_web::{
     get,
-    web::{Data, ReqData},
+    http::header::ContentType,
+    patch,
+    web::{self, Data, ReqData},
     HttpRequest, HttpResponse,
 };
 use mongodb::bson::{doc, oid::ObjectId};
@@ -16,7 +18,7 @@ use crate::{
         Database,
     },
     errors::{GuardianError, Result},
-    web::helper,
+    web::helper::{self, bson},
 };
 
 const USER_PAGE: &str = "group_admin.html";
@@ -71,6 +73,33 @@ pub(super) async fn group(
     )))
 }
 
+#[patch("user")]
+async fn group_update_user(db: Data<&DB>, form: web::Form<User>) -> Result<HttpResponse> {
+    let user = form.into_inner();
+    let _ = db
+        .update(
+            doc! {"user_name": &user.user_name},
+            doc! {"$set": doc! {
+                "user_name": &user.user_name,
+                "groups": &user.groups,
+                "user_type": bson(user.user_type)?,
+                "updated_at": bson(time::OffsetDateTime::now_utc())?,
+            }},
+            USER,
+            PhantomData::<User>,
+        )
+        .await?;
+
+    let content = format!("<p>User named {} has been updated</p>", user.user_name);
+    Ok(HttpResponse::Ok()
+        .content_type(ContentType::form_url_encoded())
+        .body(content))
+}
+
 pub fn config_group(cfg: &mut actix_web::web::ServiceConfig) {
-    cfg.service(group);
+    cfg.service(
+        web::scope("group_admin")
+            .service(group)
+            .service(group_update_user),
+    );
 }

@@ -48,10 +48,10 @@ where
     fn call(&self, req: ServiceRequest) -> Self::Future {
         match req.cookie(COOKIE_NAME).map(|c| c.value().to_string()) {
             Some(v) => {
-                let guardian_cookie = serde_json::from_str::<GuardianCookie>(&v);
-                match guardian_cookie {
-                    Ok(gc) => {
-                        req.extensions_mut().insert(gc);
+                let guardian_cookie_result = serde_json::from_str::<GuardianCookie>(&v);
+                match guardian_cookie_result {
+                    Ok(gcs) => {
+                        req.extensions_mut().insert(gcs);
                         self.service
                             .call(req)
                             .map_ok(ServiceResponse::map_into_left_body)

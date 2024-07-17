@@ -9,6 +9,7 @@ use crate::web::guardian_middleware::CookieCheck;
 mod group_admin;
 mod system_admin;
 mod user;
+mod helper;
 
 #[get("")]
 async fn index(data: Option<ReqData<GuardianCookie>>) -> Result<HttpResponse> {
