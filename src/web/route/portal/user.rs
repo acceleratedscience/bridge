@@ -58,8 +58,6 @@ pub(super) async fn user(
             }
         }
 
-        dbg!(&user.created_at);
-
         let mut ctx = tera::Context::new();
         ctx.insert("name", &user.user_name);
         ctx.insert("group", &user.groups.join(", "));

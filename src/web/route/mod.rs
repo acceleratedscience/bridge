@@ -18,8 +18,6 @@ pub mod proxy;
 async fn index(data: Data<Tera>, req: HttpRequest) -> Result<HttpResponse> {
     // if cookie exists, redirect to portal
     if let Some(c) = req.cookie(COOKIE_NAME) {
-        dbg!(c.clone());
-        dbg!(c.path());
         return Ok(HttpResponse::TemporaryRedirect()
             .append_header((header::LOCATION, "/portal"))
             .finish());

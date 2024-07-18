@@ -15,9 +15,7 @@
         {% endif %}
         <div class="text-center">
           <div id="status" class="lead">
-            <a href="/portal/logout">
-              <button type="button" class="btn btn-primary" type="submit">Log Out</button>
-            </a>
+			  <button type="button" class="btn btn-primary" hx-post="/portal/hx/logout">Log Out</button>
           </div>
         </div>
       </div>
