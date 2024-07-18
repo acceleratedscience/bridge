@@ -46,6 +46,7 @@ thiserror = "1.0.61"
 futures-util = "0.3.30"
 tokio-stream = { version = "0.1.15", features = ["sync"] }
 mongodb = "3.0.0"
+serde_urlencoded = "0.7.1"
 
 [profile.dev]
 opt-level = 0

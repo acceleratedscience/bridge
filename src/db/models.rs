@@ -42,6 +42,18 @@ pub struct GuardianCookie {
     pub user_type: UserType,
 }
 
+#[derive(Debug, Deserialize, Clone)]
+pub enum AdminTab {
+    Profile,
+    Group,
+    User,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct AdminTabs {
+    pub tab: AdminTab,
+}
+
 #[cfg(test)]
 mod tests {
     use crate::db::models::UserType;

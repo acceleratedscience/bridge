@@ -1,5 +1,7 @@
 use std::{marker::PhantomData, str::FromStr};
 
+mod htmx;
+
 use actix_web::{
     delete, get,
     http::header::ContentType,
@@ -11,7 +13,10 @@ use mongodb::bson::{doc, oid::ObjectId};
 use tera::Tera;
 use tracing::instrument;
 
-use crate::web::{helper::bson, route::portal::helper::check_admin};
+use crate::{
+    db::models::{AdminTab, AdminTabs},
+    web::{helper::bson, route::portal::helper::check_admin},
+};
 use crate::{
     db::{
         models::{Group, GuardianCookie, User, UserType, GROUP, USER},
@@ -21,6 +26,8 @@ use crate::{
     errors::{GuardianError, Result},
     web::helper::{self},
 };
+
+use self::htmx::get_group_content;
 
 const USER_PAGE: &str = "system_admin.html";
 
@@ -150,12 +157,11 @@ async fn system_update_user(
         .update(
             doc! {"user_name": &user.user_name},
             doc! {"$set": doc! {
-                "user_name": &user.user_name,
-                "groups": &user.groups,
-                "user_type": bson(user.user_type)?,
-                "updated_at": bson(time::OffsetDateTime::now_utc())?,
-                "last_updated_by": gc.subject,
-            }},
+            "user_name": &user.user_name,
+            "groups": &user.groups,
+            "user_type": bson(user.user_type)?,
+            "updated_at": bson(time::OffsetDateTime::now_utc())?,
+            "last_updated_by": gc.subject,            }},
             USER,
             PhantomData::<User>,
         )
@@ -191,11 +197,48 @@ async fn system_delete_user(
         .body(content))
 }
 
+#[get("tab")]
+async fn system_tab_htmx(
+    req: HttpRequest,
+    db: Data<&DB>,
+    subject: Option<ReqData<GuardianCookie>>,
+) -> Result<HttpResponse> {
+    let gc = check_admin(subject, UserType::SystemAdmin)?;
+
+    let id = ObjectId::from_str(&gc.subject)
+        .map_err(|e| GuardianError::GeneralError(e.to_string()))?;
+
+    // get user from objectid
+    let user: User = db
+        .find(
+            doc! {
+                "_id": id,
+            },
+            USER,
+        )
+        .await?;
+
+    let query = req.query_string();
+    // deserialize into SystemAdminTab
+    let tab = helper::log_errors(serde_urlencoded::from_str::<AdminTabs>(query))?;
+
+    let content = match tab.tab {
+        AdminTab::Profile => r#"<br><p class="lead">Profile tab</p>"#.to_string(),
+        AdminTab::Group => get_group_content(&user.sub),
+        AdminTab::User => r#"<br><p class="lead">User tab</p>"#.to_string(),
+    };
+
+    Ok(HttpResponse::Ok()
+        .content_type(ContentType::form_url_encoded())
+        .body(content))
+}
+
 pub fn config_system(cfg: &mut web::ServiceConfig) {
     cfg.service(
         web::scope("/system_admin")
             .service(system)
             .service(system_create_group)
+            .service(web::scope("/hx").service(system_tab_htmx))
             // .service(system_delete_group)
             .service(system_update_group)
             .service(system_update_user)

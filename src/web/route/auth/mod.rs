@@ -1,5 +1,5 @@
 use actix_web::{
-    cookie::{time, Cookie},
+    cookie::{time, Cookie, SameSite},
     get,
     http::header::{self, ContentType},
     web::{self, Data},
@@ -46,6 +46,7 @@ async fn login(req: HttpRequest) -> Result<HttpResponse> {
     // authentication process in 5 minutes, they will be required to start over
     let cookie = Cookie::build("nonce", url.2.secret())
         .expires(time::OffsetDateTime::now_utc() + time::Duration::minutes(5))
+        .same_site(SameSite::Lax)
         .http_only(true)
         .secure(true)
         .finish();
@@ -180,6 +181,7 @@ async fn code_to_response(
     // middleware will check for this cookie and and safeguard specific routes
     // TODO: look into doing session management that stores a dynamic key into the cookie
     let cookie = Cookie::build(COOKIE_NAME, content)
+        .same_site(SameSite::Strict)
         .expires(time::OffsetDateTime::now_utc() + time::Duration::days(1))
         .path("/")
         .http_only(true)
@@ -202,6 +204,7 @@ async fn code_to_response(
     let rendered = helper::log_errors(data.render("token.html", &ctx))?;
 
     let mut cookie_remove = Cookie::build("nonce", "")
+        .same_site(SameSite::Lax)
         .http_only(true)
         .secure(true)
         .finish();

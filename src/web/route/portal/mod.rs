@@ -1,5 +1,5 @@
 use actix_web::{
-    cookie::Cookie,
+    cookie::{Cookie, SameSite},
     get,
     http::header,
     post,
@@ -50,6 +50,7 @@ async fn index(data: Option<ReqData<GuardianCookie>>) -> Result<HttpResponse> {
 async fn logout() -> HttpResponse {
     // clear the cookie
     let mut cookie_remove = Cookie::build(COOKIE_NAME, "")
+        .same_site(SameSite::Strict)
         .path("/")
         .http_only(true)
         .secure(true)

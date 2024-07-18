@@ -13,12 +13,13 @@ use tracing::instrument;
 
 use crate::{
     db::{
-        models::{GuardianCookie, User, UserType, USER},
+        models::{AdminTab, AdminTabs, GuardianCookie, User, UserType, USER},
         mongo::DB,
         Database,
     },
     errors::{GuardianError, Result},
     web::{
+        guardian_middleware::Htmx,
         helper::{self, bson},
         route::portal::helper::check_admin,
     },
@@ -100,9 +101,31 @@ async fn group_update_user(
         .body(content))
 }
 
+#[get("tab")]
+async fn group_tab_htmx(
+    req: HttpRequest,
+    subject: Option<ReqData<GuardianCookie>>,
+) -> Result<HttpResponse> {
+    let _ = check_admin(subject, UserType::SystemAdmin)?;
+    let query = req.query_string();
+    // deserialize into SystemAdminTab
+    let tab = helper::log_errors(serde_urlencoded::from_str::<AdminTabs>(query))?;
+
+    let content = match tab.tab {
+        AdminTab::Profile => r#"<br><p class="lead">Profile tab</p>"#,
+        AdminTab::Group => r#"<br><p class="lead">Group tab</p>"#,
+        AdminTab::User => r#"<br><p class="lead">User tab</p>"#,
+    };
+
+    Ok(HttpResponse::Ok()
+        .content_type(ContentType::form_url_encoded())
+        .body(content))
+}
+
 pub fn config_group(cfg: &mut actix_web::web::ServiceConfig) {
     cfg.service(
         web::scope("/group_admin")
+            .service(web::scope("/hx").wrap(Htmx).service(group_tab_htmx))
             .service(group)
             .service(group_update_user),
     );

@@ -1,20 +1,13 @@
-{% extends "base.html" %}
+{% extends "admin.html" %}
 {% block title %}Welcome Admin!{% endblock title %}
-{% block body %}
-  <div class="container d-flex flex-column w-100" style="height:100vh">
-    <header class="mb-auto"></header>
-    <main class="mx-auto">
-      <div class="text-center text-break">
-		  <h1 >Welcome, {{name}}!</h1>
-        <p class="lead">Great day we are having!</p>
-		{% if group == "" %}
-      <p class="lead">You are currently not part of any group. Contact your Group Admin to have you added.</p>
-		{% else %}
-      <p class="lead">You are part of group(s): {{group}}.</p>
-      <p class="lead">Consult with you group administrator on what inference models you have access to.</p>
-		{% endif %}
-      </div>
-    </main>
-    <footer class="mt-auto"></footer>
-  </div>
-{% endblock body %}
+{% block admin_message %}
+  <p class="lead">Welcome System Admin! All base are belong to us!!!</p>
+{% endblock admin_message %}
+{% block tabselection %}
+  <li class="nav-item">
+    <a class="nav-link active disabled" aria-current="page" hx-get="group_admin/hx/tab?tab=Profile" href="#" role="tab" aria-controls="tab-contents" aria-selected="true">Profile</a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link" href="#" role="tab" aria-controls="tab-contents" hx-get="group_admin/hx/tab?tab=Group" aria-selected="false">Group</a>
+  </li>
+{% endblock tabselection %}
