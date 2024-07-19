@@ -15,7 +15,10 @@ use tracing::instrument;
 
 use crate::{
     db::models::{AdminTab, AdminTabs},
-    web::{helper::bson, route::portal::helper::check_admin},
+    web::{
+        guardian_middleware::Htmx, helper::bson, route::portal::helper::check_admin,
+        services::CATALOG_URLS,
+    },
 };
 use crate::{
     db::{
@@ -206,8 +209,8 @@ async fn system_tab_htmx(
 ) -> Result<HttpResponse> {
     let gc = check_admin(subject, UserType::SystemAdmin)?;
 
-    let id = ObjectId::from_str(&gc.subject)
-        .map_err(|e| GuardianError::GeneralError(e.to_string()))?;
+    let id =
+        ObjectId::from_str(&gc.subject).map_err(|e| GuardianError::GeneralError(e.to_string()))?;
 
     // get user from objectid
     let user: User = db
@@ -224,10 +227,12 @@ async fn system_tab_htmx(
     let tab = helper::log_errors(serde_urlencoded::from_str::<AdminTabs>(query))?;
 
     let mut list = GroupContent::new();
-    list.add("group1".to_string());
-    list.add("group2".to_string());
-    list.add("group3".to_string());
-    list.add("group4".to_string());
+
+    CATALOG_URLS
+        .get()
+        .ok_or_else(|| GuardianError::GeneralError("Catalog urls not found".to_string()))?
+        .iter()
+        .for_each(|(_, service_name)| list.add(service_name.to_owned()));
 
     let content = match tab.tab {
         AdminTab::Profile => r#"<br><p class="lead">Profile tab</p>"#.to_string(),
@@ -242,13 +247,14 @@ async fn system_tab_htmx(
 
 pub fn config_system(cfg: &mut web::ServiceConfig) {
     cfg.service(
-        web::scope("/system_admin")
-            .service(system)
-            .service(system_create_group)
-            .service(web::scope("/hx").service(system_tab_htmx))
-            // .service(system_delete_group)
-            .service(system_update_group)
-            .service(system_update_user)
-            .service(system_delete_user),
+        web::scope("/system_admin").service(system).service(
+            web::scope("/hx")
+                .wrap(Htmx)
+                .service(system_tab_htmx)
+                .service(system_create_group)
+                .service(system_update_group)
+                .service(system_update_user),
+        ),
+        // .service(system_delete_group)
     );
 }

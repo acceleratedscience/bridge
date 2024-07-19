@@ -1,10 +1,13 @@
 {% extends "base.html" %}
 {% block body %}
 <div class="container d-flex flex-column w-100" style="height:100vh">
-	<header class="mb-auto"></header>
-	<main class="mx-auto">
+	<header class="mb-5"></header>
+	<main class="mx-5">
 		<div class="text-center text-break">
-			<h1 >Welcome, {% block usertype %}{% endblock usertype %}!</h1>
+			<h1>
+				Welcome,
+				<small class="text-body-secondary">{% block usertype %}{% endblock usertype %}!</small>
+			</h1>
 			<p class="lead">{{name}}, great day we are having!</p>
 			{% block admin_message %}
 			{% endblock admin_message %}
@@ -24,7 +27,7 @@
 					{% endblock tabselection %}
 				</ul>
 			</div>
-			<div id="tab-contents" role="tabpanel">
+			<div id="tab-contents" role="tabpanel" class="w-50 mx-auto">
 				<br>
 				{% if group == "" %}
 				<p class="lead">You are currently not part of any group. Contact your Group Admin to have you added.</p>
