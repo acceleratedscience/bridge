@@ -2,12 +2,12 @@ use std::{io::Result, process::exit};
 
 use actix_web::{
     middleware::{self},
-    web::Data,
+    web::{self, Data},
     App, HttpServer,
 };
-use tracing::error;
+use tracing::{error, warn};
 
-use crate::{db::mongo::DBCONN, templating};
+use crate::{db::mongo::DBCONN, errors::GuardianError, templating};
 
 mod guardian_middleware;
 mod helper;

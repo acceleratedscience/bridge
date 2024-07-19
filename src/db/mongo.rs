@@ -1,9 +1,10 @@
 use std::{marker::PhantomData, sync::OnceLock};
 
-use futures::TryStreamExt;
+use futures::{StreamExt, TryStreamExt};
 use mongodb::{
-    bson::{Bson, Document},
-    Client, Collection,
+    bson::{doc, Bson, Document},
+    options::IndexOptions,
+    Client, Collection, Database as MongoDatabase, IndexModel,
 };
 use serde::{de::DeserializeOwned, Serialize};
 
@@ -12,15 +13,19 @@ use crate::{
     errors::{GuardianError, Result},
 };
 
-use super::Database;
+use super::{
+    models::{Group, User, GROUP, USER},
+    Database,
+};
 
 #[derive(Clone)]
 pub struct DB {
-    mongo_client: Client,
-    database: &'static str,
+    mongo_database: MongoDatabase,
 }
 
 pub static DBCONN: OnceLock<DB> = OnceLock::new();
+
+static COLLECTIONS: [&str; 2] = [USER, GROUP];
 
 impl DB {
     pub async fn init_once(database: &'static str) -> Result<()> {
@@ -30,11 +35,44 @@ impl DB {
                 GuardianError::GeneralError("Could not obtain configuration".to_string())
             })?
             .db;
-        let mongo_client = Client::with_uri_str(&db.url).await?;
-        DBCONN.get_or_init(|| Self {
-            mongo_client,
-            database,
-        });
+        let mongo_database = Client::with_uri_str(&db.url).await?.database(database);
+
+        // check if the collections exists, if not create them
+        let all_collection = mongo_database.list_collection_names().await?;
+        for collection in COLLECTIONS.iter() {
+            if !all_collection.contains(&collection.to_string()) {
+                mongo_database.create_collection(*collection).await?;
+            }
+        }
+
+        let dbs = Self { mongo_database };
+        // create the unique indexes if they do not exist
+        Self::create_index::<User>(&dbs, USER, "sub").await?;
+        Self::create_index::<Group>(&dbs, GROUP, "name").await?;
+
+        DBCONN.get_or_init(|| dbs);
+
+        Ok(())
+    }
+
+    async fn create_index<Z>(db: &DB, collection: &str, field: &str) -> Result<()>
+    where
+        Z: Send + Sync + Serialize + DeserializeOwned,
+    {
+        let col = Self::get_collection::<Z>(db, collection);
+        let mut indexes = col.list_indexes().await?;
+        while let Some(Ok(index)) = indexes.next().await {
+            if collection == index.keys.to_string() {
+                return Ok(());
+            }
+        }
+        // create index
+        let index_model = IndexModel::builder()
+            .keys(doc! {field: 1})
+            .options(IndexOptions::builder().unique(true).build())
+            .build();
+        col.create_index(index_model).await?;
+
         Ok(())
     }
 
@@ -43,8 +81,7 @@ impl DB {
     where
         Z: Send + Sync + Serialize + DeserializeOwned,
     {
-        let db = d.mongo_client.database(d.database);
-        db.collection::<Z>(collection)
+        d.mongo_database.collection::<Z>(collection)
     }
 }
 

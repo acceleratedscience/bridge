@@ -9,12 +9,14 @@ use actix_web::{
     web::{self, Data, ReqData},
     HttpRequest, HttpResponse,
 };
+use futures::StreamExt;
 use mongodb::bson::{doc, oid::ObjectId};
+use serde::Deserialize;
 use tera::Tera;
 use tracing::instrument;
 
 use crate::{
-    db::models::{AdminTab, AdminTabs},
+    db::models::{AdminTab, AdminTabs, GroupForm},
     web::{
         guardian_middleware::Htmx, helper::bson, route::portal::helper::check_admin,
         services::CATALOG_URLS,
@@ -78,23 +80,38 @@ pub(super) async fn system(
     return Ok(HttpResponse::Ok().body(content));
 }
 
-#[instrument(skip(db))]
+#[instrument(skip(db, pl))]
 #[post("group")]
 async fn system_create_group(
     db: Data<&DB>,
-    form: web::Form<Group>,
+    mut pl: web::Payload,
     subject: Option<ReqData<GuardianCookie>>,
 ) -> Result<HttpResponse> {
     // TODO: do this at the middleware level
-    let gc = check_admin(subject, UserType::SystemAdmin)?;
+    let _gc = check_admin(subject, UserType::SystemAdmin)?;
 
-    let mut group = form.into_inner();
+    let mut body = web::BytesMut::new();
+    while let Some(chunk) = pl.next().await {
+        let chunk = chunk.unwrap();
+        body.extend_from_slice(&chunk);
+    }
+    let body = String::from_utf8_lossy(&body);
+    let deserializer = serde::de::value::StrDeserializer::<serde::de::value::Error>::new(&body);
+    let gf = helper::log_errors(GroupForm::deserialize(deserializer))?;
+
+    dbg!(&gf.last_updated_by);
+
     let now = time::OffsetDateTime::now_utc();
-    group.created_at = now;
-    group.updated_at = now;
-    group.last_updated_by = gc.subject;
+    let group = Group {
+        _id: ObjectId::new(),
+        name: gf.name,
+        subscriptions: gf.subscriptions,
+        created_at: now,
+        updated_at: now,
+        last_updated_by: gf.last_updated_by,
+    };
 
-    let id = db.insert(group, GROUP).await?;
+    let id = helper::log_errors(db.insert(group, GROUP).await)?;
     let content = format!("<p>Group created with id: {}</p>", id);
     Ok(HttpResponse::Ok()
         .content_type(ContentType::form_url_encoded())

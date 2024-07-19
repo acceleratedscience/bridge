@@ -5,6 +5,7 @@ use crate::errors::Result;
 
 pub mod models;
 pub mod mongo;
+pub mod deserialize;
 
 // Database interface
 // Q is a generic type that represents a query

@@ -28,11 +28,18 @@ pub struct User {
 pub static GROUP: &str = "groups";
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Group {
-    _id: ObjectId,
+    pub _id: ObjectId,
     pub name: String,
     pub subscriptions: Vec<String>,
     pub created_at: time::OffsetDateTime,
     pub updated_at: time::OffsetDateTime,
+    pub last_updated_by: String,
+}
+
+#[derive(Debug)]
+pub struct GroupForm {
+    pub name: String,
+    pub subscriptions: Vec<String>,
     pub last_updated_by: String,
 }
 
