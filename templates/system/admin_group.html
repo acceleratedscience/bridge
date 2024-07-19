@@ -10,8 +10,8 @@
 			<label for='subscriptions'>subscriptions:</label>
 			<select id='subscriptions' name='subscriptions' class='form-control' multiple required>
 				{% for item in items %}
-          <option value='{{ item }}'>{{ item }}</option>
-        {% endfor %}
+				<option value='{{ item }}'>{{ item }}</option>
+				{% endfor %}
 			</select>
 			<div class='invalid-feedback'>please select at least one subscription.</div>
 		</div>

@@ -29,7 +29,7 @@ use crate::{
 
 use self::htmx::GroupContent;
 
-const USER_PAGE: &str = "system_admin.html";
+const USER_PAGE: &str = "system/admin.html";
 
 #[get("")]
 #[instrument(skip(data, db, subject))]

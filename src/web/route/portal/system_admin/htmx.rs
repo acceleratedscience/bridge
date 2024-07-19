@@ -21,6 +21,6 @@ impl GroupContent {
         context.insert("subject", &subject);
         context.insert("items", &self.items);
 
-        Ok(tera.render("system_admin_group.html", &context)?)
+        Ok(tera.render("system/admin_group.html", &context)?)
     }
 }

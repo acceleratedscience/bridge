@@ -4,61 +4,61 @@
 {% endblock htmx %}
 {% block body %}
 <div class="container">
-  <div class="row">
-    <div class="col d-flex">
-      <div class="align-self-center p-5">
-        <h1 class="fs-1 lead">
-        GUARDIAN
-        </h1>
-        <p class="lead">
-        Welcome to the Accelerated Discovery Platform. This is Guardian: your gateway to the future of scientific discovery.
-        </p>
-      </div>
-    </div>
-    <div class="col">
-      <div class="modal modal-sheet position-static d-block" tabindex="-1" role="dialog" >
-        <div class="container d-flex w-100" style="height:100vh">
-          <div class="modal-dialog align-self-center" role="document">
-            <div class="modal-content rounded-2 shadow">
-              <div class="modal-body p-5">
-                <h2 class="fw-bold mb-0">What's new</h2>
-                <ul class="d-grid gap-4 my-5 list-unstyled small">
-                  <li class="d-flex gap-4">
-                    <div>
-                      <h5 class="mb-0">Stage Launch</h5>
-                      Guardian is now live on stage.
-                    </div>
-                  </li>
-                  <li class="d-flex gap-4">
-                    <div>
-                      <h5 class="mb-0">Inferences</h5>
-                      Four inference models are now available.
-                    </div>
-                  </li>
-                  <li class="d-flex gap-4">
-                    <div>
-                      <h5 class="mb-0">IBM Verify</h5>
-                      IBM Verify is now available for login.
-                    </div>
-                  </li>
-                </ul>
-                <hr>
-                <a href="/auth/login?ibm">
-                  <button class="w-100 py-2 mb-2 btn btn-secondary rounded-2" type="submit">
-                    Get access with IBM ID
-                  </button>
-                </a>
-                <a href="/auth/login?w3">
-                  <button class="w-100 py-2 mb-2 btn btn-secondary rounded-2" target="/auth/login?w3" type="submit">
-                    Get access with W3
-                  </button>
-                </a>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
+	<div class="row">
+		<div class="col d-flex">
+			<div class="align-self-center p-5">
+				<h1 class="fs-1 lead">
+					GUARDIAN
+				</h1>
+				<p class="lead">
+				Welcome to the Accelerated Discovery Platform. This is Guardian: your gateway to the future of scientific discovery.
+				</p>
+			</div>
+		</div>
+		<div class="col">
+			<div class="modal modal-sheet position-static d-block" tabindex="-1" role="dialog" >
+				<div class="container d-flex w-100" style="height:100vh">
+					<div class="modal-dialog align-self-center" role="document">
+						<div class="modal-content rounded-2 shadow">
+							<div class="modal-body p-5">
+								<h2 class="fw-bold mb-0">What's new</h2>
+								<ul class="d-grid gap-4 my-5 list-unstyled small">
+									<li class="d-flex gap-4">
+										<div>
+											<h5 class="mb-0">Stage Launch</h5>
+											Guardian is now live on stage.
+										</div>
+									</li>
+									<li class="d-flex gap-4">
+										<div>
+											<h5 class="mb-0">Inferences</h5>
+											Four inference models are now available.
+										</div>
+									</li>
+									<li class="d-flex gap-4">
+										<div>
+											<h5 class="mb-0">IBM Verify</h5>
+											IBM Verify is now available for login.
+										</div>
+									</li>
+								</ul>
+								<hr>
+								<a href="/auth/login?ibm">
+									<button class="w-100 py-2 mb-2 btn btn-secondary rounded-2" type="submit">
+										Get access with IBM ID
+									</button>
+								</a>
+								<a href="/auth/login?w3">
+									<button class="w-100 py-2 mb-2 btn btn-secondary rounded-2" target="/auth/login?w3" type="submit">
+										Get access with W3
+									</button>
+								</a>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
 </div>
 {% endblock body %}
