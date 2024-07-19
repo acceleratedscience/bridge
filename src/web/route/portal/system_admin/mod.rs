@@ -27,7 +27,7 @@ use crate::{
     web::helper::{self},
 };
 
-use self::htmx::get_group_content;
+use self::htmx::GroupContent;
 
 const USER_PAGE: &str = "system_admin.html";
 
@@ -201,6 +201,7 @@ async fn system_delete_user(
 async fn system_tab_htmx(
     req: HttpRequest,
     db: Data<&DB>,
+    data: Data<Tera>,
     subject: Option<ReqData<GuardianCookie>>,
 ) -> Result<HttpResponse> {
     let gc = check_admin(subject, UserType::SystemAdmin)?;
@@ -222,9 +223,15 @@ async fn system_tab_htmx(
     // deserialize into SystemAdminTab
     let tab = helper::log_errors(serde_urlencoded::from_str::<AdminTabs>(query))?;
 
+    let mut list = GroupContent::new();
+    list.add("group1".to_string());
+    list.add("group2".to_string());
+    list.add("group3".to_string());
+    list.add("group4".to_string());
+
     let content = match tab.tab {
         AdminTab::Profile => r#"<br><p class="lead">Profile tab</p>"#.to_string(),
-        AdminTab::Group => get_group_content(&user.sub),
+        AdminTab::Group => list.render(&user.sub, data)?,
         AdminTab::User => r#"<br><p class="lead">User tab</p>"#.to_string(),
     };
 
