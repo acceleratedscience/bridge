@@ -68,8 +68,13 @@ impl DB {
         }
         // create index
         let index_model = IndexModel::builder()
-            .keys(doc! {field: 1})
-            .options(IndexOptions::builder().unique(true).build())
+            .keys(doc! {field: "text"})
+            .options(
+                IndexOptions::builder()
+                    .name(Some(field.to_string()))
+                    .unique(true)
+                    .build(),
+            )
             .build();
         col.create_index(index_model).await?;
 

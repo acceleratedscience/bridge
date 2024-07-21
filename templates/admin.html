@@ -13,15 +13,24 @@
 			{% endblock admin_message %}
 			{% block tabbed %}
 			<div id="tabs" hx-target="#tab-contents" role="tablist"
-													 hx-on-htmx-after-on-load="let currentTab = document.querySelector('[aria-selected=true]');
-																			   currentTab.setAttribute('aria-selected', 'false');
-																			   currentTab.classList.remove('active');
-																			   currentTab.classList.remove('disabled');
-																			   let newTab = event.target;
-																			   newTab.setAttribute('aria-selected', 'true');
-																			   newTab.classList.add('active');
-																			   newTab.classList.add('disabled');
-																			   ">
+				hx-on-htmx-after-on-load="
+					let currentTab = document.querySelector('[aria-selected=true]');
+					currentTab.setAttribute('aria-selected', 'false');
+					currentTab.classList.remove('active');
+					currentTab.classList.remove('disabled');
+					if (currentTab.classList.contains('innertab')) {
+						let innertab = currentTab.parentElement.parentElement.previousElementSibling;
+						innertab.classList.remove('active');
+					}
+					let newTab = event.target;
+					newTab.setAttribute('aria-selected', 'true');
+					newTab.classList.add('active');
+					newTab.classList.add('disabled');
+					if (newTab.classList.contains('innertab')) {
+						let innertab = newTab.parentElement.parentElement.previousElementSibling;
+						innertab.classList.add('active');
+					}
+				">
 				<ul class="nav nav-tabs">
 					{% block tabselection %}
 					{% endblock tabselection %}

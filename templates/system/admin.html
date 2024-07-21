@@ -16,7 +16,11 @@
 	<a class="nav-link active disabled" aria-current="page" hx-get="system_admin/hx/tab?tab=Profile" href="#" role="tab" aria-controls="tab-contents" aria-selected="true">Profile</a>
 </li>
 <li class="nav-item">
-	<a class="nav-link" href="#" role="tab" aria-controls="tab-contents" hx-get="system_admin/hx/tab?tab=Group" aria-selected="false">Group</a>
+	<a class="nav-link dropdown-toggle" data-bs-toggle="dropdown" href="#" role="tab" aria-expanded="false" aria-selected="false">Group</a>
+	<ul class="dropdown-menu">
+		<li><a class="dropdown-item innertab" href="#" hx-get="system_admin/hx/tab?tab=GroupCreate">Create</a></li>
+		<li><a class="dropdown-item innertab" href="#" hx-get="system_admin/hx/tab?tab=GroupModify">Modify</a></li>
+	</ul>
 </li>
 <li class="nav-item">
 	<a class="nav-link" href="#" role="tab" aria-controls="tab-contents" hx-get="system_admin/hx/tab?tab=User" aria-selected="false">User</a>

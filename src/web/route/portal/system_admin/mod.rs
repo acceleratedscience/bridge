@@ -9,16 +9,16 @@ use actix_web::{
     web::{self, Data, ReqData},
     HttpRequest, HttpResponse,
 };
-use futures::StreamExt;
 use mongodb::bson::{doc, oid::ObjectId};
-use serde::Deserialize;
 use tera::Tera;
 use tracing::instrument;
 
 use crate::{
     db::models::{AdminTab, AdminTabs, GroupForm},
     web::{
-        guardian_middleware::Htmx, helper::bson, route::portal::helper::check_admin,
+        guardian_middleware::Htmx,
+        helper::bson,
+        route::portal::helper::{check_admin, payload_to_struct},
         services::CATALOG_URLS,
     },
 };
@@ -32,7 +32,7 @@ use crate::{
     web::helper::{self},
 };
 
-use self::htmx::GroupContent;
+use self::htmx::{GroupContent, CREATE, MODIFY};
 
 const USER_PAGE: &str = "system/admin.html";
 
@@ -84,35 +84,33 @@ pub(super) async fn system(
 #[post("group")]
 async fn system_create_group(
     db: Data<&DB>,
-    mut pl: web::Payload,
+    pl: web::Payload,
     subject: Option<ReqData<GuardianCookie>>,
 ) -> Result<HttpResponse> {
     // TODO: do this at the middleware level
-    let _gc = check_admin(subject, UserType::SystemAdmin)?;
-
-    let mut body = web::BytesMut::new();
-    while let Some(chunk) = pl.next().await {
-        let chunk = chunk.unwrap();
-        body.extend_from_slice(&chunk);
-    }
-    let body = String::from_utf8_lossy(&body);
-    let deserializer = serde::de::value::StrDeserializer::<serde::de::value::Error>::new(&body);
-    let gf = helper::log_errors(GroupForm::deserialize(deserializer))?;
-
-    dbg!(&gf.last_updated_by);
-
+    let _ = check_admin(subject, UserType::SystemAdmin)?;
+    let gf = payload_to_struct::<GroupForm>(pl).await?;
     let now = time::OffsetDateTime::now_utc();
+
     let group = Group {
         _id: ObjectId::new(),
-        name: gf.name,
+        name: gf.name.clone(),
         subscriptions: gf.subscriptions,
         created_at: now,
         updated_at: now,
         last_updated_by: gf.last_updated_by,
     };
 
-    let id = helper::log_errors(db.insert(group, GROUP).await)?;
-    let content = format!("<p>Group created with id: {}</p>", id);
+    // TODO: check if group already exists, and not rely one dup key from DB
+    let result = helper::log_errors(db.insert(group, GROUP).await);
+    let content = match result {
+        Ok(r) => format!("<p>Group created with id: {}</p>", r),
+        Err(e) if e.to_string().contains("dup key") => {
+            format!("<p>Group named {} already exists</p>", gf.name)
+        }
+        Err(e) => return Err(e),
+    };
+
     Ok(HttpResponse::Ok()
         .content_type(ContentType::form_url_encoded())
         .body(content))
@@ -136,28 +134,28 @@ async fn system_create_group(
 #[patch("group")]
 async fn system_update_group(
     db: Data<&DB>,
-    form: web::Form<Group>,
+    pl: web::Payload,
     subject: Option<ReqData<GuardianCookie>>,
 ) -> Result<HttpResponse> {
     // TODO: do this at the middleware level
     let gc = check_admin(subject, UserType::SystemAdmin)?;
+    let gf = payload_to_struct::<GroupForm>(pl).await?;
 
-    let group = form.into_inner();
     let _ = db
         .update(
-            doc! {"name": &group.name},
+            doc! {"name": &gf.name},
             doc! {"$set": doc! {
-                "name": &group.name,
-                "subscriptions": &group.subscriptions,
+                "name": &gf.name,
+                "subscriptions": &gf.subscriptions,
                 "updated_at": bson(time::OffsetDateTime::now_utc())?,
-                "last_updated_by": gc.subject,
+                "last_updated_by": gf.last_updated_by,
             }},
             GROUP,
             PhantomData::<Group>,
         )
         .await?;
 
-    let content = format!("<p>Group named {} has been updated</p>", group.name);
+    let content = format!("<p>Group named {} has been updated</p>", gf.name);
     Ok(HttpResponse::Ok()
         .content_type(ContentType::form_url_encoded())
         .body(content))
@@ -243,17 +241,18 @@ async fn system_tab_htmx(
     // deserialize into SystemAdminTab
     let tab = helper::log_errors(serde_urlencoded::from_str::<AdminTabs>(query))?;
 
-    let mut list = GroupContent::new();
+    let mut group_form = GroupContent::new();
 
     CATALOG_URLS
         .get()
         .ok_or_else(|| GuardianError::GeneralError("Catalog urls not found".to_string()))?
         .iter()
-        .for_each(|(_, service_name)| list.add(service_name.to_owned()));
+        .for_each(|(_, service_name)| group_form.add(service_name.to_owned()));
 
     let content = match tab.tab {
         AdminTab::Profile => r#"<br><p class="lead">Profile tab</p>"#.to_string(),
-        AdminTab::Group => list.render(&user.sub, data)?,
+        AdminTab::GroupCreate => group_form.render(&user.sub, data, CREATE)?,
+        AdminTab::GroupModify => group_form.render(&user.sub, data, MODIFY)?,
         AdminTab::User => r#"<br><p class="lead">User tab</p>"#.to_string(),
     };
 

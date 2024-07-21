@@ -1,6 +1,8 @@
 use std::any::Any;
 
-use actix_web::web::ReqData;
+use actix_web::web::{self, ReqData};
+use futures::StreamExt;
+use serde::de::Deserialize;
 
 use crate::{
     db::models::{Group, GuardianCookie, User, UserType},
@@ -25,12 +27,13 @@ pub(super) fn portal_hygienic_group(gc: &GuardianCookie, doc: &dyn Any) -> Resul
     ))
 }
 
-pub(super) fn check_admin(subject: Option<ReqData<GuardianCookie>>, admin: UserType) -> Result<GuardianCookie> {
+pub(super) fn check_admin(
+    subject: Option<ReqData<GuardianCookie>>,
+    admin: UserType,
+) -> Result<GuardianCookie> {
     Ok(match subject {
         // System admin
-        Some(cookie_subject) if cookie_subject.user_type == admin => {
-            cookie_subject.into_inner()
-        }
+        Some(cookie_subject) if cookie_subject.user_type == admin => cookie_subject.into_inner(),
         // All other users
         Some(g) => {
             return helper::log_errors(Err(GuardianError::UserNotFound(format!(
@@ -44,4 +47,18 @@ pub(super) fn check_admin(subject: Option<ReqData<GuardianCookie>>, admin: UserT
             )))
         }
     })
+}
+
+pub(super) async fn payload_to_struct<T>(mut payload: web::Payload) -> Result<T>
+where
+    T: Deserialize<'static>,
+{
+    let mut body = web::BytesMut::new();
+    while let Some(chunk) = payload.next().await {
+        let chunk = chunk.unwrap();
+        body.extend_from_slice(&chunk);
+    }
+    let body = String::from_utf8_lossy(&body);
+    let deserializer = serde::de::value::StrDeserializer::<serde::de::value::Error>::new(&body);
+    Ok(helper::log_errors(T::deserialize(deserializer))?)
 }

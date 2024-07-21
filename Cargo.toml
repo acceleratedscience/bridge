@@ -46,7 +46,7 @@ thiserror = "1.0.61"
 # Async
 futures-util = "0.3.30"
 tokio-stream = { version = "0.1.15", features = ["sync"] }
-mongodb = "3.0.0"
+mongodb = "3.0.1"
 urlencoding = "2.1.3"
 
 [profile.dev]

@@ -52,7 +52,8 @@ pub struct GuardianCookie {
 #[derive(Debug, Deserialize, Clone)]
 pub enum AdminTab {
     Profile,
-    Group,
+    GroupCreate,
+    GroupModify,
     User,
 }
 

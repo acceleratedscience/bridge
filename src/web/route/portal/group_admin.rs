@@ -113,8 +113,8 @@ async fn group_tab_htmx(
 
     let content = match tab.tab {
         AdminTab::Profile => r#"<br><p class="lead">Profile tab</p>"#,
-        AdminTab::Group => r#"<br><p class="lead">Group tab</p>"#,
         AdminTab::User => r#"<br><p class="lead">User tab</p>"#,
+        _ => r#"<br><p class="lead">Group tab</p>"#,
     };
 
     Ok(HttpResponse::Ok()
