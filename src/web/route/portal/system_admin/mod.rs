@@ -138,7 +138,7 @@ async fn system_update_group(
     subject: Option<ReqData<GuardianCookie>>,
 ) -> Result<HttpResponse> {
     // TODO: do this at the middleware level
-    let gc = check_admin(subject, UserType::SystemAdmin)?;
+    let _ = check_admin(subject, UserType::SystemAdmin)?;
     let gf = payload_to_struct::<GroupForm>(pl).await?;
 
     let _ = db
