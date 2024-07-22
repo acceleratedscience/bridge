@@ -49,7 +49,7 @@ where
             let mut res = response.await?;
             res.headers_mut().insert(
                 header::CONTENT_SECURITY_POLICY,
-                HeaderValue::from_str("default-src 'self'; img-src *; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css; script-src 'self' 'unsafe-eval' 'nonce-guardian-group-form-val' 'nonce-guardian-theme-selector' https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js https://unpkg.com/htmx.org@2.0.1;")?,
+                HeaderValue::from_str("default-src 'self'; media-src *; img-src *; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css; script-src 'self' 'unsafe-eval' 'nonce-guardian-group-form-val' 'nonce-guardian-theme-selector' https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js https://unpkg.com/htmx.org@2.0.1 https://unpkg.com/htmx-ext-response-targets@2.0.0/response-targets.js;")?,
             );
             Ok(res)
         })

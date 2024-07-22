@@ -5,7 +5,7 @@ use futures::StreamExt;
 use serde::de::Deserialize;
 
 use crate::{
-    db::models::{Group, GuardianCookie, User, UserType},
+    db::{models::{Group, GuardianCookie, User, UserType}, mongo::DB},
     errors::{GuardianError, Result},
     web::helper,
 };
@@ -62,3 +62,11 @@ where
     let deserializer = serde::de::value::StrDeserializer::<serde::de::value::Error>::new(&body);
     Ok(helper::log_errors(T::deserialize(deserializer))?)
 }
+
+// pub (super) async fn get_all_groups(db: &DB) -> Result<Vec<Group>> {
+//     let result: Result<Vec<Group>> = db.find_all(GROUP).await;
+//     Ok(match result {
+//         Ok(groups) => groups,
+//         Err(e) => return helper::log_errors(Err(e)),
+//     })
+// }

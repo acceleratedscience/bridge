@@ -1,5 +1,9 @@
 {% extends "admin.html" %}
 {% block title %}Welcome Admin!{% endblock title %}
+{% block htmx %}
+{{ super() }}
+<script src="https://unpkg.com/htmx-ext-response-targets@2.0.0/response-targets.js"></script>
+{% endblock htmx %}
 {% block usertype %}System Administrator{% endblock usertype %}
 {% block admin_message %}
 <figure>

@@ -1,5 +1,31 @@
 {% extends "base.html" %}
 {% block title %}Welcome{% endblock title %}
+{% block head %}
+<style>
+.jumbo {
+	position: relative;
+	overflow: hidden;
+}
+.overlay {
+	position: relative;
+	color: #ffffff;
+	z-index: 2;
+}
+
+#video-background{ 
+	position: absolute;
+	height: auto;
+	width: auto;
+	min-height: 100%;
+	min-width: 100%;
+	left: 50%;
+	top: 50%;
+	-webkit-transform: translate3d(-50%, -50%, 0);
+	transform: translate3d(-50%, -50%, 0);
+	z-index: 1;
+}
+</style>
+{% endblock head %}
 {% block htmx %}
 {% endblock htmx %}
 {% block body %}
@@ -9,9 +35,14 @@
 	</header>
 	<div class="row align-items-md-stretch">
 		<div class="col-md-8 d-flex">
-			<div class="container-fluid py-5 align-self-start">
-				<p class="col-md-10 fs-5 lead">Welcome to the Accelerated Discovery Platform. 
-				This is Guardian: your gateway to the future of scientific discovery.</p>
+			<div class="h-100 rounded-2 jumbo">
+				<video id="video-background" class="d-none d-md-block" preload muted autoplay loop>
+					<source src="https://videos.pexels.com/video-files/854269/854269-hd_1920_1080_24fps.mp4" type="video/mp4">
+				</video>
+				<div class="row h-100 p-2">
+					<p class="col-md-10 fs-5 lead overlay align-self-center text-black">Welcome to the Accelerated Discovery Platform. 
+					This is Guardian: your gateway to the future of scientific discovery.</p>
+				</div>
 			</div>
 		</div>
 		<div class="col-md-4">

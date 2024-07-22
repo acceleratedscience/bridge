@@ -10,6 +10,8 @@ use tracing::error;
 
 pub struct Htmx;
 
+pub static HTMX_ERROR_RES: &str = "HTMX-Error-Response";
+
 impl<S, B> Transform<S, ServiceRequest> for Htmx
 where
     S: Service<ServiceRequest, Response = ServiceResponse<B>, Error = Error>,

@@ -8,7 +8,7 @@ mod security_header;
 pub use authenicate::validator;
 pub use cookie_check::CookieCheck;
 pub use errors::custom_code_handle;
-pub use htmx::Htmx;
+pub use htmx::{Htmx, HTMX_ERROR_RES};
 #[allow(unused_imports)]
 pub use https::HttpRedirect;
 pub use security_header::SecurityHeader;

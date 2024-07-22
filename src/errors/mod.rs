@@ -57,6 +57,8 @@ pub enum GuardianError {
     SerdeJsonError(#[from] serde_json::Error),
     #[error("{0}")]
     FormDeserializeError(String),
+    #[error("{0}")]
+    RecordSearchError(String),
 }
 
 // Workaround for Infallible, which may get solved by rust-lang: https://github.com/rust-lang/rust/issues/64715
@@ -78,6 +80,7 @@ impl ResponseError for GuardianError {
             GuardianError::HtmxTagNotFound => StatusCode::BAD_REQUEST,
             GuardianError::AuthorizationServerNotSupported => StatusCode::BAD_REQUEST,
             GuardianError::FormDeserializeError(_) => StatusCode::BAD_REQUEST,
+            GuardianError::RecordSearchError(_) => StatusCode::BAD_REQUEST,
             GuardianError::JsonWebTokenError(e) => {
                 match e.kind() {
                     // Unauthorized errors

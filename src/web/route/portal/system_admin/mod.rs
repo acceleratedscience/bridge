@@ -16,7 +16,7 @@ use tracing::instrument;
 use crate::{
     db::models::{AdminTab, AdminTabs, GroupForm},
     web::{
-        guardian_middleware::Htmx,
+        guardian_middleware::{Htmx, HTMX_ERROR_RES},
         helper::bson,
         route::portal::helper::{check_admin, payload_to_struct},
         services::CATALOG_URLS,
@@ -106,7 +106,12 @@ async fn system_create_group(
     let content = match result {
         Ok(r) => format!("<p>Group created with id: {}</p>", r),
         Err(e) if e.to_string().contains("dup key") => {
-            format!("<p>Group named {} already exists</p>", gf.name)
+            return Ok(HttpResponse::BadRequest()
+                .append_header((
+                    HTMX_ERROR_RES,
+                    format!("<p>Group named {} already exists</p>", gf.name),
+                ))
+                .finish());
         }
         Err(e) => return Err(e),
     };
@@ -141,7 +146,7 @@ async fn system_update_group(
     let _ = check_admin(subject, UserType::SystemAdmin)?;
     let gf = payload_to_struct::<GroupForm>(pl).await?;
 
-    let _ = db
+    let r = db
         .update(
             doc! {"name": &gf.name},
             doc! {"$set": doc! {
@@ -155,10 +160,18 @@ async fn system_update_group(
         )
         .await?;
 
-    let content = format!("<p>Group named {} has been updated</p>", gf.name);
+    if r.eq(&0) {
+        return Ok(HttpResponse::BadRequest()
+            .append_header((
+                HTMX_ERROR_RES,
+                format!("<p>Group named {} does not exist</p>", gf.name),
+            ))
+            .finish());
+    }
+
     Ok(HttpResponse::Ok()
         .content_type(ContentType::form_url_encoded())
-        .body(content))
+        .body(format!("<p>Group named {} has been updated</p>", gf.name)))
 }
 
 #[patch("user")]
@@ -171,7 +184,7 @@ async fn system_update_user(
     let gc = check_admin(subject, UserType::SystemAdmin)?;
 
     let user = form.into_inner();
-    let _ = db
+    let r = db
         .update(
             doc! {"user_name": &user.user_name},
             doc! {"$set": doc! {
@@ -185,7 +198,12 @@ async fn system_update_user(
         )
         .await?;
 
-    let content = format!("<p>User named {} has been updated</p>", user.user_name);
+    let content = if r.eq(&0) {
+        format!("User named {} does not exist", user.user_name)
+    } else {
+        format!("<p>User named {} has been updated</p>", user.user_name)
+    };
+
     Ok(HttpResponse::Ok()
         .content_type(ContentType::form_url_encoded())
         .body(content))
