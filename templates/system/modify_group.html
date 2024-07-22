@@ -1,7 +1,7 @@
 <div class="container mt-3">
 	<h1 class="lead">Modify a group</h1>
 	<div hx-ext="response-targets">
-		<form id="form-group-form" class="text-start" hx-patch="/portal/system_admin/hx/group" hx-target="#response" hx-target-400="#bad-request" hx-swap="innerhtml">
+		<form id="form-group-form" class="text-start" hx-patch="/portal/system_admin/hx/group" hx-target="#response" hx-target-400="#response" hx-swap="innerhtml">
 			<div class="form-group">
 				<label for="name" class="fs-6 mx-2">Subject Name</label>
 				<input type="text" id="name" name="name" class="form-control" required>
@@ -21,6 +21,5 @@
 			<button type="submit" class="btn btn-primary mt-3">submit</button>
 		</form>
 		<div id="response" class="mt-3"></div>
-		<div id="bad-request" class="mt-3"></div>
 	</div>
 </div>
