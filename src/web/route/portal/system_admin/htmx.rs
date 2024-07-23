@@ -7,8 +7,8 @@ pub struct GroupContent {
     items: Vec<String>,
 }
 
-pub(super) static CREATE: &str = "system/create_group.html";
-pub(super) static MODIFY: &str = "system/modify_group.html";
+pub(super) static CREATE_GROUP: &str = "system/create_group.html";
+pub(super) static MODIFY_GROUP: &str = "system/modify_group.html";
 
 impl GroupContent {
     pub fn new() -> Self {
@@ -23,6 +23,41 @@ impl GroupContent {
         let mut context = tera::Context::new();
         context.insert("subject", &subject);
         context.insert("items", &self.items);
+
+        Ok(tera.render(template_name, &context)?)
+    }
+}
+
+pub struct UserContent {
+    group_items: Vec<String>,
+    user_items: Vec<String>,
+}
+
+pub(super) static DELETE_USER: &str = "system/delete_user.html";
+pub(super) static MODIFY_USER: &str = "system/modify_user.html";
+
+impl UserContent {
+    pub fn new() -> Self {
+        Self {
+            group_items: Vec::new(),
+            user_items: Vec::new(),
+        }
+    }
+
+    pub fn add_group(&mut self, item: String) {
+        self.group_items.push(item);
+    }
+
+    pub fn add_user(&mut self, item: String) {
+        self.user_items.push(item);
+    }
+
+    pub fn render(&self, subject: &str, tera: Data<Tera>, template_name: &str) -> Result<String> {
+
+        let mut context = tera::Context::new();
+        context.insert("subject", &subject);
+        context.insert("group_items", &self.group_items);
+        context.insert("user_items", &self.user_items);
 
         Ok(tera.render(template_name, &context)?)
     }

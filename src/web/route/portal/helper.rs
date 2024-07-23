@@ -2,14 +2,17 @@ use std::any::Any;
 
 use actix_web::web::{self, ReqData};
 use futures::StreamExt;
+use mongodb::bson::doc;
 use serde::de::Deserialize;
 
 use crate::{
-    db::{models::{Group, GuardianCookie, User, UserType}, mongo::DB},
+    db::{models::{Group, GuardianCookie, User, UserType, GROUP}, mongo::DB, Database},
     errors::{GuardianError, Result},
     web::helper,
 };
 
+#[allow(dead_code)]
+#[allow(unused_variables)]
 pub(super) fn portal_hygienic_group(gc: &GuardianCookie, doc: &dyn Any) -> Result<bool> {
     // Downcast to Group
     if let Some(group) = doc.downcast_ref::<Group>() {
@@ -63,10 +66,10 @@ where
     Ok(helper::log_errors(T::deserialize(deserializer))?)
 }
 
-// pub (super) async fn get_all_groups(db: &DB) -> Result<Vec<Group>> {
-//     let result: Result<Vec<Group>> = db.find_all(GROUP).await;
-//     Ok(match result {
-//         Ok(groups) => groups,
-//         Err(e) => return helper::log_errors(Err(e)),
-//     })
-// }
+pub (super) async fn get_all_groups(db: &DB) -> Result<Vec<Group>> {
+    let result: Result<Vec<Group>> = db.find_many(doc! {}, GROUP).await;
+    Ok(match result {
+        Ok(groups) => groups,
+        Err(e) => return helper::log_errors(Err(e)),
+    })
+}

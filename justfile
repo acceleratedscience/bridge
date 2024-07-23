@@ -1,5 +1,5 @@
-down:
-	docker compose down
+down-local-mongo:
+	docker stop mongodb
 
 build:
 	docker build -t guardian .

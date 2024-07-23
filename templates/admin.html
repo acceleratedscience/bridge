@@ -13,6 +13,7 @@
 			{% endblock admin_message %}
 			{% block tabbed %}
 			<div id="tabs" hx-target="#tab-contents" role="tablist"
+				{# Careful here... not the most robust JS #}
 				hx-on-htmx-after-on-load="
 					let currentTab = document.querySelector('[aria-selected=true]');
 					currentTab.setAttribute('aria-selected', 'false');

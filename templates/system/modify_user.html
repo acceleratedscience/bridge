@@ -1,23 +1,33 @@
 <div class="container mt-3">
-	<h1 class="lead">Modify a group</h1>
-	<form id="form-group-form" class="text-start" hx-patch="/portal/system_admin/hx/group" hx-target="#response" hx-swap="innerhtml">
-		<div class="form-group">
-			<label for="name" class="fs-6 mx-2">Subject Name</label>
-			<input type="text" id="name" name="name" class="form-control" required>
-		</div>
-		<div class="form-group mt-3">
-			<label for="subscriptions" class="fs-6 mx-2">Subscriptions</label>
-			<select id="subscriptions" size="5" name="subscriptions" class="form-control" multiple required>
-				{% for item in items %}
-				<option value="{{ item }}">{{ item }}</option>
-				{% endfor %}
-			</select>
-		</div>
-		<div class="form-group mt-3">
-			<label for="last_updated_by" class="fs-6 mx-2">Last Updated By</label>
-			<input type="text" id="last_updated_by" name="last_updated_by" class="form-control" value="{{ subject }}" readonly>
-		</div>
-		<button type="submit" class="btn btn-primary mt-3">submit</button>
-	</form>
-	<div id="response" class="mt-3"></div>
+	<h1 class="lead">Modify a user</h1>
+	<div hx-ext="response-targets">
+		<form id="form-group-form" class="text-start" hx-patch="/portal/system_admin/hx/user" hx-target="#response" hx-target-400="#response" hx-swap="innerhtml">
+			<div class="form-group">
+				<label for="email" class="fs-6 mx-2">User's email</label>
+				<input type="text" id="email" name="email" class="form-control" required>
+			</div>
+			<div class="form-group mt-3">
+				<label for="groups" class="fs-6 mx-2">Groups</label>
+				<select id="groups" size="5" name="groups" class="form-control" multiple required>
+					{% for item in group_items %}
+					<option value="{{ item }}">{{ item }}</option>
+					{% endfor %}
+				</select>
+			</div>
+			<div class="form-group mt-3">
+				<label for="user_type" class="fs-6 mx-2">User Type</label>
+				<select id="user_type" size="5" name="user_type" class="form-control" required>
+					{% for item in user_items %}
+					<option value="{{ item }}">{{ item }}</option>
+					{% endfor %}
+				</select>
+			</div>
+			<div class="form-group mt-3">
+				<label for="last_updated_by" class="fs-6 mx-2">Last Updated By</label>
+				<input type="text" id="last_updated_by" name="last_updated_by" class="form-control" value="{{ subject }}" readonly>
+			</div>
+			<button type="submit" class="btn btn-primary mt-3">submit</button>
+		</form>
+		<div id="response" class="mt-3"></div>
+	</div>
 </div>

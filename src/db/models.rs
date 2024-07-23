@@ -1,14 +1,40 @@
 use mongodb::bson::oid::ObjectId;
 use serde::{Deserialize, Serialize};
+use utils::EnumToArrayStr;
 
-#[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, EnumToArrayStr)]
 pub enum UserType {
     #[serde(rename = "user")]
+    #[rename_variant = "user"]
     User,
     #[serde(rename = "group")]
+    #[rename_variant = "group"]
     GroupAdmin,
     #[serde(rename = "system")]
+    #[rename_variant = "system"]
     SystemAdmin,
+}
+
+// This is used in one of the deserialize.rs
+impl From<&str> for UserType {
+    fn from(s: &str) -> Self {
+        match s {
+            "user" => UserType::User,
+            "group" => UserType::GroupAdmin,
+            "system" => UserType::SystemAdmin,
+            _ => UserType::User,
+        }
+    }
+}
+
+impl From<UserType> for &str {
+    fn from(user_type: UserType) -> Self {
+        match user_type {
+            UserType::User => "user",
+            UserType::GroupAdmin => "group",
+            UserType::SystemAdmin => "system",
+        }
+    }
 }
 
 pub static USER: &str = "users";
@@ -25,6 +51,24 @@ pub struct User {
     pub last_updated_by: String,
 }
 
+/// This is the form verison of the User struct
+#[derive(Debug)]
+pub struct UserForm {
+    // sub is the safer way to identify a user, but sub is an arbitrary string if the user
+    // registered through IBM ID. This would be not great on the admin portal. If we ensure the
+    // email address has been verified, we can use that as the unique identifier.
+    pub email: String,
+    pub groups: Vec<String>,
+    pub user_type: Option<UserType>,
+    pub last_updated_by: String,
+}
+
+#[derive(Debug)]
+pub struct UserDeleteForm {
+    pub email: String,
+    pub last_updated_by: String,
+}
+
 pub static GROUP: &str = "groups";
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Group {
@@ -36,6 +80,7 @@ pub struct Group {
     pub last_updated_by: String,
 }
 
+/// This is the form verison of the Group struct
 #[derive(Debug)]
 pub struct GroupForm {
     pub name: String,
@@ -54,7 +99,8 @@ pub enum AdminTab {
     Profile,
     GroupCreate,
     GroupModify,
-    User,
+    UserModify,
+    UserDelete,
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -75,5 +121,12 @@ mod tests {
         assert_eq!(user, UserType::User);
         assert_eq!(group, UserType::GroupAdmin);
         assert_eq!(system, UserType::SystemAdmin);
+    }
+
+    #[test]
+    fn test_enum_to_array() {
+        let col = UserType::to_array_str();
+        dbg!(&col);
+        assert_eq!(col, ["user", "group", "system"])
     }
 }

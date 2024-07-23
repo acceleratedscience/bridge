@@ -10,15 +10,16 @@ use actix_web::{
     HttpRequest, HttpResponse,
 };
 use mongodb::bson::{doc, oid::ObjectId};
+use serde::Deserialize;
 use tera::Tera;
 use tracing::instrument;
 
 use crate::{
-    db::models::{AdminTab, AdminTabs, GroupForm},
+    db::models::{AdminTab, AdminTabs, GroupForm, UserDeleteForm, UserForm},
     web::{
         guardian_middleware::{Htmx, HTMX_ERROR_RES},
         helper::bson,
-        route::portal::helper::{check_admin, payload_to_struct},
+        route::portal::helper::{check_admin, get_all_groups, payload_to_struct},
         services::CATALOG_URLS,
     },
 };
@@ -32,7 +33,7 @@ use crate::{
     web::helper::{self},
 };
 
-use self::htmx::{GroupContent, CREATE, MODIFY};
+use self::htmx::{GroupContent, UserContent, CREATE_GROUP, DELETE_USER, MODIFY_GROUP, MODIFY_USER};
 
 const USER_PAGE: &str = "system/admin.html";
 
@@ -177,57 +178,75 @@ async fn system_update_group(
 #[patch("user")]
 async fn system_update_user(
     db: Data<&DB>,
-    form: web::Form<User>,
+    pl: web::Payload,
     subject: Option<ReqData<GuardianCookie>>,
 ) -> Result<HttpResponse> {
     // TODO: do this at the middleware level
-    let gc = check_admin(subject, UserType::SystemAdmin)?;
+    let _ = check_admin(subject, UserType::SystemAdmin)?;
+    let uf = payload_to_struct::<UserForm>(pl).await?;
 
-    let user = form.into_inner();
+    // stop self update
+    if uf.email.eq(&uf.last_updated_by) {
+        return Ok(HttpResponse::BadRequest()
+            .append_header((HTMX_ERROR_RES, "<p>Cannot update self</p>".to_string()))
+            .finish());
+    }
+
     let r = db
         .update(
-            doc! {"user_name": &user.user_name},
+            doc! {"email": &uf.email},
             doc! {"$set": doc! {
-            "user_name": &user.user_name,
-            "groups": &user.groups,
-            "user_type": bson(user.user_type)?,
+            "groups": uf.groups,
+            "user_type": bson(uf.user_type)?,
             "updated_at": bson(time::OffsetDateTime::now_utc())?,
-            "last_updated_by": gc.subject,            }},
+            "last_updated_by": uf.last_updated_by }},
             USER,
             PhantomData::<User>,
         )
         .await?;
 
-    let content = if r.eq(&0) {
-        format!("User named {} does not exist", user.user_name)
-    } else {
-        format!("<p>User named {} has been updated</p>", user.user_name)
-    };
+    if r.eq(&0) {
+        return Ok(HttpResponse::BadRequest()
+            .append_header((
+                HTMX_ERROR_RES,
+                format!("<p>User with sub {} does not exist</p>", uf.email),
+            ))
+            .finish());
+    }
 
     Ok(HttpResponse::Ok()
         .content_type(ContentType::form_url_encoded())
-        .body(content))
+        .body(format!(
+            "<p>User with sub field {} has been updated</p>",
+            uf.email
+        )))
 }
 
 #[delete("user")]
 async fn system_delete_user(
     db: Data<&DB>,
-    form: web::Form<User>,
+    req: HttpRequest,
     subject: Option<ReqData<GuardianCookie>>,
 ) -> Result<HttpResponse> {
     // TODO: do this at the middleware level
     let _ = check_admin(subject, UserType::SystemAdmin)?;
+    let query = req.query_string();
+    let de = serde::de::value::StrDeserializer::<serde::de::value::Error>::new(query);
+    let uf = UserDeleteForm::deserialize(de)?;
+    dbg!(&uf);
 
-    let user = form.into_inner();
+    // stop self delete
+    if uf.email.eq(&uf.last_updated_by) {
+        return Ok(HttpResponse::BadRequest()
+            .append_header((HTMX_ERROR_RES, "<p>Cannot delete self</p>".to_string()))
+            .finish());
+    }
+
     let _ = db
-        .delete(
-            doc! {"user_name": &user.user_name},
-            USER,
-            PhantomData::<User>,
-        )
+        .delete(doc! {"sub": &uf.email}, USER, PhantomData::<User>)
         .await?;
 
-    let content = format!("<p>User named {} has been deleted</p>", user.user_name);
+    let content = format!("<p>User with sub {} has been deleted</p>", uf.email);
     Ok(HttpResponse::Ok()
         .content_type(ContentType::form_url_encoded())
         .body(content))
@@ -256,22 +275,33 @@ async fn system_tab_htmx(
         .await?;
 
     let query = req.query_string();
-    // deserialize into SystemAdminTab
+    // deserialize into AdminTab
     let tab = helper::log_errors(serde_urlencoded::from_str::<AdminTabs>(query))?;
 
+    // TODO: move group_form and user_form to OnceLock
     let mut group_form = GroupContent::new();
-
     CATALOG_URLS
         .get()
         .ok_or_else(|| GuardianError::GeneralError("Catalog urls not found".to_string()))?
         .iter()
         .for_each(|(_, service_name)| group_form.add(service_name.to_owned()));
 
+    let mut user_form = UserContent::new();
+    get_all_groups(&db)
+        .await
+        .unwrap_or(vec![])
+        .iter()
+        .for_each(|g| user_form.add_group(g.name.to_owned()));
+    UserType::to_array_str()
+        .iter()
+        .for_each(|t| user_form.add_user(t.to_string()));
+
     let content = match tab.tab {
         AdminTab::Profile => r#"<br><p class="lead">Profile tab</p>"#.to_string(),
-        AdminTab::GroupCreate => group_form.render(&user.sub, data, CREATE)?,
-        AdminTab::GroupModify => group_form.render(&user.sub, data, MODIFY)?,
-        AdminTab::User => r#"<br><p class="lead">User tab</p>"#.to_string(),
+        AdminTab::GroupCreate => group_form.render(&user.sub, data, CREATE_GROUP)?,
+        AdminTab::GroupModify => group_form.render(&user.sub, data, MODIFY_GROUP)?,
+        AdminTab::UserModify => user_form.render(&user.sub, data, MODIFY_USER)?,
+        AdminTab::UserDelete => user_form.render(&user.sub, data, DELETE_USER)?,
     };
 
     Ok(HttpResponse::Ok()
@@ -287,7 +317,8 @@ pub fn config_system(cfg: &mut web::ServiceConfig) {
                 .service(system_tab_htmx)
                 .service(system_create_group)
                 .service(system_update_group)
-                .service(system_update_user),
+                .service(system_update_user)
+                .service(system_delete_user),
         ),
         // .service(system_delete_group)
     );
