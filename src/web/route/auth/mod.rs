@@ -189,19 +189,18 @@ async fn code_to_response(
         .finish();
 
     // Generate guardian token
-    const TOKEN_LIFETIME: usize = const { 60 * 60 * 24 * 30 };
-    let token = jwt::get_token(
-        &CONFIG.get().unwrap().encoder,
-        TOKEN_LIFETIME,
-        &subject,
-        AUD[0],
-        vec!["all"],
-    )?;
-
+    // const TOKEN_LIFETIME: usize = const { 60 * 60 * 24 * 30 };
+    // let token = jwt::get_token(
+    //     &CONFIG.get().unwrap().encoder,
+    //     TOKEN_LIFETIME,
+    //     &subject,
+    //     AUD[0],
+    //     vec!["all"],
+    // )?;
+    //
     let mut ctx = Context::new();
-    ctx.insert("token", &token);
     ctx.insert("name", &name);
-    let rendered = helper::log_errors(data.render("token.html", &ctx))?;
+    let rendered = helper::log_errors(data.render("login_success.html", &ctx))?;
 
     let mut cookie_remove = Cookie::build("nonce", "")
         .same_site(SameSite::Lax)

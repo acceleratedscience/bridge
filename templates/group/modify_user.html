@@ -1,10 +1,10 @@
 {# STUFF #}
-<div hx-ext="response-targets">
-	<div class="container mt-3" id="response-div">
+<div hx-ext="response-targets" id="response-div">
+	<div class="container mt-3">
 		<h1 class="lead">Modify user group {{ group_name }}</h1>
-		<form id="form-group-form" class="text-start" hx-patch="/portal/group_admin/hx/user" hx-target="#response-div" hx-target-400="#response" hx-swap="outerHTML">
+		<form id="form-group-form" class="text-start" hx-patch="/portal/group_admin/hx/user" hx-target="#response-div" hx-target-400="#response" hx-swap="innerHTML">
 			<div class="form-group">
-				<label for="email" class="fs-6 mx-2">User's email</label>outerHTML
+				<label for="email" class="fs-6 mx-2">User's email</label>
 				<input type="text" id="email" name="email" class="form-control" required>
 			</div>
 			<div class="form-group my-3">
