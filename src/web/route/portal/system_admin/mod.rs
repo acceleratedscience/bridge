@@ -298,10 +298,10 @@ async fn system_tab_htmx(
 
     let content = match tab.tab {
         AdminTab::Profile => r#"<br><p class="lead">Profile tab</p>"#.to_string(),
-        AdminTab::GroupCreate => group_form.render(&user.sub, data, CREATE_GROUP)?,
-        AdminTab::GroupModify => group_form.render(&user.sub, data, MODIFY_GROUP)?,
-        AdminTab::UserModify => user_form.render(&user.sub, data, MODIFY_USER)?,
-        AdminTab::UserDelete => user_form.render(&user.sub, data, DELETE_USER)?,
+        AdminTab::GroupCreate => group_form.render(&user.email, data, CREATE_GROUP)?,
+        AdminTab::GroupModify => group_form.render(&user.email, data, MODIFY_GROUP)?,
+        AdminTab::UserModify => user_form.render(&user.email, data, MODIFY_USER)?,
+        AdminTab::UserDelete => user_form.render(&user.email, data, DELETE_USER)?,
     };
 
     Ok(HttpResponse::Ok()

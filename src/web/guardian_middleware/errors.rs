@@ -87,15 +87,15 @@ pub fn custom_code_handle(data: Data<Tera>) -> ErrorHandlers<BoxBody> {
             Ok(ErrorHandlerResponse::Response(ServiceResponse::new(
                 request,
                 {
-                    let content = if let Some(hh) = htmx_header {
-                        hh
+                    let contents = if let Some(hh) = htmx_header {
+                        (hh, ContentType::form_url_encoded())
                     } else {
-                        template.get("400").unwrap().to_string()
+                        (template.get("400").unwrap().to_string(), ContentType::html())
                     };
 
                     HttpResponse::build(StatusCode::BAD_REQUEST)
-                        .content_type(ContentType::html())
-                        .body(content)
+                        .content_type(contents.1)
+                        .body(contents.0)
                         .map_into_left_body()
                 },
             )))

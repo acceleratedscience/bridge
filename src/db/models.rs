@@ -88,6 +88,21 @@ pub struct GroupForm {
     pub last_updated_by: String,
 }
 
+#[derive(Debug, Deserialize)]
+pub struct UserGroupMod {
+    pub email: String,
+    pub modify_user: ModifyUser,
+    pub group_name: String,
+    pub last_updated_by: String,
+}
+#[derive(Debug, Deserialize)]
+pub enum ModifyUser {
+    #[serde(rename = "add")]
+    Add,
+    #[serde(rename = "remove")]
+    Remove,
+}
+
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct GuardianCookie {
     pub subject: String,
