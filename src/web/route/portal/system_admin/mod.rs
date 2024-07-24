@@ -243,8 +243,9 @@ async fn system_delete_user(
     }
 
     let _ = db
-        .delete(doc! {"sub": &uf.email}, USER, PhantomData::<User>)
+        .delete(doc! {"email": &uf.email}, USER, PhantomData::<User>)
         .await?;
+
 
     let content = format!("<p>User with sub {} has been deleted</p>", uf.email);
     Ok(HttpResponse::Ok()
