@@ -59,19 +59,30 @@ pub(super) async fn user(
         }
 
         // look up the subscriptions the group user belongs to
-        let group: Group = db
-            .find(doc! {"name": user.groups.first().unwrap_or(&"".into())}, GROUP)
-            .await?;
+        let group: Result<Group> = db
+            .find(
+                doc! {"name": user.groups.first().unwrap_or(&"".into())},
+                GROUP,
+            )
+            .await;
 
         let mut profile = Profile::new(user.user_name);
-        user.groups.iter().for_each(|group| {
-            profile.add_group(group.to_string());
-        });
-        group.subscriptions.iter().for_each(|subscription| {
-            profile.add_subscription(subscription.to_string());
-        });
 
-        let content = helper::log_errors(profile.render(data))?;
+        let content = match group {
+            Ok(group) => {
+                user.groups.iter().for_each(|group| {
+                    profile.add_group(group.to_string());
+                });
+                group.subscriptions.iter().for_each(|subscription| {
+                    profile.add_subscription(subscription.to_string());
+                });
+
+                helper::log_errors(profile.render(data))?
+            }
+            Err(_) => {
+                profile.render(data)?
+            },
+        };
 
         return Ok(HttpResponse::Ok().body(content));
     }
