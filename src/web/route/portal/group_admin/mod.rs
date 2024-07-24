@@ -15,7 +15,8 @@ use tracing::instrument;
 use crate::{
     db::{
         models::{
-            AdminTab, AdminTabs, GuardianCookie, ModifyUser, User, UserGroupMod, UserType, USER,
+            AdminTab, AdminTabs, Group, GuardianCookie, ModifyUser, User, UserGroupMod, UserType,
+            GROUP, USER,
         },
         mongo::DB,
         Database,
@@ -28,7 +29,7 @@ use crate::{
     },
 };
 
-use self::htmx::ModifyUserGroup;
+use self::htmx::{ModifyUserGroup, Profile};
 
 mod htmx;
 
@@ -70,9 +71,17 @@ pub(super) async fn group(
         }
     }
 
+    // get all subscriptions
+    let subscriptions: Result<Group> = db.find(doc! {"name": user.groups[0].clone()}, GROUP).await;
+    let subs = match subscriptions {
+        Ok(g) => g.subscriptions,
+        Err(_) => vec![],
+    };
+
     let mut ctx = tera::Context::new();
     ctx.insert("name", &user.user_name);
     ctx.insert("group", &user.groups.join(", "));
+    ctx.insert("subscriptions", &subs);
     let content = helper::log_errors(data.render(USER_PAGE, &ctx))?;
 
     return Ok(HttpResponse::Ok().body(content));
@@ -214,7 +223,23 @@ async fn group_tab_htmx(
         .await?;
 
     let content = match tab.tab {
-        AdminTab::Profile => r#"<br><p class="lead">Profile tab</p>"#.to_string(),
+        AdminTab::Profile => {
+            dbg!(&user.groups[0]);
+            let mut profile = Profile::new();
+            let subscriptions: Result<Group> =
+                db.find(doc! {"name": user.groups[0].clone()}, GROUP).await;
+            let subs = match subscriptions {
+                Ok(g) => g.subscriptions,
+                Err(_) => vec![],
+            };
+            user.groups.iter().for_each(|g| {
+                profile.add_group(g.clone());
+            });
+            subs.iter().for_each(|s| {
+                profile.add_subscription(s.clone());
+            });
+            helper::log_errors(profile.render(data))?
+        }
         AdminTab::UserModify => {
             let group_name = user.groups.first().ok_or_else(|| {
                 GuardianError::GeneralError(

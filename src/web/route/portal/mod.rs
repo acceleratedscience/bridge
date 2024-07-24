@@ -21,6 +21,8 @@ mod user;
 mod user_htmx;
 mod token;
 
+pub static PROFILE_MAIN: &str = "profile.html";
+
 #[get("")]
 async fn index(data: Option<ReqData<GuardianCookie>>) -> Result<HttpResponse> {
     // get cookie if it exists
