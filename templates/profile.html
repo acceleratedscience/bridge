@@ -1,0 +1,20 @@
+{# Profile for every user #}
+<div class="text-center text-breaki mt-2">
+	{% if group == "" %}
+	<p class="lead">You are currently not part of any group. Contact your Group Admin to have you added.</p>
+	{% else %}
+	<p class="lead">You are part of group: {{group}}.</p>
+	<p class="lead">You have access to the following models:</p>
+	<ul class="list-group">
+		{% for model in subscriptions %}
+		<li class="list-group-item">{{model}}</li>
+		{% endfor %}
+	</ul>
+	{% endif %}
+	<div class="text-center mt-4">
+		<div id="status" class="lead">
+			<button type="button" class="btn btn-primary" hx-get="/portal/hx/token" hx-target="#response-token" hx-swap="innerhtml">Generate access token</button>
+		</div>
+	</div>
+	<div id="response-token" class="text-center mt-3"></div>
+</div>

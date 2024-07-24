@@ -18,6 +18,8 @@ mod group_admin;
 mod helper;
 mod system_admin;
 mod user;
+mod user_htmx;
+mod token;
 
 #[get("")]
 async fn index(data: Option<ReqData<GuardianCookie>>) -> Result<HttpResponse> {
@@ -67,7 +69,7 @@ pub fn config_portal(cfg: &mut web::ServiceConfig) {
     cfg.service(
         web::scope("/portal")
             .wrap(CookieCheck)
-            .service(web::scope("/hx").wrap(Htmx).service(logout))
+            .service(web::scope("/hx").wrap(Htmx).service(token::get_token_for_user).service(logout))
             .service(index)
             .service(user::user)
             .configure(group_admin::config_group)

@@ -11,6 +11,8 @@
 			<p class="lead">{{name}}, great day we are having!</p>
 			{% block admin_message %}
 			{% endblock admin_message %}
+			{% block user_message %}
+			{% endblock user_message %}
 			{% block tabbed %}
 			<div id="tabs" hx-target="#tab-contents" role="tablist"
 				{# Careful here... not the most robust JS #}
@@ -38,13 +40,8 @@
 				</ul>
 			</div>
 			<div id="tab-contents" role="tabpanel" class="w-50 mx-auto">
-				<br>
-				{% if group == "" %}
-				<p class="lead">You are currently not part of any group. Contact your Group Admin to have you added.</p>
-				{% else %}
-				<p class="lead">You are part of group(s): {{group}}.</p>
-				<p class="lead">Consult with you group administrator on what inference models you have access to.</p>
-				{% endif %}
+				{% block tabcontents %}
+				{% endblock tabcontents %}
 			</div>
 			{% endblock tabbed %}
 		</div>

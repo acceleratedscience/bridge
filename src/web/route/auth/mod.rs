@@ -13,11 +13,9 @@ use tracing::instrument;
 
 use crate::{
     auth::{
-        jwt,
         openid::{self, get_openid_provider, OpenID},
         COOKIE_NAME,
     },
-    config::{AUD, CONFIG},
     db::{
         models::{GuardianCookie, User, UserType, USER},
         mongo::DB,
@@ -188,16 +186,6 @@ async fn code_to_response(
         .secure(true)
         .finish();
 
-    // Generate guardian token
-    // const TOKEN_LIFETIME: usize = const { 60 * 60 * 24 * 30 };
-    // let token = jwt::get_token(
-    //     &CONFIG.get().unwrap().encoder,
-    //     TOKEN_LIFETIME,
-    //     &subject,
-    //     AUD[0],
-    //     vec!["all"],
-    // )?;
-    //
     let mut ctx = Context::new();
     ctx.insert("name", &name);
     let rendered = helper::log_errors(data.render("login_success.html", &ctx))?;

@@ -11,15 +11,15 @@ use tracing::instrument;
 
 use crate::{
     db::{
-        models::{GuardianCookie, User, UserType, USER},
+        models::{Group, GuardianCookie, User, UserType, GROUP, USER},
         mongo::DB,
         Database,
     },
     errors::{GuardianError, Result},
-    web::helper,
+    web::{helper, route::portal::user_htmx::Profile},
 };
 
-const USER_PAGE: &str = "user.html";
+const USER_PAGE: &str = "user/user.html";
 
 #[get("user")]
 #[instrument(skip(data, db, subject))]
@@ -58,10 +58,20 @@ pub(super) async fn user(
             }
         }
 
-        let mut ctx = tera::Context::new();
-        ctx.insert("name", &user.user_name);
-        ctx.insert("group", &user.groups.join(", "));
-        let content = helper::log_errors(data.render(USER_PAGE, &ctx))?;
+        // look up the subscriptions the group user belongs to
+        let group: Group = db
+            .find(doc! {"name": user.groups.first().unwrap_or(&"".into())}, GROUP)
+            .await?;
+
+        let mut profile = Profile::new(user.user_name);
+        user.groups.iter().for_each(|group| {
+            profile.add_group(group.to_string());
+        });
+        group.subscriptions.iter().for_each(|subscription| {
+            profile.add_subscription(subscription.to_string());
+        });
+
+        let content = helper::log_errors(profile.render(data))?;
 
         return Ok(HttpResponse::Ok().body(content));
     }

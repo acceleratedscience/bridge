@@ -1,4 +1,4 @@
-{% extends "admin.html" %}
+{% extends "portal.html" %}
 {% block title %}Welcome Admin!{% endblock title %}
 {% block htmx %}
 {{ super() }}
@@ -37,3 +37,13 @@
 	<a class="nav-link" href="#" role="tab" aria-controls="tab-contents" hx-post="hx/logout" aria-selected="false">Logout</a>
 </li>
 {% endblock tabselection %}
+{% block tabcontents %}
+<br>
+{% if group == "" %}
+<p class="lead">You are currently not part of any group. Contact your Group Admin to have you added.</p>
+{% else %}
+<p class="lead">You are part of group(s): {{group}}.</p>
+<p class="lead">Consult with you group administrator on what inference models you have access to.</p>
+{% endif %}
+{% endblock tabcontents %}
+
