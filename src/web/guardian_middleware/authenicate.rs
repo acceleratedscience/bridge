@@ -1,10 +1,10 @@
-use actix_web::dev::ServiceRequest;
-use actix_web::{Error, HttpMessage};
-use actix_web_httpauth::extractors::bearer::{self, BearerAuth};
-use actix_web_httpauth::extractors::AuthenticationError;
+use actix_web::{dev::ServiceRequest, Error};
+use actix_web_httpauth::extractors::{
+    bearer::{self, BearerAuth},
+    AuthenticationError,
+};
 
-use crate::web::route::proxy::INFERENCE_HEADER;
-use crate::{auth::jwt::validate_token, config::CONFIG};
+use crate::{auth::jwt::validate_token, config::CONFIG, web::route::proxy::INFERENCE_HEADER};
 
 pub async fn validator(
     req: ServiceRequest,
@@ -32,7 +32,12 @@ pub async fn validator(
                     return Ok(req);
                 }
             }
-            Err((error.with_error_description("Inference-Service Issue").into(), req))
+            Err((
+                error
+                    .with_error_description("Inference-Service Issue")
+                    .into(),
+                req,
+            ))
         }
         Err(_e) => {
             // TODO: handler the error better

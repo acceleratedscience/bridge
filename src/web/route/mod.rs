@@ -14,6 +14,8 @@ pub mod health;
 pub mod portal;
 pub mod proxy;
 
+static APP_VERSSION: &str = env!("CARGO_PKG_VERSION");
+
 #[get("")]
 async fn index(data: Data<Tera>, req: HttpRequest) -> Result<HttpResponse> {
     // if cookie exists, redirect to portal
@@ -23,7 +25,8 @@ async fn index(data: Data<Tera>, req: HttpRequest) -> Result<HttpResponse> {
             .finish());
     }
 
-    let ctx = Context::new();
+    let mut ctx = Context::new();
+    ctx.insert("version", APP_VERSSION);
     let rendered = helper::log_errors(data.render("login.html", &ctx))?;
 
     Ok(HttpResponse::Ok().body(rendered))

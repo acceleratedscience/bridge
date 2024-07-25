@@ -47,7 +47,7 @@ impl DB {
 
         let dbs = Self { mongo_database };
         // create the unique indexes if they do not exist
-        Self::create_index::<User>(&dbs, USER, "sub").await?;
+        Self::create_index::<User>(&dbs, USER, "email").await?;
         Self::create_index::<Group>(&dbs, GROUP, "name").await?;
 
         DBCONN.get_or_init(|| dbs);

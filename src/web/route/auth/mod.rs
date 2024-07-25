@@ -113,7 +113,7 @@ async fn code_to_response(
     let email = claims
         .email()
         .unwrap_or(&EndUserEmail::new("".to_string()))
-        .to_string();
+        .to_string().to_ascii_lowercase();
     let name = helper::log_errors(|| -> Result<String> {
         let name = claims
             .given_name()
@@ -145,14 +145,14 @@ async fn code_to_response(
                 .insert(
                     User {
                         _id: ObjectId::new(),
-                        sub: subject.clone(),
+                        sub: subject,
                         user_name: name.clone(),
-                        email,
+                        email: email.clone(),
                         groups: vec![],
                         user_type: UserType::User,
                         created_at: time,
                         updated_at: time,
-                        last_updated_by: subject.clone(),
+                        last_updated_by: email,
                     },
                     USER,
                 )
