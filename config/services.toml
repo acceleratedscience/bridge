@@ -1,9 +1,9 @@
 [services]
 version = "0.1.0"
 
-	[services.postman]
-	url = "https://postman-echo.com"
-	readiness = "/get"
+	# [services.postman]
+	# url = "https://postman-echo.com"
+	# readiness = "/get"
 
 	[services.properties]
 	url = "http://property-inference-service.openad-models.svc.cluster.local"
@@ -19,4 +19,8 @@ version = "0.1.0"
 
 	[services.moler]
 	url = "http://moler-inference-service.openad-models.svc.cluster.local"
+	readiness = "/health"
+
+	[services.bmfm]
+	url = "http://bmfm-inference-service.openad-models.svc.cluster.local"
 	readiness = "/health"

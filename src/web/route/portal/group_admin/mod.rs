@@ -72,7 +72,11 @@ pub(super) async fn group(
     }
 
     // get all subscriptions
-    let subscriptions: Result<Group> = db.find(doc! {"name": user.groups[0].clone()}, GROUP).await;
+    let group_name = user
+        .groups
+        .first().unwrap_or(&"".to_string()).clone();
+
+    let subscriptions: Result<Group> = db.find(doc! {"name": group_name}, GROUP).await;
     let subs = match subscriptions {
         Ok(g) => g.subscriptions,
         Err(_) => vec![],
@@ -175,7 +179,7 @@ async fn group_update_user(
             doc! {"$set": doc! {
                 "groups": current_group,
                 "updated_at": bson(time::OffsetDateTime::now_utc())?,
-                "last_updated_by": &user.email,
+                "last_updated_by": &form.email,
             }},
             USER,
             PhantomData::<User>,

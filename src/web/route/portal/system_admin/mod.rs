@@ -73,9 +73,20 @@ pub(super) async fn system(
         }
     }
 
+    let group_name = user
+        .groups
+        .first().unwrap_or(&"".to_string()).clone();
+
+    let subscriptions: Result<Group> = db.find(doc! {"name": group_name}, GROUP).await;
+    let subs = match subscriptions {
+        Ok(g) => g.subscriptions,
+        Err(_) => vec![],
+    };
+
     let mut ctx = tera::Context::new();
     ctx.insert("name", &user.user_name);
     ctx.insert("group", &user.groups.join(", "));
+    ctx.insert("subscriptions", &subs);
     let content = helper::log_errors(data.render(USER_PAGE, &ctx))?;
 
     return Ok(HttpResponse::Ok().body(content));
