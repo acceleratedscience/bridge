@@ -24,6 +24,7 @@ use self::services::CATALOG;
 pub mod services;
 
 const GUARDIAN_PREFIX: &str = "/proxy";
+pub static INFERENCE_HEADER: &str = "Inference-Service";
 
 #[instrument(skip(payload))]
 async fn forward(
@@ -42,7 +43,7 @@ async fn forward(
     // get header for which infernce service to forward to
     let service = req
         .headers()
-        .get("Inference-Service")
+        .get(INFERENCE_HEADER)
         .ok_or_else(|| {
             warn!("Inference-Service header not found in request");
             GuardianError::InferenceServiceHeaderNotFound

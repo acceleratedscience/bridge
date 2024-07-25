@@ -47,6 +47,18 @@ pub enum GuardianError {
     URLParseError(#[from] url::ParseError),
     #[error("Authorization server not supported")]
     AuthorizationServerNotSupported,
+    #[error("{0}")]
+    MongoError(#[from] mongodb::error::Error),
+    #[error("{0}")]
+    UserNotFound(String),
+    #[error("User cannot access this page {0}")]
+    UserNotAllowedOnPage(String),
+    #[error("{0}")]
+    SerdeJsonError(#[from] serde_json::Error),
+    #[error("{0}")]
+    FormDeserializeError(String),
+    #[error("{0}")]
+    RecordSearchError(String),
 }
 
 // Workaround for Infallible, which may get solved by rust-lang: https://github.com/rust-lang/rust/issues/64715
@@ -67,6 +79,8 @@ impl ResponseError for GuardianError {
             GuardianError::ServiceDoesNotExist(_) => StatusCode::BAD_REQUEST,
             GuardianError::HtmxTagNotFound => StatusCode::BAD_REQUEST,
             GuardianError::AuthorizationServerNotSupported => StatusCode::BAD_REQUEST,
+            GuardianError::FormDeserializeError(_) => StatusCode::BAD_REQUEST,
+            GuardianError::RecordSearchError(_) => StatusCode::BAD_REQUEST,
             GuardianError::JsonWebTokenError(e) => {
                 match e.kind() {
                     // Unauthorized errors
@@ -108,11 +122,17 @@ impl ResponseError for GuardianError {
             GuardianError::IOError(_) => StatusCode::INTERNAL_SERVER_ERROR,
             GuardianError::TomlError(_) => StatusCode::INTERNAL_SERVER_ERROR,
             GuardianError::URLParseError(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            GuardianError::MongoError(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            GuardianError::SerdeJsonError(_) => StatusCode::INTERNAL_SERVER_ERROR,
+
             GuardianError::NotAdmin => StatusCode::UNAUTHORIZED,
             GuardianError::Unauthorized(_) => StatusCode::UNAUTHORIZED,
             GuardianError::ClaimsVerificationError(_) => StatusCode::UNAUTHORIZED,
             GuardianError::NonceCookieNotFound => StatusCode::UNAUTHORIZED,
             GuardianError::TokenRequestError(_) => StatusCode::UNAUTHORIZED,
+
+            GuardianError::UserNotFound(_) => StatusCode::FORBIDDEN,
+            GuardianError::UserNotAllowedOnPage(_) => StatusCode::FORBIDDEN,
         }
     }
 }

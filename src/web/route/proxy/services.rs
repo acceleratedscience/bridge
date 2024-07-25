@@ -82,8 +82,6 @@ mod test {
         let services: Vec<(Url, String)> = catalog.into();
         assert_eq!(services.len(), 5);
 
-        dbg!(&services);
-
         let postman = services.iter().find(|(_, name)| name == "postman");
         assert!(postman.is_some());
     }

@@ -3,6 +3,8 @@ use openssl::{ec, pkey::PKey};
 pub mod jwt;
 pub mod openid;
 
+pub static COOKIE_NAME: &str = "guardian-user";
+
 /// Convert SEC1 to PKCS8
 pub fn sec1_to_pkcs8(secret_pem: &[u8]) -> Vec<u8> {
     // See note here: https://github.com/Keats/jsonwebtoken#convert-sec1-private-key-to-pkcs8

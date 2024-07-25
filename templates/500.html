@@ -1,17 +1,19 @@
 {% extends "base.html" %}
 {% block title %}Internal Service Error{% endblock title %}
+{% block htmx %}
+{% endblock htmx %}
 {% block body %}
-	<div class="container" style="height:100vh">
-		<div class="row h-100 text-center">
-			<div class="col"></div>
-			<div class="col d-flex justify-content-center flex-column lead">
-				<h1>500 Internal Server Error</h1>
-				<div class="d-flex flex-column justify-content-center">
-          <img src="https://png.pngtree.com/png-vector/20220710/ourmid/pngtree-robot-with-broken-leg-in-plaster-png-image_5693680.png" alt="500" class="img-responsive">
-				</div>
-				<p>Oops. This is embarrassing. Sorry about that!</p>
+<div class="container" style="height:100vh">
+	<div class="row h-100 text-center">
+		<div class="col"></div>
+		<div class="col d-flex justify-content-center flex-column lead">
+			<h1>500 Internal Server Error</h1>
+			<div class="d-flex flex-column justify-content-center">
+				<img src="https://png.pngtree.com/png-vector/20220710/ourmid/pngtree-robot-with-broken-leg-in-plaster-png-image_5693680.png" alt="500" class="img-responsive">
 			</div>
-			<div class="col"></div>
+			<p>Oops. This is embarrassing. Sorry about that!</p>
 		</div>
+		<div class="col"></div>
 	</div>
+</div>
 {% endblock body %}

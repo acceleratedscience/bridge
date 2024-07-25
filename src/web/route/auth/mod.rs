@@ -1,10 +1,11 @@
 use actix_web::{
-    cookie::{time, Cookie},
+    cookie::{time, Cookie, SameSite},
     get,
     http::header::{self, ContentType},
     web::{self, Data},
     HttpRequest, HttpResponse,
 };
+use mongodb::bson::{doc, oid::ObjectId};
 use openidconnect::{EndUserEmail, Nonce};
 use serde::Deserialize;
 use tera::{Context, Tera};
@@ -12,12 +13,16 @@ use tracing::instrument;
 
 use crate::{
     auth::{
-        jwt,
         openid::{self, get_openid_provider, OpenID},
+        COOKIE_NAME,
     },
-    config::CONFIG,
+    db::{
+        models::{GuardianCookie, User, UserType, USER},
+        mongo::DB,
+        Database,
+    },
     errors::{GuardianError, Result},
-    web::helper,
+    web::helper::{self},
 };
 
 use self::deserialize::CallBackResponse;
@@ -39,6 +44,7 @@ async fn login(req: HttpRequest) -> Result<HttpResponse> {
     // authentication process in 5 minutes, they will be required to start over
     let cookie = Cookie::build("nonce", url.2.secret())
         .expires(time::OffsetDateTime::now_utc() + time::Duration::minutes(5))
+        .same_site(SameSite::Lax)
         .http_only(true)
         .secure(true)
         .finish();
@@ -51,8 +57,8 @@ async fn login(req: HttpRequest) -> Result<HttpResponse> {
 }
 
 #[get("/redirect")]
-#[instrument]
-async fn redirect(req: HttpRequest, data: Data<Tera>) -> Result<HttpResponse> {
+#[instrument(skip(data, db))]
+async fn redirect(req: HttpRequest, data: Data<Tera>, db: Data<&DB>) -> Result<HttpResponse> {
     let query = req.query_string();
     let deserializer = serde::de::value::StrDeserializer::<serde::de::value::Error>::new(query);
     let callback_response = helper::log_errors(CallBackResponse::deserialize(deserializer))?;
@@ -60,12 +66,12 @@ async fn redirect(req: HttpRequest, data: Data<Tera>) -> Result<HttpResponse> {
     let openid = helper::log_errors(get_openid_provider(openid::OpenIDProvider::W3))?;
 
     // get token from auth server
-    code_to_response(callback_response.code, req, openid, data).await
+    code_to_response(callback_response.code, req, openid, data, db).await
 }
 
 #[get("/callback")]
-#[instrument]
-async fn callback(req: HttpRequest, data: Data<Tera>) -> Result<HttpResponse> {
+#[instrument(skip(data, db))]
+async fn callback(req: HttpRequest, data: Data<Tera>, db: Data<&DB>) -> Result<HttpResponse> {
     let query = req.query_string();
     let deserializer = serde::de::value::StrDeserializer::<serde::de::value::Error>::new(query);
     let callback_response = helper::log_errors(CallBackResponse::deserialize(deserializer))?;
@@ -73,7 +79,7 @@ async fn callback(req: HttpRequest, data: Data<Tera>) -> Result<HttpResponse> {
     let openid = helper::log_errors(get_openid_provider(openid::OpenIDProvider::IbmId))?;
 
     // get token from auth server
-    code_to_response(callback_response.code, req, openid, data).await
+    code_to_response(callback_response.code, req, openid, data, db).await
 }
 
 async fn code_to_response(
@@ -81,6 +87,7 @@ async fn code_to_response(
     req: HttpRequest,
     openid: &OpenID,
     data: Data<Tera>,
+    db: Data<&DB>,
 ) -> Result<HttpResponse> {
     let token = helper::log_errors(openid.get_token(code).await)?;
 
@@ -117,28 +124,81 @@ async fn code_to_response(
             .to_string())
     }())?;
 
-    // Generate guardian token
-    const TOKEN_LIFETIME: usize = const { 60 * 60 * 24 * 30 };
-    let token = jwt::get_token(
-        &CONFIG.get().unwrap().encoder,
-        TOKEN_LIFETIME,
-        &subject,
-        &email,
-        vec!["all"],
-    )?;
+    // look up user in database
+    let r: Result<User> = db
+        .find(
+            doc! {
+                "sub": &subject
+            },
+            USER,
+        )
+        .await;
 
-    let mut ctx = Context::new();
-    ctx.insert("token", &token);
-    ctx.insert("name", &name);
-    let rendered = helper::log_errors(data.render("token.html", &ctx))?;
+    let (id, user_type) = match r {
+        Ok(user) => (user._id, user.user_type),
+        // user not found, create user
+        Err(_) => {
+            // get current time in time after unix epoch
+            let time = time::OffsetDateTime::now_utc();
+            // add user to the DB as a new user
+            let r = db
+                .insert(
+                    User {
+                        _id: ObjectId::new(),
+                        sub: subject.clone(),
+                        user_name: name.clone(),
+                        email,
+                        groups: vec![],
+                        user_type: UserType::User,
+                        created_at: time,
+                        updated_at: time,
+                        last_updated_by: subject.clone(),
+                    },
+                    USER,
+                )
+                .await?;
+            (
+                r.as_object_id().ok_or_else(|| {
+                    GuardianError::GeneralError("Could not convert BSON to objectid".to_string())
+                })?,
+                UserType::User,
+            )
+        }
+    };
 
-    let mut cookie = Cookie::build("nonce", "")
+    let guardian_cookie_json = GuardianCookie {
+        subject: id.to_string(),
+        user_type,
+    };
+
+    let content = serde_json::to_string(&guardian_cookie_json).map_err(|e| {
+        GuardianError::GeneralError(format!("Could not serialize guardian cookie: {}", e))
+    })?;
+
+    // create cookie for all routes for this user
+    // middleware will check for this cookie and and safeguard specific routes
+    // TODO: look into doing session management that stores a dynamic key into the cookie
+    let cookie = Cookie::build(COOKIE_NAME, content)
+        .same_site(SameSite::Strict)
+        .expires(time::OffsetDateTime::now_utc() + time::Duration::days(1))
+        .path("/")
         .http_only(true)
         .secure(true)
         .finish();
-    cookie.make_removal();
+
+    let mut ctx = Context::new();
+    ctx.insert("name", &name);
+    let rendered = helper::log_errors(data.render("login_success.html", &ctx))?;
+
+    let mut cookie_remove = Cookie::build("nonce", "")
+        .same_site(SameSite::Lax)
+        .http_only(true)
+        .secure(true)
+        .finish();
+    cookie_remove.make_removal();
 
     Ok(HttpResponse::Ok()
+        .cookie(cookie_remove)
         .cookie(cookie)
         .content_type(ContentType::html())
         .body(rendered))

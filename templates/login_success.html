@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Welcome!{% endblock title %}
+{% block head %}
+{# TODO: remove this inline redirect #}
+<script nonce="login-redirect-guardian">
+    setTimeout(function() {
+        window.location.href = '/';
+    }, 3000);
+</script>
+{% endblock head %}
+{% block htmx %}
+{% endblock htmx %}
+{% block body %}
+<div class="container d-flex flex-column w-100" style="height:100vh">
+	<header class="mb-auto"></header>
+	<main class="mx-auto">
+		<div class="text-center text-break">
+			<h1 >Welcome {{ name }}</h1>
+			<p class="lead">You have successfully logged in, you are being redirected to the portal.</p>
+		</div>
+	</main>
+	<footer class="mt-auto"></footer>
+</div>
+{% endblock body %}

@@ -14,7 +14,7 @@ where
     exp: usize,
     sub: T,
     aud: T,
-    scp: Vec<T>,
+    pub scp: Vec<String>,
 }
 
 const ISSUER: &str = "guardian";
@@ -26,7 +26,7 @@ pub fn get_token(
     token_lifetime: usize,
     sub: &str,
     aud: &str,
-    scp: Vec<&str>,
+    scp: Vec<String>,
 ) -> Result<String> {
     // Get exp UNIX EPOC
     let start = SystemTime::now();

@@ -1,17 +1,28 @@
-use actix_web::web::Data;
-use actix_web::{get, web, HttpResponse};
+use actix_web::{
+    get,
+    http::header,
+    web::{self, Data},
+    HttpRequest, HttpResponse,
+};
 use tera::{Context, Tera};
 
-use crate::errors::Result;
-use crate::web::helper;
+use crate::{auth::COOKIE_NAME, errors::Result, web::helper};
 
 pub mod auth;
 pub mod foo;
 pub mod health;
+pub mod portal;
 pub mod proxy;
 
 #[get("")]
-async fn index(data: Data<Tera>) -> Result<HttpResponse> {
+async fn index(data: Data<Tera>, req: HttpRequest) -> Result<HttpResponse> {
+    // if cookie exists, redirect to portal
+    if req.cookie(COOKIE_NAME).is_some() {
+        return Ok(HttpResponse::TemporaryRedirect()
+            .append_header((header::LOCATION, "/portal"))
+            .finish());
+    }
+
     let ctx = Context::new();
     let rendered = helper::log_errors(data.render("login.html", &ctx))?;
 

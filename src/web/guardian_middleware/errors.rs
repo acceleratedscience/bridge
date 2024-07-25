@@ -3,15 +3,14 @@ use std::{collections::HashMap, sync::OnceLock};
 use actix_web::{
     body::BoxBody,
     dev::ServiceResponse,
-    http::{
-        header::ContentType,
-        StatusCode,
-    },
+    http::{header::ContentType, StatusCode},
     middleware::{ErrorHandlerResponse, ErrorHandlers},
     web::Data,
     HttpResponse,
 };
 use tera::{Context, Tera};
+
+use super::htmx::HTMX_ERROR_RES;
 
 static ERROR_HTMLS: OnceLock<HashMap<&str, String>> = OnceLock::new();
 
@@ -38,6 +37,11 @@ pub fn custom_code_handle(data: Data<Tera>) -> ErrorHandlers<BoxBody> {
             "401",
             data.render("401.html", &Context::new())
                 .expect("Failed to render 401.html"),
+        );
+        map.insert(
+            "403",
+            data.render("403.html", &Context::new())
+                .expect("Failed to render 403.html"),
         );
         map
     });
@@ -71,13 +75,27 @@ pub fn custom_code_handle(data: Data<Tera>) -> ErrorHandlers<BoxBody> {
             },
         )
         .handler(StatusCode::BAD_REQUEST, move |res: ServiceResponse| {
+            let response = res.response();
+            let htmx_header = response.headers().get(HTMX_ERROR_RES).map(|header| {
+                header
+                    .to_str()
+                    .unwrap_or("Htmx message retrieval failed")
+                    .to_string()
+            });
             let request = res.into_parts().0;
+
             Ok(ErrorHandlerResponse::Response(ServiceResponse::new(
                 request,
                 {
+                    let contents = if let Some(hh) = htmx_header {
+                        (hh, ContentType::form_url_encoded())
+                    } else {
+                        (template.get("400").unwrap().to_string(), ContentType::html())
+                    };
+
                     HttpResponse::build(StatusCode::BAD_REQUEST)
-                        .content_type(ContentType::html())
-                        .body(template.get("400").unwrap().to_string())
+                        .content_type(contents.1)
+                        .body(contents.0)
                         .map_into_left_body()
                 },
             )))
@@ -97,6 +115,18 @@ pub fn custom_code_handle(data: Data<Tera>) -> ErrorHandlers<BoxBody> {
                     response
                         .content_type(ContentType::html())
                         .body(template.get("401").unwrap().to_string())
+                        .map_into_left_body()
+                },
+            )))
+        })
+        .handler(StatusCode::FORBIDDEN, move |res: ServiceResponse| {
+            let request = res.into_parts().0;
+            Ok(ErrorHandlerResponse::Response(ServiceResponse::new(
+                request,
+                {
+                    HttpResponse::build(StatusCode::FORBIDDEN)
+                        .content_type(ContentType::html())
+                        .body(template.get("403").unwrap().to_string())
                         .map_into_left_body()
                 },
             )))
