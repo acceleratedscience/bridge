@@ -20,6 +20,7 @@ mod system_admin;
 mod user;
 mod user_htmx;
 mod token;
+mod profile_htmx;
 
 pub static PROFILE_MAIN: &str = "profile.html";
 

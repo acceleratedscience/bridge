@@ -66,6 +66,7 @@ where
     Ok(helper::log_errors(T::deserialize(deserializer))?)
 }
 
+/// This is a helper function to get all Groups from the database
 pub (super) async fn get_all_groups(db: &DB) -> Result<Vec<Group>> {
     let result: Result<Vec<Group>> = db.find_many(doc! {}, GROUP).await;
     Ok(match result {

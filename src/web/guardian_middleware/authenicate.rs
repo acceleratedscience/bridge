@@ -21,8 +21,8 @@ pub async fn validator(
 
     match validate_token(
         &token,
-        &CONFIG.get().unwrap().decoder,
-        &CONFIG.get().unwrap().validation.clone(),
+        &CONFIG.decoder,
+        &CONFIG.validation,
     ) {
         Ok(claims) => {
             if let Some(r) = req.headers().get(INFERENCE_HEADER) {

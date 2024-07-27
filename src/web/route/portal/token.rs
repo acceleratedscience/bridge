@@ -67,7 +67,7 @@ pub async fn get_token_for_user(
 
     // Generate guardian token
     let token = helper::log_errors(jwt::get_token(
-        &CONFIG.get().unwrap().encoder,
+        &CONFIG.encoder,
         TOKEN_LIFETIME,
         &gc.subject,
         AUD[0],
