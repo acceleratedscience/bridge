@@ -19,6 +19,20 @@ where
     }
 }
 
+#[macro_export]
+macro_rules! log_error {
+    ($res:expr) => {{
+        let result = $res;
+        match result {
+            Ok(_) => result,
+            Err(ref e) => {
+                tracing::error!("Error: {}", e);
+                result
+            }
+        }
+    }};
+}
+
 pub fn bson<T>(t: T) -> Result<Bson, GuardianError>
 where
     T: serde::Serialize,

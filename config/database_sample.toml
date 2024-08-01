@@ -1,6 +1,6 @@
 [database]
 	url = "mongodb://USER:PASSSWORD@guardian-mongodb.mongodb.svc.cluster.local:27017/?authSource=guardian"
-	url_local = "mongodb://USER:PASSWORD@localhost:27017/?authSource=guardian" # make sure to port forward
+	url_local = "mongodb://guardian-user:admin123456789@localhost:27017/?authSource=guardian" # make sure to port forward
 	db = "guardian"
 
 [user]

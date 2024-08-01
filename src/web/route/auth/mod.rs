@@ -22,6 +22,7 @@ use crate::{
         Database,
     },
     errors::{GuardianError, Result},
+    log_error,
     web::helper::{self},
 };
 
@@ -113,7 +114,8 @@ async fn code_to_response(
     let email = claims
         .email()
         .unwrap_or(&EndUserEmail::new("".to_string()))
-        .to_string().to_ascii_lowercase();
+        .to_string()
+        .to_ascii_lowercase();
     let name = helper::log_errors(|| -> Result<String> {
         let name = claims
             .given_name()
@@ -141,8 +143,8 @@ async fn code_to_response(
             // get current time in time after unix epoch
             let time = time::OffsetDateTime::now_utc();
             // add user to the DB as a new user
-            let r = db
-                .insert(
+            let r = log_error!(
+                db.insert(
                     User {
                         _id: ObjectId::new(),
                         sub: subject,
@@ -156,7 +158,8 @@ async fn code_to_response(
                     },
                     USER,
                 )
-                .await?;
+                .await
+            )?;
             (
                 r.as_object_id().ok_or_else(|| {
                     GuardianError::GeneralError("Could not convert BSON to objectid".to_string())

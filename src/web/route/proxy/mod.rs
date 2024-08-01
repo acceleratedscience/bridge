@@ -99,10 +99,12 @@ async fn forward(
         None => forwarded_req,
     };
 
-    let res = helper::log_errors(forwarded_req.send().await.map_err(|e| {
-        error!("{:?}", e);
-        GuardianError::GeneralError(e.to_string())
-    }))?;
+    let res = helper::log_errors(
+        forwarded_req
+            .send()
+            .await
+            .map_err(|e| GuardianError::GeneralError(e.to_string())),
+    )?;
 
     let status = res.status().as_u16();
     let status = StatusCode::from_u16(status).unwrap();
