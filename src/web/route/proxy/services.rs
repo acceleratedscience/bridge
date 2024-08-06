@@ -80,7 +80,7 @@ mod test {
         init_once();
         let catalog = CATALOG.get().unwrap();
         let services: Vec<(Url, String)> = catalog.into();
-        assert_eq!(services.len(), 5);
+        assert_eq!(services.len(), 6);
 
         let postman = services.iter().find(|(_, name)| name == "postman");
         assert!(postman.is_some());
