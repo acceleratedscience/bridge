@@ -26,5 +26,5 @@ async fn main() {
         exit(1);
     }
 
-    let _ = start_server(true).await;
+    let _ = start_server(false).await;
 }

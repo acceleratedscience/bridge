@@ -15,8 +15,7 @@ use tokio_stream::wrappers::UnboundedReceiverStream;
 use tracing::{error, instrument, warn};
 
 use crate::{
-    errors::{GuardianError, Result},
-    web::{guardian_middleware::validator, helper},
+    db, errors::{GuardianError, Result}, web::{guardian_middleware::validator, helper}
 };
 
 use self::services::CATALOG;

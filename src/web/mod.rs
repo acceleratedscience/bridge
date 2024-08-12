@@ -40,7 +40,7 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
             .wrap(guardian_middleware::custom_code_handle(tera_data))
             .wrap(middleware::NormalizePath::trim())
             .wrap(middleware::Compress::default())
-            .wrap(guardian_middleware::SecurityHeader)
+            // .wrap(guardian_middleware::SecurityHeader)
             .configure(route::auth::config_auth)
             .configure(route::health::config_status)
             .configure(route::foo::config_foo)
@@ -54,7 +54,7 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
         server
             .bind_rustls_0_23(
                 ("0.0.0.0", 8080),
-                tls::load_certs("certs/cert.pem", "certs/key.pem"),
+                tls::load_certs("certs/fullchain.cer", "certs/open.accelerator.cafe.key"),
             )?
             .run()
             .await

@@ -20,3 +20,7 @@ version = "0.1.0"
 	[services.moler]
 	url = "http://moler-inference-service.openad-models.svc.cluster.local"
 	readiness = "/health"
+
+	[services.notebook]
+	url = "http://localhost:8888/proxy"
+	readiness = "/"

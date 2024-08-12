@@ -1,5 +1,5 @@
 # Stage 1 build
-FROM rust:1.79 AS builder
+FROM rust:1.80.1 AS builder
 
 WORKDIR /app
 
@@ -8,7 +8,7 @@ COPY . ./
 RUN cargo build --release
 
 # Stage 2 build
-FROM debian:stable
+FROM debian:stable-slim
 
 WORKDIR /app
 
