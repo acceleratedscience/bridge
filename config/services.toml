@@ -24,3 +24,7 @@ version = "0.1.0"
 	[services.bmfm]
 	url = "http://bmfm-inference-service.openad-models.svc.cluster.local"
 	readiness = "/health"
+
+	[services.bmfm-small-molecules]
+	url = "http://bmfm-sm-inference-service.openad-models.svc.cluster.local"
+	readiness = "/health"
