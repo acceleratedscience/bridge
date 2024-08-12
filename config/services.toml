@@ -22,5 +22,5 @@ version = "0.1.0"
 	readiness = "/health"
 
 	[services.notebook]
-	url = "http://localhost:8888/proxy"
+	url = "http://localhost:8888/notebook"
 	readiness = "/"
