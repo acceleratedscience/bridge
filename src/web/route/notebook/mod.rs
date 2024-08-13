@@ -117,15 +117,15 @@ async fn notebook_forward(
     let mut client_resp = HttpResponse::build(status);
     // Remove `Connection` as per
     // https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Connection#Directives
-    // for (header_name, header_value) in res.headers().iter().filter(|(h, _)| *h != "connection") {
-    //     let name = header_name.to_string();
-    //     let value = header_value.to_str().unwrap();
-    //
-    //     let name = HeaderName::from_str(&name).unwrap();
-    //     let value = HeaderValue::from_str(value).unwrap();
-    //
-    //     client_resp.insert_header((name, value));
-    // }
+    for (header_name, header_value) in res.headers().iter().filter(|(h, _)| *h != "connection" && *h != "content-length") {
+        let name = header_name.to_string();
+        let value = header_value.to_str().unwrap();
+
+        let name = HeaderName::from_str(&name).unwrap();
+        let value = HeaderValue::from_str(value).unwrap();
+
+        client_resp.insert_header((name, value));
+    }
 
     Ok(client_resp.streaming(res.bytes_stream()))
 }
