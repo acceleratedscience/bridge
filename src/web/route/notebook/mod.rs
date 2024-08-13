@@ -1,11 +1,13 @@
+//! This module contains the proxy logic for the Juptyer Notebook. In order to proxy traffic to
+//! notebook, we use the forward function from the helper module. But we also introduce to
+//! websocket endpoints.
+
 use serde::Deserialize;
 
 use actix_web::{dev::PeerAddr, get, http::Method, web, HttpRequest, HttpResponse};
 use tracing::instrument;
 
-mod ws;
 
-use self::ws::websocket;
 use crate::{
     errors::{GuardianError, Result},
     web::{helper, services::CATALOG},
@@ -13,7 +15,7 @@ use crate::{
 
 #[get("/api/events/subscribe")]
 async fn notebook_ws_subscribe(req: HttpRequest, pl: web::Payload) -> Result<HttpResponse> {
-    websocket::manage_connection(req, pl, "ws://localhost:8888/notebook/api/events/subscribe").await
+    helper::ws::manage_connection(req, pl, "ws://localhost:8888/notebook/api/events/subscribe").await
 }
 
 #[derive(Deserialize)]
@@ -36,7 +38,7 @@ async fn notebook_ws_session(
         kernel_id, session_id
     );
 
-    websocket::manage_connection(req, pl, url).await
+    helper::ws::manage_connection(req, pl, url).await
 }
 
 #[instrument(skip(payload))]
