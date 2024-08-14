@@ -19,7 +19,7 @@ mod inference_services;
 #[get("")]
 #[instrument(skip(data))]
 async fn pulse(data: Data<Tera>) -> Result<HttpResponse> {
-    let bod = helper::log_errors(data.render("pulse.html", &Context::new()))?;
+    let bod = helper::log_with_level!(data.render("pulse.html", &Context::new()), error)?;
     Ok(HttpResponse::build(StatusCode::OK)
         .content_type(ContentType::html())
         .body(bod))

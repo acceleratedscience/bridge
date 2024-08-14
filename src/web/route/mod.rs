@@ -11,9 +11,9 @@ use crate::{auth::COOKIE_NAME, errors::Result, web::helper};
 pub mod auth;
 pub mod foo;
 pub mod health;
+pub mod notebook;
 pub mod portal;
 pub mod proxy;
-pub mod notebook;
 
 static APP_VERSSION: &str = env!("CARGO_PKG_VERSION");
 
@@ -28,7 +28,7 @@ async fn index(data: Data<Tera>, req: HttpRequest) -> Result<HttpResponse> {
 
     let mut ctx = Context::new();
     ctx.insert("version", APP_VERSSION);
-    let rendered = helper::log_errors(data.render("login.html", &ctx))?;
+    let rendered = helper::log_with_level!(data.render("login.html", &ctx), error)?;
 
     Ok(HttpResponse::Ok().body(rendered))
 }

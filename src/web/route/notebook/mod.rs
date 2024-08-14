@@ -7,7 +7,6 @@ use serde::Deserialize;
 use actix_web::{dev::PeerAddr, get, http::Method, web, HttpRequest, HttpResponse};
 use tracing::instrument;
 
-
 use crate::{
     errors::{GuardianError, Result},
     web::{helper, services::CATALOG},
@@ -15,7 +14,8 @@ use crate::{
 
 #[get("/api/events/subscribe")]
 async fn notebook_ws_subscribe(req: HttpRequest, pl: web::Payload) -> Result<HttpResponse> {
-    helper::ws::manage_connection(req, pl, "ws://localhost:8888/notebook/api/events/subscribe").await
+    helper::ws::manage_connection(req, pl, "ws://localhost:8888/notebook/api/events/subscribe")
+        .await
 }
 
 #[derive(Deserialize)]
@@ -54,10 +54,13 @@ async fn notebook_forward(
     let service = "notebook";
 
     // look up service and get url
-    let catalog = helper::log_errors(CATALOG.get().ok_or_else(|| {
-        GuardianError::GeneralError("Could not get catalog of services".to_string())
-    }))?;
-    let mut new_url = helper::log_errors(catalog.get(service))?;
+    let catalog = helper::log_with_level!(
+        CATALOG.get().ok_or_else(|| {
+            GuardianError::GeneralError("Could not get catalog of services".to_string())
+        }),
+        error
+    )?;
+    let mut new_url = helper::log_with_level!(catalog.get(service), error)?;
     new_url.set_path(path);
     new_url.set_query(req.uri().query());
 

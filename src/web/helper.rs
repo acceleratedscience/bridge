@@ -1,37 +1,60 @@
 use std::error::Error;
 
 use mongodb::bson::{to_bson, Bson};
-use tracing::error;
 
 use crate::errors::GuardianError;
 
-#[inline]
-pub fn log_errors<T, E>(res: Result<T, E>) -> Result<T, E>
-where
-    E: Error,
-{
-    match res {
-        Ok(_) => res,
-        Err(ref e) => {
-            error!("Error: {}", e);
-            res
-        }
-    }
-}
-
-#[macro_export]
-macro_rules! log_error {
-    ($res:expr) => {{
+macro_rules! log_with_level {
+    ($res:expr, error) => {{
         let result = $res;
         match result {
             Ok(_) => result,
             Err(ref e) => {
-                tracing::error!("Error: {}", e);
+                $crate::web::helper::error(e);
                 result
             }
         }
     }};
+    ($res:expr, warn) => {{
+        let result = $res;
+        match result {
+            Ok(_) => result,
+            Err(ref e) => {
+                tracing::warn!("Warning: {}", e);
+                result
+            }
+        }
+    }};
+    ($res:expr, info) => {{
+        let result = $res;
+        match result {
+            Ok(_) => result,
+            Err(ref e) => {
+                tracing::info!("Info: {}", e);
+                result
+            }
+        }
+    }};
+    ($res:expr, debug) => {{
+        let result = $res;
+        match result {
+            Ok(_) => result,
+            Err(ref e) => {
+                tracing::debug!("Debug: {}", e);
+                result
+            }
+        }
+    }};
+    ($res:expr, $level:tt) => {
+        compile_error!("Invalid log level. Use error, warn, info, or debug.")
+    };
 }
+
+pub fn error(e: impl Error){
+    tracing::error!("Error: {}", e);
+}
+
+pub(crate) use log_with_level;
 
 pub fn bson<T>(t: T) -> Result<Bson, GuardianError>
 where
@@ -62,8 +85,6 @@ pub mod forwarding {
 
     use actix_web::http::StatusCode;
 
-    use super::log_errors;
-
     use crate::errors::{GuardianError, Result};
 
     // No inline needed... generic are inherently inlined
@@ -91,7 +112,7 @@ pub mod forwarding {
 
         // sigh... this is a workaround due to reqwest and actix-web use different versions of
         // hyper. At least we can use two version of hyper and not get stuck in dependency hell
-        // like python. 
+        // like python.
         let method = match method.as_str() {
             "OPTIONS" => reqwest::Method::OPTIONS,
             "GET" => reqwest::Method::GET,
@@ -120,10 +141,12 @@ pub mod forwarding {
             None => forwarded_req,
         };
 
-        let res = log_errors(forwarded_req.send().await.map_err(|e| {
-            error!("{:?}", e);
-            GuardianError::GeneralError(e.to_string())
-        }))?;
+        let res = log_with_level!(
+            forwarded_req.send().await.map_err(|e| {
+                GuardianError::GeneralError(e.to_string())
+            }),
+            error
+        )?;
 
         let status = res.status().as_u16();
         let status =

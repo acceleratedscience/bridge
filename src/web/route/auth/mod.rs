@@ -22,7 +22,6 @@ use crate::{
         Database,
     },
     errors::{GuardianError, Result},
-    log_error,
     web::helper::{self},
 };
 
@@ -36,7 +35,7 @@ async fn login(req: HttpRequest) -> Result<HttpResponse> {
     // get openid provider
     let provider = req.query_string();
 
-    let openid = helper::log_errors(get_openid_provider(provider.into()))?;
+    let openid = helper::log_with_level!(get_openid_provider(provider.into()), error)?;
     let url = openid.get_client_resources();
 
     // TODO: use the CsrfToken to protect against CSRF attacks, but since we use PCKE, we are ok
@@ -62,9 +61,10 @@ async fn login(req: HttpRequest) -> Result<HttpResponse> {
 async fn redirect(req: HttpRequest, data: Data<Tera>, db: Data<&DB>) -> Result<HttpResponse> {
     let query = req.query_string();
     let deserializer = serde::de::value::StrDeserializer::<serde::de::value::Error>::new(query);
-    let callback_response = helper::log_errors(CallBackResponse::deserialize(deserializer))?;
+    let callback_response =
+        helper::log_with_level!(CallBackResponse::deserialize(deserializer), error)?;
 
-    let openid = helper::log_errors(get_openid_provider(openid::OpenIDProvider::W3))?;
+    let openid = helper::log_with_level!(get_openid_provider(openid::OpenIDProvider::W3), error)?;
 
     // get token from auth server
     code_to_response(callback_response.code, req, openid, data, db).await
@@ -75,9 +75,11 @@ async fn redirect(req: HttpRequest, data: Data<Tera>, db: Data<&DB>) -> Result<H
 async fn callback(req: HttpRequest, data: Data<Tera>, db: Data<&DB>) -> Result<HttpResponse> {
     let query = req.query_string();
     let deserializer = serde::de::value::StrDeserializer::<serde::de::value::Error>::new(query);
-    let callback_response = helper::log_errors(CallBackResponse::deserialize(deserializer))?;
+    let callback_response =
+        helper::log_with_level!(CallBackResponse::deserialize(deserializer), error)?;
 
-    let openid = helper::log_errors(get_openid_provider(openid::OpenIDProvider::IbmId))?;
+    let openid =
+        helper::log_with_level!(get_openid_provider(openid::OpenIDProvider::IbmId), error)?;
 
     // get token from auth server
     code_to_response(callback_response.code, req, openid, data, db).await
@@ -90,23 +92,25 @@ async fn code_to_response(
     data: Data<Tera>,
     db: Data<&DB>,
 ) -> Result<HttpResponse> {
-    let token = helper::log_errors(openid.get_token(code).await)?;
+    let token = helper::log_with_level!(openid.get_token(code).await, error)?;
 
     // get nonce cookie from client
-    let nonce = helper::log_errors(
+    let nonce = helper::log_with_level!(
         req.cookie("nonce")
             .ok_or_else(|| GuardianError::NonceCookieNotFound),
+        error
     )?;
     let nonce = Nonce::new(nonce.value().to_string());
 
     // verify token
     let verifier = openid.get_verifier();
-    let claims = helper::log_errors(
+    let claims = helper::log_with_level!(
         token
             .extra_fields()
             .id_token()
             .ok_or_else(|| GuardianError::GeneralError("No ID Token".to_string()))?
             .claims(&verifier, &nonce),
+        error
     )?;
 
     // get information from claims
@@ -116,15 +120,18 @@ async fn code_to_response(
         .unwrap_or(&EndUserEmail::new("".to_string()))
         .to_string()
         .to_ascii_lowercase();
-    let name = helper::log_errors(|| -> Result<String> {
-        let name = claims
-            .given_name()
-            .ok_or_else(|| GuardianError::GeneralError("No name in claims".to_string()))?;
-        Ok(name
-            .get(None)
-            .ok_or_else(|| GuardianError::GeneralError("locale error".to_string()))?
-            .to_string())
-    }())?;
+    let name = helper::log_with_level!(
+        || -> Result<String> {
+            let name = claims
+                .given_name()
+                .ok_or_else(|| GuardianError::GeneralError("No name in claims".to_string()))?;
+            Ok(name
+                .get(None)
+                .ok_or_else(|| GuardianError::GeneralError("locale error".to_string()))?
+                .to_string())
+        }(),
+        error
+    )?;
 
     // look up user in database
     let r: Result<User> = db
@@ -143,7 +150,7 @@ async fn code_to_response(
             // get current time in time after unix epoch
             let time = time::OffsetDateTime::now_utc();
             // add user to the DB as a new user
-            let r = log_error!(
+            let r = helper::log_with_level!(
                 db.insert(
                     User {
                         _id: ObjectId::new(),
@@ -158,7 +165,8 @@ async fn code_to_response(
                     },
                     USER,
                 )
-                .await
+                .await,
+                error
             )?;
             (
                 r.as_object_id().ok_or_else(|| {
@@ -191,7 +199,7 @@ async fn code_to_response(
 
     let mut ctx = Context::new();
     ctx.insert("name", &name);
-    let rendered = helper::log_errors(data.render("login_success.html", &ctx))?;
+    let rendered = helper::log_with_level!(data.render("login_success.html", &ctx), error)?;
 
     let mut cookie_remove = Cookie::build("nonce", "")
         .same_site(SameSite::Lax)

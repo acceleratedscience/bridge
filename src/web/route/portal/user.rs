@@ -48,7 +48,7 @@ pub(super) async fn user(
 
         let user = match result {
             Ok(user) => user,
-            Err(e) => return helper::log_errors(Err(e)),
+            Err(e) => return helper::log_with_level!(Err(e), error),
         };
 
         match user.user_type {
@@ -77,17 +77,18 @@ pub(super) async fn user(
                     profile.add_subscription(subscription.to_string());
                 });
 
-                helper::log_errors(profile.render(data))?
+                helper::log_with_level!(profile.render(data), error)?
             }
-            Err(_) => {
-                profile.render(data)?
-            },
+            Err(_) => profile.render(data)?,
         };
 
         return Ok(HttpResponse::Ok().body(content));
     }
 
-    helper::log_errors(Err(GuardianError::UserNotFound(
-        "subject not passed from middleware".to_string(),
-    )))
+    helper::log_with_level!(
+        Err(GuardianError::UserNotFound(
+            "subject not passed from middleware".to_string(),
+        )),
+        error
+    )
 }
