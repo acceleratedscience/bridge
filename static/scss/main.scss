@@ -1,0 +1,12 @@
+body {
+	background: pink;
+}
+
+cds-header cds-header-global-action.logo {
+	pointer-events: none;
+}
+
+a.cds--header__name {
+	background: yellow !important;
+	padding-left: 0 !important;
+}

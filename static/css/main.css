@@ -1,0 +1,31 @@
+body {
+	background: #fafafa;
+	margin: 3rem;
+}
+
+h1 {
+	margin-bottom: 1.5rem;
+}
+
+p {
+	margin-bottom: 0.5rem;
+}
+p.small {
+	font-size: 0.8rem;
+}
+
+/* Display items */
+.display-items-wrap {
+	display: flex;
+	gap: 2.5rem;
+}
+.soft-text,
+.display-item > div:first-child {
+	font-size: 0.8rem;
+	color: var(--cds-slug-background);
+}
+
+.display-text,
+.display-item > div:last-child {
+	font-size: 2rem;
+}

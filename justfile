@@ -6,9 +6,10 @@ build:
 
 local-mongo:
 	docker run -d --rm --name mongodb \
-	-e MONGODB_ROOT_PASSWORD="admin123456789" \
-	-e MONGODB_USERNAME="guardian-user" -e MONGODB_PASSWORD="admin123456789" -e MONGODB_DATABASE="guardian" \
-	-p 27017:27017 bitnami/mongodb:latest
+	-e MONGO_INITDB_ROOT_USERNAME="guardian-user" \
+	-e MONGO_INITDB_ROOT_PASSWORD="admin123456789" \
+	-e MONGO_INITDB_DATABASE="guardian" \
+	-p 27017:27017 mongodb/mongodb-community-server
 
 certs:
 	mkdir certs
