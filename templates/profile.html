@@ -1,4 +1,5 @@
 {# Profile for every user #}
+<link rel="stylesheet" href="/static/css/token.css" />
 <div class="text-center text-breaki mt-2">
 	{% if group == "" %}
 	<p class="lead">You are currently not part of any group. Contact your Group Admin to have you added.</p>
@@ -11,10 +12,8 @@
 		{% endfor %}
 	</ul>
 	{% endif %}
-	<div class="text-center mt-4">
-		<div id="status" class="lead">
-			<button type="button" class="btn btn-primary" hx-get="/portal/hx/token" hx-target="#response-token" hx-swap="innerhtml">Generate access token</button>
-		</div>
-	</div>
-	<div id="response-token" class="text-center mt-3"></div>
+	<p class="soft-text">Your access token</p>
+	<div id="response-token" onclick="clickToCopy(event)"></div>
+	<p class="soft-text">Expiration date: INSERT DATE</p>
+	<cds-button hx-get="/portal/hx/token" hx-target="#response-token" hx-swap="innerhtml">Regenerate</cds-button>
 </div>

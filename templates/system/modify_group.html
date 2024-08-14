@@ -1,25 +1,40 @@
-<div class="container mt-3">
-	<h1 class="lead">Modify a group</h1>
-	<div hx-ext="response-targets">
-		<form id="form-group-form" class="text-start" hx-patch="/portal/system_admin/hx/group" hx-target="#response" hx-target-400="#response" hx-swap="innerhtml">
-			<div class="form-group">
-				<label for="name" class="fs-6 mx-2">Subject Name</label>
-				<input type="text" id="name" name="name" class="form-control" required>
-			</div>
-			<div class="form-group mt-3">
-				<label for="subscriptions" class="fs-6 mx-2">Subscriptions</label>
-				<select id="subscriptions" size="5" name="subscriptions" class="form-control" multiple required>
-					{% for item in items %}
-					<option value="{{ item }}">{{ item }}</option>
-					{% endfor %}
-				</select>
-			</div>
-			<div class="form-group mt-3">
-				<label for="last_updated_by" class="fs-6 mx-2">Last Updated By</label>
-				<input type="text" id="last_updated_by" name="last_updated_by" class="form-control" value="{{ subject }}" readonly>
-			</div>
-			<button type="submit" class="btn btn-primary mt-3">submit</button>
-		</form>
-		<div id="response" class="mt-3"></div>
-	</div>
+
+
+
+
+
+<h1>Modify Group</h1>
+<div hx-ext="response-targets">
+	<form id="form-group-form" hx-patch="/portal/system_admin/hx/group" hx-target="#response" hx-target-400="#response" hx-swap="innerhtml">
+		<cds-text-input label="Subject name"></cds-text-input>
+
+		<cds-multi-select title-text="Multiselect title" label="Select models">
+			{% for item in items %}
+				<cds-multi-select-item value="{{ item }}">{{ item }}</cds-multi-select-item>
+			{% endfor %}
+		</cds-multi-select>
+
+		<cds-text-input label="Last updated by" readonly value="{{ subject }}"></cds-text-input>
+
+		<cds-button kind="primary">Submit</cds-button>
+
+		<!-- <div class="form-group">
+			<label for="name" class="fs-6 mx-2">Subject Name</label>
+			<input type="text" id="name" name="name" class="form-control" required>
+		</div>
+		<div class="form-group mt-3">
+			<label for="subscriptions" class="fs-6 mx-2">Subscriptions</label>
+			<select id="subscriptions" size="5" name="subscriptions" class="form-control" multiple required>
+				{% for item in items %}
+				<option value="{{ item }}">{{ item }}</option>
+				{% endfor %}
+			</select>
+		</div>
+		<div class="form-group mt-3">
+			<label for="last_updated_by" class="fs-6 mx-2">Last Updated By</label>
+			<input type="text" id="last_updated_by" name="last_updated_by" class="form-control" value="{{ subject }}" readonly>
+		</div> -->
+		<!-- <button type="submit" class="btn btn-primary mt-3">submit</button> -->
+	</form>
+	<div id="response" class="mt-3"></div>
 </div>

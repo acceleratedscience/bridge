@@ -76,5 +76,5 @@ pub async fn get_token_for_user(
 
     Ok(HttpResponse::Ok()
         .content_type(ContentType::form_url_encoded())
-        .body(format!("<p class='lead'>{}</p>", token)))
+        .body(token))
 }
