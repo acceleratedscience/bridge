@@ -1,21 +1,23 @@
 {% extends "portal.html" %}
+{% block title %}Welcome Admin!{% endblock title %}
 {% block htmx %}
 {{ super() }}
 <script src="https://unpkg.com/htmx-ext-response-targets@2.0.0/response-targets.js"></script>
 {% endblock htmx %}
-{% block usertype %}User{% endblock usertype %}
-{% block admin_message %}
-{% endblock admin_message %}
-{% block user_message %}
-{% endblock user_message %}
+{% block usertype %}Group Admin{% endblock usertype %}
+{% block usertype_message %}
+{% endblock usertype_message %}
 {% block tabselection %}
 <li class="nav-item">
 	<a class="nav-link active disabled" aria-current="page" hx-get="group_admin/hx/tab?tab=Profile" href="#" role="tab" aria-controls="tab-contents" aria-selected="true">Profile</a>
+</li>
+<li class="nav-item">
+	<a class="nav-link" href="#" role="tab" aria-controls="tab-contents" hx-get="group_admin/hx/tab?tab=UserModify" aria-selected="false">User</a>
 </li>
 <li class="nav-item">
 	<a class="nav-link" href="#" role="tab" aria-controls="tab-contents" hx-post="hx/logout" aria-selected="false">Logout</a>
 </li>
 {% endblock tabselection %}
 {% block tabcontents %}
-{% include "profile.html" %}
+{% include "token.html" %}
 {% endblock tabcontents %}

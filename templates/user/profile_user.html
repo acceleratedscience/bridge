@@ -1,0 +1,23 @@
+{% extends "portal.html" %}
+
+{% block title %}OpenAD Portal | User Profile{% endblock title %}
+
+{% block htmx %}
+{{ super() }}
+<script src="https://unpkg.com/htmx-ext-response-targets@2.0.0/response-targets.js"></script>
+{% endblock htmx %}
+
+{% block usertype %}
+User
+{% endblock usertype %}
+
+{% block usertype_message %}
+<!-- Some user message here -->
+{% endblock usertype_message %}
+
+{% block tabselection %}
+{% endblock tabselection %}
+
+{% block tabcontents %}
+{% include "token.html" %}
+{% endblock tabcontents %}

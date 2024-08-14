@@ -14,18 +14,47 @@ p.small {
 	font-size: 0.8rem;
 }
 
-/* Display items */
-.display-items-wrap {
+/* Vertical sections */
+.sections-wrap {
 	display: flex;
+	flex-direction: column;
 	gap: 2.5rem;
 }
+/* .sections-wrap > * {
+	border: solid 1px pink;
+} */
+
+/* Display items */
 .soft-text,
 .display-item > div:first-child {
 	font-size: 0.8rem;
 	color: var(--cds-slug-background);
 }
-
 .display-text,
 .display-item > div:last-child {
 	font-size: 2rem;
+	margin-bottom: 0.5rem;
+}
+
+/**
+ * Style shortcuts
+ */
+.soft {
+	color: var(--cds-layer-accent-active-01);
+}
+
+/**
+ * UI Elements 
+ */
+.list-table {
+	background: #fff;
+	border: solid 1px var(--cds-border-subtle-00);
+	border-bottom: none;
+	max-width: 400px;
+}
+.list-table .list-table-item {
+	height: 2rem;
+	line-height: 1.9rem;
+	border-bottom: solid 1px var(--cds-border-subtle-00);
+	padding: 0 1rem;
 }

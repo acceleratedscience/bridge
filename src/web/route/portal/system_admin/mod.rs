@@ -35,7 +35,7 @@ use crate::{
 
 use self::htmx::{GroupContent, UserContent, CREATE_GROUP, DELETE_USER, MODIFY_GROUP, MODIFY_USER};
 
-const USER_PAGE: &str = "system/admin.html";
+const USER_PAGE: &str = "system/profile_system.html";
 
 #[get("")]
 #[instrument(skip(data, db, subject))]
@@ -121,7 +121,7 @@ async fn system_create_group(
             return Ok(HttpResponse::BadRequest()
                 .append_header((
                     HTMX_ERROR_RES,
-                    format!("<p>Group named {} already exists</p>", gf.name),
+                    format!("<p>Group '{}' already exists</p>", gf.name),
                 ))
                 .finish());
         }
@@ -142,7 +142,7 @@ async fn system_create_group(
 //         .delete(doc! {"name": &group.name}, GROUP, PhantomData::<Group>)
 //         .await?;
 //
-//     let content = format!("<p>Group named {} has been deleted</p>", group.name);
+//     let content = format!("<p>Group '{}' has been deleted</p>", group.name);
 //     Ok(HttpResponse::Ok()
 //         .content_type(ContentType::form_url_encoded())
 //         .body(content))
@@ -176,14 +176,14 @@ async fn system_update_group(
         return Ok(HttpResponse::BadRequest()
             .append_header((
                 HTMX_ERROR_RES,
-                format!("<p>Group named {} does not exist</p>", gf.name),
+                format!("<p>Group '{}' does not exist</p>", gf.name),
             ))
             .finish());
     }
 
     Ok(HttpResponse::Ok()
         .content_type(ContentType::form_url_encoded())
-        .body(format!("<p>Group named {} has been updated</p>", gf.name)))
+        .body(format!("<p>Group '{}' has been updated</p>", gf.name)))
 }
 
 #[patch("user")]

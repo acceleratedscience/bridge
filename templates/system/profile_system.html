@@ -1,0 +1,35 @@
+{% extends "portal.html" %}
+
+{% block title %}OpenAD Portal | System Admin Profile{% endblock title %}
+
+{% block htmx %}
+{{ super() }}
+<script src="https://unpkg.com/htmx-ext-response-targets@2.0.0/response-targets.js"></script>
+{% endblock htmx %}
+
+{% block usertype %}
+System Administrator
+{% endblock usertype %}
+
+{% block usertype_message %}
+As a system admin you can manage users and groups.
+{% endblock usertype_message %}
+
+{% block tabselection %}
+
+<br><br>
+<b>Profile:</b>
+<a href="#" hx-get="system_admin/hx/tab?tab=GroupCreate">Create</a> /
+<a href="#" hx-get="system_admin/hx/tab?tab=GroupModify">Modify</a>
+
+<br><br>
+<b>User:</b>
+<a href="#" hx-get="system_admin/hx/tab?tab=UserModify">Modify</a> /
+<a href="#" hx-get="system_admin/hx/tab?tab=UserDelete">Delete</a>
+
+<br><br>
+{% endblock tabselection %}
+
+{% block tabcontents %}
+{% include "token.html" %}
+{% endblock tabcontents %}

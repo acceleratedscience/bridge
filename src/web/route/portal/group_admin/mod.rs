@@ -33,7 +33,7 @@ use self::htmx::{ModifyUserGroup, Profile};
 
 mod htmx;
 
-const USER_PAGE: &str = "group/admin.html";
+const USER_PAGE: &str = "group/profile_group.html";
 
 #[get("")]
 #[instrument(skip(data, db, subject))]

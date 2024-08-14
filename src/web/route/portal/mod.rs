@@ -22,7 +22,7 @@ mod user_htmx;
 mod token;
 mod profile_htmx;
 
-pub static PROFILE_MAIN: &str = "profile.html";
+pub static PROFILE_MAIN: &str = "token.html";
 
 #[get("")]
 async fn index(data: Option<ReqData<GuardianCookie>>) -> Result<HttpResponse> {

@@ -3,49 +3,50 @@
 <div class="text-center text-break">
 	<p class="soft-text">Welcome, {{name}}</p>
 	<br><br>
-	<div class="display-items-wrap">
+	<div class="sections-wrap">
+		
+		<!-- Group -->
 		<div class="display-item">
 			<div>Your group</div>
-			<div>IBM</div>
+			{% if group == "" %}
+			<div class="soft">-</div>
+			{% else %}
+			<div>{{group}}</div>
+			{% endif %}
 		</div>
-		<div class="display-item">
-			<div>Your role</div>
-			<div>{% block usertype %}{% endblock usertype %}</div>
+		
+		<!-- Role -->
+		<div>
+			<div class="display-item">
+				<div>Your role</div>
+				<div>{% block usertype %}{% endblock usertype %}</div>
+			</div>
+			{% block usertype_message %}{% endblock usertype_message %}
 		</div>
+
+		<!-- Models -->
+		{% if group != "" %}
+		<div>
+			<p class="soft-text">Your models</p>
+			<div class="list-table">
+				{% for model in subscriptions %}
+				<div class="list-table-item">{{model}}</div>
+				<div class="list-table-item">{{model}}</div>
+				<div class="list-table-item">{{model}}</div>
+				{% endfor %}
+			</div>
+		</div>
+		{% endif %}
+
+
 	</div>
+	
 	<br><br><br><br>
-	{% block admin_message %}{% endblock admin_message %}
-	{% block user_message %}{% endblock user_message %}
 	{% block tabbed %}
-	<div id="tabs" hx-target="#tab-contents" role="tablist"
-		{# Careful here... not the most robust JS #}
-		hx-on-htmx-after-on-load="
-			let currentTab = document.querySelector('[aria-selected=true]');
-			currentTab.setAttribute('aria-selected', 'false');
-			currentTab.classList.remove('active');
-			currentTab.classList.remove('disabled');
-			if (currentTab.classList.contains('innertab')) {
-				let innertab = currentTab.parentElement.parentElement.previousElementSibling;
-				innertab.classList.remove('active');
-			}
-			let newTab = event.target;
-			newTab.setAttribute('aria-selected', 'true');
-			newTab.classList.add('active');
-			newTab.classList.add('disabled');
-			if (newTab.classList.contains('innertab')) {
-				let innertab = newTab.parentElement.parentElement.previousElementSibling;
-				innertab.classList.add('active');
-			}
-		">
-		<ul class="nav nav-tabs">
-			{% block tabselection %}
-			{% endblock tabselection %}
-		</ul>
-	</div>
-	<div id="tab-contents" role="tabpanel">
+		{% block tabselection %}
+		{% endblock tabselection %}
 		{% block tabcontents %}
 		{% endblock tabcontents %}
-	</div>
 	{% endblock tabbed %}
 </div>
 {% endblock body %}
