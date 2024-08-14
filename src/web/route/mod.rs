@@ -13,6 +13,7 @@ pub mod foo;
 pub mod health;
 pub mod portal;
 pub mod proxy;
+pub mod notebook;
 
 static APP_VERSSION: &str = env!("CARGO_PKG_VERSION");
 

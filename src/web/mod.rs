@@ -2,7 +2,7 @@ use std::{io::Result, process::exit};
 
 use actix_web::{
     middleware::{self},
-    web::Data,
+    web::{self, Data},
     App, HttpServer,
 };
 use tracing::error;
@@ -39,13 +39,17 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
             .wrap(guardian_middleware::custom_code_handle(tera_data))
             .wrap(middleware::NormalizePath::trim())
             .wrap(middleware::Compress::default())
-            .wrap(guardian_middleware::SecurityHeader)
-            .configure(route::auth::config_auth)
-            .configure(route::health::config_status)
-            .configure(route::foo::config_foo)
-            .configure(route::proxy::config_proxy)
-            .configure(route::config_index)
-            .configure(route::portal::config_portal)
+            // .configure(route::notebook::config_notebook)
+            .service(
+                web::scope("")
+                    .wrap(guardian_middleware::SecurityHeader)
+                    .configure(route::auth::config_auth)
+                    .configure(route::health::config_status)
+                    .configure(route::foo::config_foo)
+                    .configure(route::proxy::config_proxy)
+                    .configure(route::config_index)
+                    .configure(route::portal::config_portal),
+            )
             .service(actix_files::Files::new("/static", "static"))
     });
 
