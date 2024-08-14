@@ -13,6 +13,7 @@ pub mod foo;
 pub mod health;
 pub mod portal;
 pub mod proxy;
+pub mod notebook;
 
 #[get("")]
 async fn index(data: Data<Tera>, req: HttpRequest) -> Result<HttpResponse> {
