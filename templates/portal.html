@@ -24,6 +24,7 @@
 			{% block usertype_message %}{% endblock usertype_message %}
 		</div>
 
+		{% block models %}
 		<!-- Models -->
 		{% if group != "" %}
 		<div>
@@ -37,11 +38,11 @@
 			</div>
 		</div>
 		{% endif %}
+		{% endblock models %}
 
 
 	</div>
 	
-	<br><br><br><br>
 	{% block tabbed %}
 		{% block tabselection %}
 		{% endblock tabselection %}

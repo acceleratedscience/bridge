@@ -10,6 +10,7 @@ use crate::{auth::COOKIE_NAME, errors::Result, web::helper};
 
 pub mod auth;
 pub mod foo;
+pub mod token;
 pub mod health;
 pub mod portal;
 pub mod proxy;
@@ -32,16 +33,6 @@ async fn index(data: Data<Tera>, req: HttpRequest) -> Result<HttpResponse> {
     Ok(HttpResponse::Ok().body(rendered))
 }
 
-#[get("test")]
-async fn test(data: Data<Tera>, req: HttpRequest) -> Result<HttpResponse> {
-    let mut ctx = Context::new();
-    ctx.insert("version", APP_VERSION);
-    let rendered = helper::log_errors(data.render("test.html", &ctx))?;
-
-    Ok(HttpResponse::Ok().body(rendered))
-}
-
 pub fn config_index(cfg: &mut web::ServiceConfig) {
     cfg.service(web::scope("/").service(index));
-    cfg.service(web::scope("/test").service(test));
 }
