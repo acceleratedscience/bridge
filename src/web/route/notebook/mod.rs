@@ -64,6 +64,7 @@ async fn notebook_forward(
     helper::forwarding::forward(req, payload, method, peer_addr, client, new_url).await
 }
 
+#[allow(dead_code)]
 pub fn config_notebook(cfg: &mut web::ServiceConfig) {
     cfg.service(
         web::scope("/notebook")
