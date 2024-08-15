@@ -8,13 +8,13 @@ use crate::errors::Result;
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Claims<T>
 where
-	T: AsRef<str>,
+    T: AsRef<str>,
 {
-	iss: String,
-	exp: usize,
-	sub: T,
-	aud: T,
-	pub scp: Vec<String>,
+    iss: String,
+    exp: usize,
+    sub: T,
+    aud: T,
+    pub scp: Vec<String>,
 }
 
 const ISSUER: &str = "guardian";
@@ -22,34 +22,34 @@ const ISSUER: &str = "guardian";
 /// Generate a token with the given lifetime and uuid. This is an expensive operation, cache as
 /// much as possible
 pub fn get_token(
-	key: &EncodingKey,
-	token_lifetime: usize,
-	sub: &str,
-	aud: &str,
-	scp: Vec<String>,
+    key: &EncodingKey,
+    token_lifetime: usize,
+    sub: &str,
+    aud: &str,
+    scp: Vec<String>,
 ) -> Result<String> {
-	// Get exp UNIX EPOC
-	let start = SystemTime::now();
-	let since_epoc = start.duration_since(UNIX_EPOCH)?;
-	let exp = since_epoc.as_secs() as usize;
+    // Get exp UNIX EPOC
+    let start = SystemTime::now();
+    let since_epoc = start.duration_since(UNIX_EPOCH)?;
+    let exp = since_epoc.as_secs() as usize;
 
-	let claims = Claims {
-		iss: ISSUER.to_owned(),
-		exp: exp + token_lifetime,
-		sub,
-		aud,
-		scp,
-	};
-	let token = encode(&Header::new(Algorithm::ES256), &claims, key)?;
-	Ok(token)
+    let claims = Claims {
+        iss: ISSUER.to_owned(),
+        exp: exp + token_lifetime,
+        sub,
+        aud,
+        scp,
+    };
+    let token = encode(&Header::new(Algorithm::ES256), &claims, key)?;
+    Ok(token)
 }
 
 /// Validate token. If token is valid, return the claims, is not return an error
 pub fn validate_token(
-	token: &str,
-	decode_key: &DecodingKey,
-	val: &Validation,
+    token: &str,
+    decode_key: &DecodingKey,
+    val: &Validation,
 ) -> Result<Claims<String>> {
-	let token = decode::<Claims<String>>(token, decode_key, val)?;
-	Ok(token.claims)
+    let token = decode::<Claims<String>>(token, decode_key, val)?;
+    Ok(token.claims)
 }
