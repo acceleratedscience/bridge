@@ -1,6 +1,6 @@
 #response-token {
 	background: #fff;
-	border: solid 1px var(--cds-border-subtle-00);
+	border: solid 1px var(--border);
 	padding: 1rem;
 	max-width: 400px;
 	min-height: 17rem;
@@ -14,15 +14,15 @@
 }
 #response-token.copy-blink {
 	animation: blink 100ms 3;
-	color: var(--cds-support-success);
+	color: var(--success);
 	transition: none;
 }
 @keyframes blink {
 	0% {
-		color: var(--cds-support-success);
+		color: var(--success);
 	}
 	49% {
-		color: var(--cds-support-success);
+		color: var(--success);
 	}
 	50% {
 		color: white;
@@ -38,7 +38,7 @@
 /* Hover states */
 @media (hover: hover) {
 	#response-token:hover {
-		border-color: var(--cds-interactive);
+		border-color: var(--blue);
 	}
 	#response-token:hover::after {
 		content: '';

@@ -11,12 +11,12 @@ use crate::{
 
 #[get("")]
 #[instrument]
-async fn users(data: Data<Tera>) -> Result<HttpResponse> {
-	let content = data.render("pages/users.html", &tera::Context::new())?;
+async fn members(data: Data<Tera>) -> Result<HttpResponse> {
+	let content = data.render("pages/members.html", &tera::Context::new())?;
 	Ok(HttpResponse::Ok().content_type(ContentType::html()).body(content))
 }
 
-pub fn config_users(cfg: &mut web::ServiceConfig) {
-	cfg.service(web::scope("/users").service(users));
+pub fn config_members(cfg: &mut web::ServiceConfig) {
+	cfg.service(web::scope("/members").service(members));
 	
 }

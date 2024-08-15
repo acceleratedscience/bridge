@@ -1,6 +1,21 @@
+/* Carbon color variables are stupid. We siplify them */
+body {
+	--error: var(--cds-support-error);
+	--success: var(--cds-support-success);
+	--soft-text: var(--cds-slug-background);
+	--softer-text: var(--cds-layer-accent-active-01);
+	--border: var(--cds-border-subtle-00);
+	--lightblue: var(--cds-ai-border-start);
+	--blue: var(--cds-interactive);
+	--fs-small: 0.8rem;
+	--marg-l: 3rem;
+	--marg-m: 1rem;
+	--marg-s: 0.5rem;
+}
+
 body {
 	background: #fafafa;
-	margin: 3rem;
+	margin: var(--marg-l);
 	line-height: 1.3rem;
 }
 
@@ -9,10 +24,10 @@ h1 {
 }
 h2,
 h3 {
-	margin-bottom: 1rem;
+	margin-bottom: var(--marg-m);
 }
 .pre-h1 {
-	color: var(--cds-slug-background);
+	color: var(--soft-text);
 }
 
 a.incog {
@@ -21,18 +36,18 @@ a.incog {
 }
 a.delete {
 	text-decoration: none;
-	color: var(--cds-support-error);
+	color: var(--error);
 }
 
 b {
 	font-weight: 600;
 }
 p {
-	margin-bottom: 0.5rem;
+	margin-bottom: var(--marg-s);
 }
 small,
 .small {
-	font-size: 0.8rem;
+	font-size: var(--fs-small);
 }
 
 /* Form elements */
@@ -41,6 +56,10 @@ small,
 	flex-direction: column;
 	gap: 2rem;
 	max-width: 400px;
+}
+.err-msg {
+	color: var(--error);
+	font-size: var(--fs-small);
 }
 
 /* Vertical sections */
@@ -57,10 +76,10 @@ small,
  * Style shortcuts
  */
 .soft {
-	color: var(--cds-slug-background);
+	color: var(--soft-text);
 }
 .softer {
-	color: var(--cds-layer-accent-active-01);
+	color: var(--softer-text);
 }
 
 /**
@@ -71,19 +90,19 @@ small,
 .section-wrap-h {
 	display: flex;
 	flex-direction: row;
-	gap: 3rem;
+	gap: var(--marg-l);
 }
 
 /* Display items */
 .soft-text,
 .display-item > div:first-child {
-	font-size: 0.8rem;
-	color: var(--cds-slug-background);
+	font-size: var(--fs-small);
+	color: var(--soft-text);
 }
 .display-text,
 .display-item > div:last-child {
 	font-size: 2rem;
-	margin-bottom: 0.5rem;
+	margin-bottom: var(--marg-s);
 }
 
 /* Key-value pairs */
@@ -92,26 +111,26 @@ small,
 	flex-direction: column;
 }
 .key-val-wrap .key {
-	font-size: 0.8rem;
-	color: var(--cds-slug-background);
+	font-size: var(--fs-small);
+	color: var(--soft-text);
 	margin-bottom: 0.2rem;
 }
 .key-val-wrap .val {
-	margin-bottom: 1rem;
+	margin-bottom: var(--marg-m);
 }
 
 /* List table */
 .list-table {
 	background: #fff;
-	border: solid 1px var(--cds-border-subtle-00);
+	border: solid 1px var(--border);
 	border-bottom: none;
 	max-width: 400px;
 }
 .list-table .list-table-item {
 	height: 2rem;
 	line-height: 1.9rem;
-	border-bottom: solid 1px var(--cds-border-subtle-00);
-	padding: 0 0.5rem;
+	border-bottom: solid 1px var(--border);
+	padding: 0 var(--marg-s);
 	position: relative;
 }
 .list-table .btn-wrap {
@@ -120,19 +139,22 @@ small,
 	flex-direction: row-reverse;
 	gap: 0.3rem;
 	position: absolute;
-	right: 0.5rem;
+	right: var(--marg-s);
 	top: 50%;
 	margin-top: -0.6rem;
-	font-size: 0.8rem;
+	font-size: var(--fs-small);
 	line-height: 1.2rem;
 	height: 1.2rem;
 }
 .list-table .btn-wrap a {
-	background: var(--cds-ai-border-start);
+	background: var(--lightblue);
 	color: #fff;
 	border-radius: 2px;
 	padding: 0 0.3rem;
 	text-decoration: none;
+}
+.list-table .btn-wrap a.remove {
+	background: #ee9095;
 }
 
 /* Loading state ellipsis */
@@ -168,7 +190,10 @@ cds-button-set > cds-button {
 		display: flex;
 	}
 	.list-table .btn-wrap a:hover {
-		background: var(--cds-interactive);
+		background: var(--blue);
 		color: #fff;
+	}
+	.list-table .btn-wrap a.remove:hover {
+		background: var(--error);
 	}
 }

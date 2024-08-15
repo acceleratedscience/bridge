@@ -8,37 +8,37 @@ use crate::errors::GuardianError;
 #[inline]
 pub fn log_errors<T, E>(res: Result<T, E>) -> Result<T, E>
 where
-    E: Error,
+	E: Error,
 {
-    match res {
-        Ok(_) => res,
-        Err(ref e) => {
-            error!("Error: {}", e);
-            res
-        }
-    }
+	match res {
+		Ok(_) => res,
+		Err(ref e) => {
+			error!("Error: {}", e);
+			res
+		}
+	}
 }
 
 #[macro_export]
 macro_rules! log_error {
-    ($res:expr) => {{
-        let result = $res;
-        match result {
-            Ok(_) => result,
-            Err(ref e) => {
-                tracing::error!("Error: {}", e);
-                result
-            }
-        }
-    }};
+	($res:expr) => {{
+		let result = $res;
+		match result {
+			Ok(_) => result,
+			Err(ref e) => {
+				tracing::error!("Error: {}", e);
+				result
+			}
+		}
+	}};
 }
 
 pub fn bson<T>(t: T) -> Result<Bson, GuardianError>
 where
-    T: serde::Serialize,
+	T: serde::Serialize,
 {
-    match to_bson(&t) {
-        Ok(bson) => Ok(bson),
-        Err(e) => Err(GuardianError::GeneralError(e.to_string())),
-    }
+	match to_bson(&t) {
+		Ok(bson) => Ok(bson),
+		Err(e) => Err(GuardianError::GeneralError(e.to_string())),
+	}
 }

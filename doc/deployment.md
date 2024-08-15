@@ -1,17 +1,18 @@
 <div align="center">
-    <img src="../static/favicon.svg" width="100px">
+	<img src="../static/favicon.svg" width="100px">
 </div>
 </br>
 
 <p align="center">
-    <a href="https://open.accelerator.cafe" target="_blank">
-        :link: Guardian
-    </a>
+	<a href="https://open.accelerator.cafe" target="_blank">
+		:link: Guardian
+	</a>
 </p>
 
 ---
 
 ##### How to run Guardian locally:
+
 1. Clone the repository
 2. Create the self-signed certificate and asymmetric key pairs
     ```bash
@@ -31,7 +32,9 @@
     ```bash
     cargo run
     ```
+
 ##### How to destroy Guardian running locally:
+
 1. Stop the Guardian server
     - Press `Ctrl + C` in the terminal where the server is running or send a sigterm
 2. Stop the local MongoDB instance
@@ -42,7 +45,9 @@
     ```bash
     cargo clean
     ```
+
 ##### How to update the Guardian on OpenShift:
+
 > [!WARNING]
 > This will definitely change as processes are automated further in the very near future.
 > This section also requires Guardian to already be deployed on OpenShift. Deployment process is still being worked on and streamlined.

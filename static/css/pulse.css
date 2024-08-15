@@ -3,7 +3,7 @@
 }
 #status .status-card {
 	background: white;
-	border: solid 1px var(--cds-border-subtle-00);
+	border: solid 1px var(--border);
 	padding: 1rem;
 	max-width: 400px;
 	display: flex;
@@ -12,10 +12,10 @@
 }
 
 #status .status-card .status-success {
-	color: var(--cds-support-success);
+	color: var(--success);
 }
 #status .status-card .status-danger {
-	color: var(--cds-support-error);
+	color: var(--error);
 }
 .loading-ellipse {
 	width: 20px;

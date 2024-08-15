@@ -7,14 +7,14 @@
 
 <div id="response-token" onclick="clickToCopy(event)">
 	{% if not token %}
-    <span class="softer">You do not have a token yet.</span>
-    {% else %}
-    {{ token }}
-    {% endif %}
+	<span class="softer">You do not have a token yet.</span>
+	{% else %}
+	{{ token }}
+	{% endif %}
 </div>
 
 <p class="soft-text">{% if token %}Expiration date: {# DCH insert date here #}{% else %}&nbsp;{% endif %}</p>
 
 <cds-button hx-get="/portal/hx/token" hx-target="#response-token" hx-swap="innerhtml">
-    {% if token %}Regenerate{% else %}Generate{% endif %}
+	{% if token %}Regenerate{% else %}Generate{% endif %}
 </cds-button>
