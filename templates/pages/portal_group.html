@@ -1,10 +1,74 @@
 {% extends "pages/portal.html" %}
-{% block title %}Welcome Admin!{% endblock title %}
+
+{% block title %}OpenAD Portal | Group Admin Profile{% endblock title %}
+
 {% block htmx %}
 {{ super() }}
 <script src="https://unpkg.com/htmx-ext-response-targets@2.0.0/response-targets.js"></script>
 {% endblock htmx %}
-{% block usertype %}Group Admin{% endblock usertype %}
+
+{% block usertype %}
+Group Admin
+{% endblock usertype %}
+
+{% block function %}
+<cds-tabs value="models">
+	<cds-tab target="panel-models" value="models">Available Models</cds-tab>
+	<cds-tab target="panel-token" value="token">Access Token</cds-tab>
+	<cds-tab target="panel-groups" value="groups">Groups</cds-tab>
+	<cds-tab target="panel-users" value="users">Users</cds-tab>
+</cds-tabs>
+<br>
+
+<!-- Models -->
+<div id="panel-models" role="tabpanel" aria-labelledby="tab-models">
+	{% if group == "" %}
+	<p>No models available.</p>
+	<p class="small">You need to be member of a group in order to have access to any models.</p>
+	{% else %}
+	<div class="list-table">
+		{# DCH - subscriptions is returning a single string with commas instead of a list #}
+		{# DCH - can we add links to each model? #}
+		{% for model in subscriptions %}
+		<div class="list-table-item">{{model}}<div class="btn-wrap"><a target="_blank" href="https://github.com/IBM/molformer">docs</a></div></div>
+		<div class="list-table-item">{{model}}<div class="btn-wrap"><a target="_blank" href="https://github.com/IBM/molformer">docs</a></div></div>
+		<div class="list-table-item">{{model}}<div class="btn-wrap"><a target="_blank" href="https://github.com/IBM/molformer">docs</a></div></div>
+		{% endfor %}
+	</div>
+	{% endif %}
+</div>
+
+<!-- Token -->
+<div id="panel-token" role="tabpanel" aria-labelledby="tab-token">
+{% include "components/token.html" %}
+</div>
+
+<!-- Groups -->
+<div id="panel-groups" role="tabpanel" aria-labelledby="tab-groups">
+	{% include 'components/groups.html' %}
+</div>
+
+<!-- Users -->
+<div id="panel-users" role="tabpanel" aria-labelledby="tab-users">
+	{% include 'components/users.html' %}
+</div>
+
+<br><br>
+DCH - delete when done<br>
+<b>Group:</b>
+<a href="#" hx-get="system_admin/hx/tab?tab=GroupCreate" hx-target="#temp">Create (broken)</a> /
+<a href="#" hx-get="system_admin/hx/tab?tab=GroupModify" hx-target="#temp">Modify (works)</a>
+
+<br><br>
+<b>User:</b>
+<a href="#" hx-get="system_admin/hx/tab?tab=UserModify" hx-target="#temp">Modify (broken)</a> /
+<a href="#" hx-get="system_admin/hx/tab?tab=UserDelete" hx-target="#temp">Delete (broken)</a>
+
+<div id="temp"></div>
+
+<br><br>
+{% endblock function %}
+
 {% block tabselection %}
 <li class="nav-item">
 	<a class="nav-link active disabled" aria-current="page" hx-get="group_admin/hx/tab?tab=Profile" href="#" role="tab" aria-controls="tab-contents" aria-selected="true">Profile</a>
