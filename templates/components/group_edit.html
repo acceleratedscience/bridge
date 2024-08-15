@@ -1,5 +1,5 @@
 {# DCH - Replace placholder variables, I'm not sure how to move this data onto the route correctly #}
-{# DCH - This component should be moved into pages/group_edit.html once variabled are moved #}
+{# DCH - This component should be moved into pages/group_edit.html once variables are moved #}
 {# DCH - Group name field should let you override group #}
 {% if not items %}{% set items = ['Foo', 'Bar'] %}{% endif %}
 {% if not subject %}{% set subject = 'john.doe@gmail.com' %}{% endif %}
@@ -12,6 +12,10 @@
 
 <div hx-ext="response-targets">
 	<form class="cds-group">
+		<!-- Hidden: Group identifier -->
+		<!-- <cds-text-input label="Group identifier" name="group_id" hidden></cds-text-input> -->
+		{# DCH - Group ID or other unique identifier #}
+		
 		<!-- Group name -->
 		<cds-text-input label="Group name" name="name" required></cds-text-input>
 
@@ -22,12 +26,8 @@
 			{% endfor %}
 		</cds-multi-select>
 
-		<!-- Hidden: Group identifier -->
-		<!-- <cds-text-input label="Group identifier" name="group_id" hidden></cds-text-input> -->
-		{# DCH - Group ID or other unique identifier #}
-
 		<!-- Hidden: Last edit  -->
-		<cds-text-input label="Last updated by" name="last_updated_by" hidden value="{{ subject }}"></cds-text-input>
+		<cds-text-input label="Last edit" name="last_updated_by" hidden value="{{ subject }}"></cds-text-input>
 
 		<!-- Submit -->
 		<cds-button-set>

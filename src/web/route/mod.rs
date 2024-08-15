@@ -11,6 +11,7 @@ use crate::{auth::COOKIE_NAME, errors::Result, web::helper};
 pub mod auth;
 pub mod foo;
 pub mod user;
+pub mod users;
 pub mod group;
 pub mod groups;
 pub mod health;

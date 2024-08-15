@@ -1,43 +1,64 @@
-{% if not members %}{% set members = 'John, Jane, Jimmy' %}{% endif %}
-{% if not group_name %}{% set group_name = 'Foobar' %}{% endif %}
+{# DCH - Replace placholder variables, I'm not sure how to move this data onto the route correctly #}
+{# DCH - This component should be moved into pages/user_edit.html once variables are moved #}
+{# DCH - Email name field should let you override email #}
+{% if not user_items %}{% set user_items = ['user', 'group', 'system'] %}{% endif %}
+{% if not user_type %}{% set user_type = 'system' %}{% endif %}
+{% if not group_items %}{% set group_items = ['Foo','Bar', 'Foobar', 'Baz'] %}{% endif %}
 {% if not subject %}{% set subject = 'john.doe@gmail.com' %}{% endif %}
 
-<div hx-ext="response-targets" id="response-div">
-	<div class="container mt-3">
-		<h1 class="lead">Modify user group1 {{ group_name }}</h1>
-		<form id="form-group-form" class="text-start" hx-patch="/portal/group_admin/hx/user" hx-target="#response-div" hx-target-400="#response" hx-swap="innerHTML">
-			<div class="form-group">
-				<label for="email" class="fs-6 mx-2">User's email</label>
-				<input type="text" id="email" name="email" class="form-control" required>
-			</div>
-			<div class="form-group my-3">
-				<div class="form-group">
-					<input class="form-check-input" type="radio" name="modify_user" id="adduser" value="add">
-					<label class="form-check-label" for="adduser">
-						Add to group
-					</label>
-				</div>
-				<div class="form-group">
-					<input class="form-check-input" type="radio" name="modify_user" id="removeuser" value="remove">
-					<label class="form-check-label" for="removeuser">
-						Remove from group
-					</label>
-				</div>
-			</div>
-			<div class="form-group mb-3">
-				<label for="exampleFormControlTextarea1" class="form-label">Members in your group</label>
-				<textarea class="form-control" id="exampleFormControlTextarea1" rows="3" disabled>{{ members }}</textarea>
-			</div>
-			<div class="form-group mt-3">
-				<label for="group_name" class="fs-6 mx-2">Group</label>
-				<input type="text" id="group_name" name="group_name" class="form-control" value="{{ group_name }}" readonly>
-			</div>
-			<div class="form-group mt-3">
-				<label for="last_updated_by" class="fs-6 mx-2">Last Updated By</label>
-				<input type="text" id="last_updated_by" name="last_updated_by" class="form-control" value="{{ subject }}" readonly>
-			</div>
-			<button type="submit" class="btn btn-primary mt-3">submit</button>
-		</form>
-		<div id="response" class="mt-3"></div>
-	</div>
+{% if create %}
+<h3>Create User</h3>
+{% else %}
+<h3><span class="softer">Edit User</span> John Doe</h3>
+{% endif %}
+
+
+<div hx-ext="response-targets">
+	<form class="cds-group">
+		<!-- Hidden: User identifier -->
+		<!-- <cds-text-input label="User identifier" name="user_id" hidden></cds-text-input> -->
+		{# DCH - User ID or other unique identifier #}
+
+		<!-- Name -->
+		<cds-text-input label="Name" name="name" required></cds-text-input>
+
+		<!-- Username -->
+		<cds-text-input label="Username" name="username" required></cds-text-input>
+
+		<!-- Email -->
+		<cds-text-input label="Email" name="email" required></cds-text-input>
+
+		<!-- Groups -->
+		<cds-multi-select title-text="Groups" label="Select groups" name="groups" required>
+			{% for item in group_items %}
+				<cds-multi-select-item value="{{ item }}">{{ item }}</cds-multi-select-item>
+			{% endfor %}
+		</cds-multi-select>
+
+		<!-- User type -->		
+		<cds-dropdown title-text="User type" value="{{ user_type }}">
+			{% for item in user_items %}
+				<cds-dropdown-item value="{{ item }}">{{ item }}</cds-dropdown-item>
+			{% endfor %}
+		</cds-dropdown>
+		
+		<!-- Hidden: Last edit  -->
+		<cds-text-input label="Last edit" name="last_updated_by" hidden value="{{ subject }}"></cds-text-input>
+
+		<!-- Submit -->
+		<cds-button-set>
+			<cds-button href="./">Cancel</cds-button>
+			{% if create %}
+			<cds-button hx-post="/portal/system_admin/hx/user" hx-target="#response" hx-target-400="#response" hx-swap="innerhtml">Submit</cds-button>
+			{% else %}
+			<cds-button hx-patch="/portal/system_admin/hx/user" hx-target="#response" hx-target-400="#response" hx-swap="innerhtml">Submit</cds-button>
+			{% endif %}
+		</cds-button-set>
+	</form>
+
+	<br><br>
+	<a href="/users" class="delete">Delete user</a>
+
+	{# DCH - instead of displaying response, please forward to group detail page (../) #}
+	<div id="response"></div>
 </div>

@@ -1,29 +1,7 @@
 <link rel="stylesheet" href="/static/css/nav.css" />
 <cds-header aria-label="IBM Platform Name">
 	<cds-header-global-action class="logo">{% include 'icons/icn-bee.html' %}</cds-header-global-action>
-	<cds-header-name href="javascript:void 0" prefix="IBM">OpenAD Portal</cds-header-name>
-	<cds-header-nav menu-bar-label="IBM OpenAD Portal" menu>
-		<cds-header-nav-item is-active="true" href="/">Profile</cds-header-nav-item>
-		<cds-header-nav-item href="/token">Token</cds-header-nav-item>
-		<cds-header-nav-item href="/groups">Groups</cds-header-nav-item>
-		<cds-header-nav-item href="/users">Users</cds-header-nav-item>
-		<!-- <cds-header-menu trigger-content="Group">
-			<cds-header-menu-item href="/create-group">
-			  Create group
-			</cds-header-menu-item>
-			<cds-header-menu-item href="/modify-group">
-			  Modify group
-			</cds-header-menu-item>
-		</cds-header-menu>
-		<cds-header-menu trigger-content="User">
-			<cds-header-menu-item href="/create-user">
-			  Create user
-			</cds-header-menu-item>
-			<cds-header-menu-item href="/modify-user">
-			  Modify user
-			</cds-header-menu-item>
-		</cds-header-menu> -->
-	</cds-header-nav>
+	<cds-header-name href="/" prefix="IBM">OpenAD Portal</cds-header-name>
 	<div class="cds--header__global">
 		<cds-header-global-action aria-label="Log out" tooltip-text="Log out" kind="primary" size="lg" tooltip-alignment="right" tooltip-position="bottom" type="button" hx-post="hx/logout">
 			{% include 'icons/icn-logout.html' %}

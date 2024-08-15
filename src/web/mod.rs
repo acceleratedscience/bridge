@@ -44,6 +44,7 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
             .configure(route::health::config_status)
             .configure(route::foo::config_foo)
             .configure(route::user::config_user)
+            .configure(route::users::config_users)
             .configure(route::group::config_group)
             .configure(route::groups::config_groups)
             .configure(route::proxy::config_proxy)

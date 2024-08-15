@@ -1,5 +1,35 @@
 {% extends "base_user.html" %}
+
+{# DCH - Replace placholder variables #}
+
 {% block body %}
-<h1>User</h1>
-{% include "components/user_edit.html" %}
+<div class="pre-h1"><a href="/users" class="incog">User</a></div>
+<h1>John Doe</h1>
+
+{# DCH - Replace john-doe with group username #}
+<cds-button href="/user/john-doe/edit">Edit</cds-button>
+<br><br>
+
+<div class="key-val-wrap">
+    <div class="key">Name</div>
+	<div class="val">John Doe</div>
+
+    <div class="key">Username</div>
+	<div class="val">john-doe</div>
+
+    <div class="key">Email</div>
+	<div class="val">john.doe@gmail.com</div>
+
+    <div class="key">Group</div>
+	<div class="val">Foobar</div>
+
+    <div class="key">User type</div>
+	<div class="val">User</div>
+
+	<div class="key">Created</div>
+	<div class="val">Jane Dee<br><small>Aug 15, 2024</small></div>
+
+	<div class="key">Last edit</div>
+	<div class="val">Jane Dee<br><small>3 days ago</small></div>
+</div>
 {% endblock body %}

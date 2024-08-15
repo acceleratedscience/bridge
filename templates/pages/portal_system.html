@@ -50,24 +50,19 @@ System Administrator
 
 <!-- Users -->
 <div id="panel-users" role="tabpanel" aria-labelledby="tab-users">
-	<cds-button size="sm">Add new</cds-button>
-	<br><br>
-	<div class="list-table">
-		<div class="list-table-item">John Doe<div class="btn-wrap"><a href="javascript:void(0)">details</a><a href="javascript:void(0)">edit</a></div></div>
-		<div class="list-table-item">Jane Dou<div class="btn-wrap"><a href="javascript:void(0)">details</a><a href="javascript:void(0)">edit</a></div></div>
-		<div class="list-table-item">Jim Deer<div class="btn-wrap"><a href="javascript:void(0)">details</a><a href="javascript:void(0)">edit</a></div></div>
-	</div>
+	{% include 'components/users.html' %}
 </div>
 
 <br><br>
+DCH - delete when done<br>
 <b>Group:</b>
-<a href="#" hx-get="system_admin/hx/tab?tab=GroupCreate" hx-target="#temp">Create</a> /
-<a href="#" hx-get="system_admin/hx/tab?tab=GroupModify" hx-target="#temp">Modify</a>
+<a href="#" hx-get="system_admin/hx/tab?tab=GroupCreate" hx-target="#temp">Create (broken)</a> /
+<a href="#" hx-get="system_admin/hx/tab?tab=GroupModify" hx-target="#temp">Modify (works)</a>
 
 <br><br>
 <b>User:</b>
-<a href="#" hx-get="system_admin/hx/tab?tab=UserModify" hx-target="#temp">Modify</a> /
-<a href="#" hx-get="system_admin/hx/tab?tab=UserDelete" hx-target="#temp">Delete</a>
+<a href="#" hx-get="system_admin/hx/tab?tab=UserModify" hx-target="#temp">Modify (broken)</a> /
+<a href="#" hx-get="system_admin/hx/tab?tab=UserDelete" hx-target="#temp">Delete (broken)</a>
 
 <div id="temp"></div>
 
