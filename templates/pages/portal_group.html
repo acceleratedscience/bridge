@@ -15,8 +15,7 @@ Group Admin
 <cds-tabs value="models">
 	<cds-tab target="panel-models" value="models">Available Models</cds-tab>
 	<cds-tab target="panel-token" value="token">Access Token</cds-tab>
-	<cds-tab target="panel-groups" value="groups">Groups</cds-tab>
-	<cds-tab target="panel-users" value="users">Users</cds-tab>
+	<cds-tab target="panel-members" value="groups">Members</cds-tab>
 </cds-tabs>
 <br>
 
@@ -43,43 +42,8 @@ Group Admin
 {% include "components/token.html" %}
 </div>
 
-<!-- Groups -->
-<div id="panel-groups" role="tabpanel" aria-labelledby="tab-groups">
-	{% include 'components/groups.html' %}
+<!-- Members -->
+<div id="panel-members" role="tabpanel" aria-labelledby="tab-members">
+	{% include 'components/members.html' %}
 </div>
-
-<!-- Users -->
-<div id="panel-users" role="tabpanel" aria-labelledby="tab-users">
-	{% include 'components/users.html' %}
-</div>
-
-<br><br>
-DCH - delete when done<br>
-<b>Group:</b>
-<a href="#" hx-get="system_admin/hx/tab?tab=GroupCreate" hx-target="#temp">Create (broken)</a> /
-<a href="#" hx-get="system_admin/hx/tab?tab=GroupModify" hx-target="#temp">Modify (works)</a>
-
-<br><br>
-<b>User:</b>
-<a href="#" hx-get="system_admin/hx/tab?tab=UserModify" hx-target="#temp">Modify (broken)</a> /
-<a href="#" hx-get="system_admin/hx/tab?tab=UserDelete" hx-target="#temp">Delete (broken)</a>
-
-<div id="temp"></div>
-
-<br><br>
 {% endblock function %}
-
-{% block tabselection %}
-<li class="nav-item">
-	<a class="nav-link active disabled" aria-current="page" hx-get="group_admin/hx/tab?tab=Profile" href="#" role="tab" aria-controls="tab-contents" aria-selected="true">Profile</a>
-</li>
-<li class="nav-item">
-	<a class="nav-link" href="#" role="tab" aria-controls="tab-contents" hx-get="group_admin/hx/tab?tab=UserModify" aria-selected="false">User</a>
-</li>
-<li class="nav-item">
-	<a class="nav-link" href="#" role="tab" aria-controls="tab-contents" hx-post="hx/logout" aria-selected="false">Logout</a>
-</li>
-{% endblock tabselection %}
-{% block tabcontents %}
-{% include "components/token.html" %}
-{% endblock tabcontents %}
