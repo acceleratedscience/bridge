@@ -7,8 +7,8 @@ pub struct GroupContent {
     items: Vec<String>,
 }
 
-pub(super) static CREATE_GROUP: &str = "system/create_group.html";
-pub(super) static MODIFY_GROUP: &str = "system/modify_group.html";
+pub(super) static CREATE_GROUP: &str = "components/group_edit.html";
+pub(super) static MODIFY_GROUP: &str = "components/group_edit.html";
 
 impl GroupContent {
     pub fn new() -> Self {
@@ -33,8 +33,8 @@ pub struct UserContent {
     user_items: Vec<String>,
 }
 
-pub(super) static DELETE_USER: &str = "system/delete_user.html";
-pub(super) static MODIFY_USER: &str = "system/modify_user.html";
+pub(super) static DELETE_USER: &str = "components/user_edit.html"; // DCH, no need for separate page.
+pub(super) static MODIFY_USER: &str = "components/user_edit.html";
 
 impl UserContent {
     pub fn new() -> Self {

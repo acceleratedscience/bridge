@@ -4,7 +4,7 @@ use tera::Tera;
 use crate::errors::Result;
 use crate::web::route::portal::PROFILE_MAIN;
 
-pub(super) static MODIFY_USER_GROUP: &str = "group/modify_user.html";
+pub(super) static MODIFY_USER_GROUP: &str = "components/user_edit.html";
 
 pub struct ModifyUserGroup {
     user_in_group: Vec<String>,

@@ -19,7 +19,7 @@ use crate::{
     web::{helper, route::portal::user_htmx::Profile},
 };
 
-const USER_PAGE: &str = "user/profile_user.html";
+const USER_PAGE: &str = "pages/portal_user.html";
 
 #[get("user")]
 #[instrument(skip(data, db, subject))]

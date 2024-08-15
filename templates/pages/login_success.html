@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+
+{% block title %}Login successful{% endblock title %}
+
+{% block head %}
+<script nonce="login-redirect-guardian">
+    window.location.href = '/';
+</script>
+{% endblock head %}
+
+{% block htmx %}{% endblock htmx %}

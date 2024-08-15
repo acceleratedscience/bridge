@@ -1,0 +1,27 @@
+{% extends "base_user.html" %}
+
+{# DCH - Replace placholder variables #}
+
+{% block body %}
+<div class="pre-h1"><a href="/groups" class="incog">Group</a></div>
+<h1>Foobar</h1>
+
+{# DCH - Replace foo-bar with group username #}
+<cds-button href="/group/foo-bar/edit">Edit</cds-button>
+<br><br>
+
+<div class="key-val-wrap">
+	<div class="key">Available models</div>
+    <div class="val list-table">
+        <div class="list-table-item">Lorm<div class="btn-wrap"><a href="javascript:void(0)">edit</a></div></div>
+        <div class="list-table-item">Foob<div class="btn-wrap"><a href="javascript:void(0)">edit</a></div></div>
+        <div class="list-table-item">Test<div class="btn-wrap"><a href="javascript:void(0)">edit</a></div></div>
+    </div>
+
+	<div class="key">Created</div>
+	<div class="val">John Doe<br><small>Aug 15, 2024</small></div>
+
+	<div class="key">Last edit</div>
+	<div class="val">Jane Dee<br><small>3 days ago</small></div>
+</div>
+{% endblock body %}

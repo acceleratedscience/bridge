@@ -10,7 +10,9 @@ use crate::{auth::COOKIE_NAME, errors::Result, web::helper};
 
 pub mod auth;
 pub mod foo;
-pub mod token;
+pub mod user;
+pub mod group;
+pub mod groups;
 pub mod health;
 pub mod portal;
 pub mod proxy;
@@ -28,7 +30,7 @@ async fn index(data: Data<Tera>, req: HttpRequest) -> Result<HttpResponse> {
 
     let mut ctx = Context::new();
     ctx.insert("version", APP_VERSION);
-    let rendered = helper::log_errors(data.render("login.html", &ctx))?;
+    let rendered = helper::log_errors(data.render("pages/login.html", &ctx))?;
 
     Ok(HttpResponse::Ok().body(rendered))
 }

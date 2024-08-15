@@ -35,7 +35,7 @@ use crate::{
 
 use self::htmx::{GroupContent, UserContent, CREATE_GROUP, DELETE_USER, MODIFY_GROUP, MODIFY_USER};
 
-const USER_PAGE: &str = "system/profile_system.html";
+const USER_PAGE: &str = "pages/portal_system.html";
 
 #[get("")]
 #[instrument(skip(data, db, subject))]
@@ -309,7 +309,7 @@ async fn system_tab_htmx(
         .for_each(|t| user_form.add_user(t.to_string()));
 
     let content = match tab.tab {
-        AdminTab::Profile => r#"<br><p class="lead">Profile tab</p>"#.to_string(),
+        AdminTab::Profile => r#"<br><p class="lead">Profile tab</p>"#.to_string(), // DCH - not needed I think
         AdminTab::GroupCreate => group_form.render(&user.email, data, CREATE_GROUP)?,
         AdminTab::GroupModify => group_form.render(&user.email, data, MODIFY_GROUP)?,
         AdminTab::UserModify => user_form.render(&user.email, data, MODIFY_USER)?,

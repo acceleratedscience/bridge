@@ -1,7 +1,0 @@
-{# Token refresh form #}
-<link rel="stylesheet" href="/static/css/token.css" />
-
-<p class="soft-text">Your access token</p>
-<div id="response-token" onclick="clickToCopy(event)"></div>
-<p class="soft-text">Expiration date: INSERT DATE</p>
-<cds-button hx-get="/portal/hx/token" hx-target="#response-token" hx-swap="innerhtml">Regenerate</cds-button>

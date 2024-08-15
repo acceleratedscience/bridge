@@ -9,7 +9,7 @@ pub struct Profile {
     pub name: String,
 }
 
-pub(super) static PROFILE: &str = "user/profile_user.html";
+pub(super) static PROFILE: &str = "pages/portal_user.html";
 
 impl Profile {
     pub fn new(name: String) -> Self {

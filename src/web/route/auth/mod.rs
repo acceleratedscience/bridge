@@ -191,7 +191,7 @@ async fn code_to_response(
 
     let mut ctx = Context::new();
     ctx.insert("name", &name);
-    let rendered = helper::log_errors(data.render("login_success.html", &ctx))?;
+    let rendered = helper::log_errors(data.render("pages/login_success.html", &ctx))?;
 
     let mut cookie_remove = Cookie::build("nonce", "")
         .same_site(SameSite::Lax)

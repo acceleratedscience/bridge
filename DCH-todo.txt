@@ -1,0 +1,11 @@
+DCH - TO DO
+-----
+- Groups and users should get a url-friendly unique username field
+- Group/user links should link to path with username instead of the foo-bar placeholder
+- Current field `user_name` is case sensitive, I think that should be just `name`, and unique username shoudl be called `username` (one word)
+
+
+
+Questions / remarks
+-------------------
+- What is `sub` field in User record do? It's my email capitalized (Moenen.Erbuer@ibm.com), is that by design?

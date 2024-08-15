@@ -1,21 +1,45 @@
 body {
 	background: #fafafa;
 	margin: 3rem;
+	line-height: 1.3rem;
 }
 
 h1 {
 	margin-bottom: 1.5rem;
 }
+h2,
+h3 {
+	margin-bottom: 1rem;
+}
+.pre-h1 {
+	color: var(--cds-slug-background);
+}
 
+a.incog {
+	text-decoration: none;
+	color: inherit;
+}
+
+b {
+	font-weight: 600;
+}
 p {
 	margin-bottom: 0.5rem;
 }
-p.small {
+small,
+.small {
 	font-size: 0.8rem;
 }
 
+/* Form elements */
+.cds-group {
+	display: flex;
+	flex-direction: column;
+	gap: 2rem;
+}
+
 /* Vertical sections */
-.sections-wrap {
+.section-wrap {
 	display: flex;
 	flex-direction: column;
 	gap: 2.5rem;
@@ -23,6 +47,27 @@ p.small {
 /* .sections-wrap > * {
 	border: solid 1px pink;
 } */
+
+/**
+ * Style shortcuts
+ */
+.soft {
+	color: var(--cds-slug-background);
+}
+.softer {
+	color: var(--cds-layer-accent-active-01);
+}
+
+/**
+ * UI Elements 
+ */
+
+/* Horizontal sections */
+.section-wrap-h {
+	display: flex;
+	flex-direction: row;
+	gap: 3rem;
+}
 
 /* Display items */
 .soft-text,
@@ -36,16 +81,21 @@ p.small {
 	margin-bottom: 0.5rem;
 }
 
-/**
- * Style shortcuts
- */
-.soft {
-	color: var(--cds-layer-accent-active-01);
+/* Key-value pairs */
+.key-val-wrap {
+	display: flex;
+	flex-direction: column;
+}
+.key-val-wrap .key {
+	font-size: 0.8rem;
+	color: var(--cds-slug-background);
+	margin-bottom: 0.2rem;
+}
+.key-val-wrap .val {
+	margin-bottom: 1rem;
 }
 
-/**
- * UI Elements 
- */
+/* List table */
 .list-table {
 	background: #fff;
 	border: solid 1px var(--cds-border-subtle-00);
@@ -56,5 +106,57 @@ p.small {
 	height: 2rem;
 	line-height: 1.9rem;
 	border-bottom: solid 1px var(--cds-border-subtle-00);
-	padding: 0 1rem;
+	padding: 0 0.5rem;
+	position: relative;
+}
+.list-table .btn-wrap {
+	display: flex;
+	display: none;
+	flex-direction: row-reverse;
+	gap: 0.3rem;
+	position: absolute;
+	right: 0.5rem;
+	top: 50%;
+	margin-top: -0.6rem;
+	font-size: 0.8rem;
+	line-height: 1.2rem;
+	height: 1.2rem;
+}
+.list-table .btn-wrap a {
+	background: var(--cds-ai-border-start);
+	color: #fff;
+	border-radius: 2px;
+	padding: 0 0.3rem;
+	text-decoration: none;
+}
+
+/* Loading state ellipsis */
+.loading-ellipse::after {
+	content: '';
+	animation: ellipsis 800ms infinite;
+}
+@keyframes ellipsis {
+	0% {
+		content: '';
+	}
+	25% {
+		content: '.';
+	}
+	50% {
+		content: '..';
+	}
+	75% {
+		content: '...';
+	}
+}
+
+/* Hover states */
+@media (hover: hover) {
+	.list-table .list-table-item:hover .btn-wrap {
+		display: flex;
+	}
+	.list-table .btn-wrap a:hover {
+		background: var(--cds-interactive);
+		color: #fff;
+	}
 }

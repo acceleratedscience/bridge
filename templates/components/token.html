@@ -1,0 +1,17 @@
+<!-- Token refresh form -->
+<link rel="stylesheet" href="/static/css/token.css" />
+
+{# DCH - Token should be saved in database, this variable should indicate if it's available #}
+{% set has_token = false %}
+
+<div id="response-token" onclick="clickToCopy(event)">
+    {% if not has_token %}
+    <span class="softer">You do not have a token yet.</span>
+    {% endif %}
+</div>
+
+<p class="soft-text">{% if has_token %}Expiration date: {# DCH insert date here #}{% else %}&nbsp;{% endif %}</p>
+
+<cds-button hx-get="/portal/hx/token" hx-target="#response-token" hx-swap="innerhtml">
+    {% if has_token %}Regenerate{% else %}Generate{% endif %}
+</cds-button>
