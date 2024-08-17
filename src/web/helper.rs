@@ -200,6 +200,12 @@ pub mod ws {
 
         let mut request = Request::builder().uri(websocket_url);
         for (header_name, header_value) in req.headers().iter() {
+
+            // this header causes some weird behavior over wss
+            if let Ok("v1.kernel.websocket.jupyter.org") = header_value.to_str() {
+                continue;
+            }
+
             request = request.header(header_name.to_string(), header_value.to_str().unwrap());
         }
         let request = request.body(()).unwrap();
