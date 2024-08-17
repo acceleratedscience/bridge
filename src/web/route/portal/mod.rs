@@ -16,11 +16,11 @@ use crate::{
 
 mod group_admin;
 mod helper;
+mod profile_htmx;
 mod system_admin;
+mod token;
 mod user;
 mod user_htmx;
-mod token;
-mod profile_htmx;
 
 pub static PROFILE_MAIN: &str = "profile.html";
 
@@ -72,7 +72,12 @@ pub fn config_portal(cfg: &mut web::ServiceConfig) {
     cfg.service(
         web::scope("/portal")
             .wrap(CookieCheck)
-            .service(web::scope("/hx").wrap(Htmx).service(token::get_token_for_user).service(logout))
+            .service(
+                web::scope("/hx")
+                    .wrap(Htmx)
+                    .service(token::get_token_for_user)
+                    .service(logout),
+            )
             .service(index)
             .service(user::user)
             .configure(group_admin::config_group)

@@ -19,11 +19,7 @@ pub async fn validator(
         .realm("proxy");
     let error = AuthenticationError::from(config);
 
-    match validate_token(
-        &token,
-        &CONFIG.decoder,
-        &CONFIG.validation,
-    ) {
+    match validate_token(&token, &CONFIG.decoder, &CONFIG.validation) {
         Ok(claims) => {
             if let Some(r) = req.headers().get(INFERENCE_HEADER) {
                 // TODO: handle unwrap_or better

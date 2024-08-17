@@ -90,7 +90,10 @@ pub fn custom_code_handle(data: Data<Tera>) -> ErrorHandlers<BoxBody> {
                     let contents = if let Some(hh) = htmx_header {
                         (hh, ContentType::form_url_encoded())
                     } else {
-                        (template.get("400").unwrap().to_string(), ContentType::html())
+                        (
+                            template.get("400").unwrap().to_string(),
+                            ContentType::html(),
+                        )
                     };
 
                     HttpResponse::build(StatusCode::BAD_REQUEST)

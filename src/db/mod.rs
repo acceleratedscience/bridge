@@ -3,9 +3,9 @@ use std::marker::PhantomData;
 
 use crate::errors::Result;
 
+pub mod deserialize;
 pub mod models;
 pub mod mongo;
-pub mod deserialize;
 
 // Database interface
 // Q is a generic type that represents a query

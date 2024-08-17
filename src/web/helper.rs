@@ -50,7 +50,7 @@ macro_rules! log_with_level {
     };
 }
 
-pub fn error(e: impl Error){
+pub fn error(e: impl Error) {
     tracing::error!("Error: {}", e);
 }
 
@@ -142,9 +142,10 @@ pub mod forwarding {
         };
 
         let res = log_with_level!(
-            forwarded_req.send().await.map_err(|e| {
-                GuardianError::GeneralError(e.to_string())
-            }),
+            forwarded_req
+                .send()
+                .await
+                .map_err(|e| { GuardianError::GeneralError(e.to_string()) }),
             error
         )?;
 
@@ -181,75 +182,83 @@ pub mod forwarding {
 pub mod ws {
     use actix_web::{
         rt,
-        web::{self, BytesMut},
+        web::{self},
         HttpRequest, HttpResponse,
     };
-    use awc::http::StatusCode;
-    use futures::{channel::mpsc::unbounded, SinkExt, StreamExt};
 
-    use tokio::io::{AsyncReadExt, AsyncWriteExt};
+    use futures::{SinkExt, StreamExt};
+    use reqwest::StatusCode;
+    use tokio_tungstenite::tungstenite::{self, handshake::client::Request};
 
     use crate::errors::{GuardianError, Result};
 
-    #[inline]
     pub async fn manage_connection<T>(
         req: HttpRequest,
-        mut pl: web::Payload,
+        pl: web::Payload,
         url: T,
     ) -> Result<HttpResponse>
     where
         T: AsRef<str> + Sync + Send,
     {
         let websocket_url = url.as_ref();
-        // start the websocket handshake with the downstream server
-        let mut wsc = awc::Client::new().ws(websocket_url);
 
-        let cookies = req.headers().get_all("cookie");
-        for cookie in cookies {
-            wsc = wsc.header("cookie", cookie.to_str().unwrap());
+        let mut request = Request::builder().uri(websocket_url);
+        for (header_name, header_value) in req.headers().iter() {
+            request = request.header(header_name.to_string(), header_value.to_str().unwrap());
         }
+        let request = request.body(()).unwrap();
 
-        let (res, frame) = wsc.connect().await?;
+        let (stream, res) = tokio_tungstenite::connect_async(request).await.unwrap();
         if !res.status().eq(&StatusCode::SWITCHING_PROTOCOLS) {
             return Err(GuardianError::GeneralError(
                 "Failed to establish websocket connection".to_string(),
             ));
         }
-        let mut io = frame.into_parts().io;
-
-        // websocket handshake with the client
-        let mut resp = actix_web_actors::ws::handshake(&req)?;
-        // for (key, value) in res.headers().iter() {
-        //     resp.insert_header((key.as_str(), value.as_bytes()));
-        // }
-
-        let (mut tx, rx) = unbounded();
-        let mut buf = BytesMut::new();
+        // downstream server
+        let (mut w, mut s_stream) = stream.split();
+        // client
+        let (res, mut s, mut c_stream) = actix_ws::handle(&req, pl).unwrap();
 
         rt::spawn(async move {
             loop {
                 tokio::select! {
-                    // body from source.
-                    res = pl.next() => {
-                        match res {
+                    // data to be sent to downstream server
+                    resp = c_stream.next() => {
+                        match resp {
+                            Some(result) => {
+                                if let Ok(msg) = result {
+                                    match msg {
+                                        actix_ws::Message::Text(t) => w.send(tungstenite::Message::Text(t.to_string())).await.unwrap(),
+                                        actix_ws::Message::Binary(b) => w.send(tungstenite::Message::Binary(b.to_vec())).await.unwrap(),
+                                        actix_ws::Message::Ping(p) => w.send(tungstenite::Message::Ping(p.to_vec())).await.unwrap(),
+                                        _ => break,
+                                    }
+                                }
+                            },
                             None => return,
-                            Some(body) => {
-                                let body = body.unwrap();
-                                io.write_all(&body).await.unwrap();
-                            }
                         }
                     }
-
-                    // body from dest.
-                    res = io.read_buf(&mut buf) => {
-                        let size = res.unwrap();
-                        let bytes = buf.split_to(size).freeze();
-                        tx.send(Ok::<_, actix_web::Error>(bytes)).await.unwrap();
+                    // data to be sent to the client
+                    resp = s_stream.next() => {
+                        match resp {
+                            Some(result) => {
+                                if let Ok(msg) = result {
+                                    match msg {
+                                        tungstenite::Message::Text(t) => s.text(t).await.unwrap(),
+                                        tungstenite::Message::Binary(b) => s.binary(b).await.unwrap(),
+                                        tungstenite::Message::Pong(p) => s.pong(&p).await.unwrap(),
+                                        _ => break,
+                                    }
+                                }
+                            },
+                            None => return,
+                        }
                     }
                 }
             }
         });
 
-        Ok(resp.streaming(rx))
+        // websocket handshake with the client
+        Ok(res)
     }
 }
