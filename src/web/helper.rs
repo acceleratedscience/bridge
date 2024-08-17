@@ -200,13 +200,13 @@ pub mod ws {
 
         let mut request = Request::builder().uri(websocket_url);
         for (header_name, header_value) in req.headers().iter() {
-
-            // this header causes some weird behavior over wss
-            if let Ok("v1.kernel.websocket.jupyter.org") = header_value.to_str() {
-                continue;
+            if let Ok(val) = header_value.to_str() {
+                // this header causes some weird behavior over wss, so we ignore it for now
+                if val == "v1.kernel.websocket.jupyter.org" {
+                    continue;
+                }
+                request = request.header(header_name.to_string(), val);
             }
-
-            request = request.header(header_name.to_string(), header_value.to_str().unwrap());
         }
         let request = request.body(()).unwrap();
 
@@ -230,18 +230,30 @@ pub mod ws {
                             Some(result) => {
                                 if let Ok(msg) = result {
                                     match msg {
-                                        actix_ws::Message::Text(t) => w
-                                            .send(tungstenite::Message::Text(t.to_string()))
-                                            .await
-                                            .unwrap(),
-                                        actix_ws::Message::Binary(b) => w
-                                            .send(tungstenite::Message::Binary(b.to_vec()))
-                                            .await
-                                            .unwrap(),
-                                        actix_ws::Message::Ping(p) => w
-                                            .send(tungstenite::Message::Ping(p.to_vec()))
-                                            .await
-                                            .unwrap(),
+                                        actix_ws::Message::Text(t) => {
+                                            let _ = log_with_level!(
+                                                w.send(tungstenite::Message::Text(t.to_string())).await,
+                                                error
+                                            );
+                                        }
+                                        actix_ws::Message::Binary(b) => {
+                                            let _ = log_with_level!(
+                                                w.send(tungstenite::Message::Binary(b.to_vec())).await,
+                                                error
+                                            );
+                                        }
+                                        actix_ws::Message::Ping(p) => {
+                                            let _ =
+                                            log_with_level!(w.send(tungstenite::Message::Ping(p.to_vec())).await, error);
+                                        }
+                                        actix_ws::Message::Pong(p) => {
+                                            let _ =
+                                            log_with_level!(w.send(tungstenite::Message::Pong(p.to_vec())).await, error);
+                                        }
+                                        actix_ws::Message::Close(_) => {
+                                            let _ = log_with_level!(w.send(tungstenite::Message::Close(None)).await, error);
+                                            break;
+                                        }
                                         _ => break,
                                     }
                                 }
@@ -255,9 +267,22 @@ pub mod ws {
                             Some(result) => {
                                 if let Ok(msg) = result {
                                     match msg {
-                                        tungstenite::Message::Text(t) => s.text(t).await.unwrap(),
-                                        tungstenite::Message::Binary(b) => s.binary(b).await.unwrap(),
-                                        tungstenite::Message::Pong(p) => s.pong(&p).await.unwrap(),
+                                        tungstenite::Message::Text(t) => {
+                                            let _ = log_with_level!(s.text(t).await, error);
+                                        }
+                                        tungstenite::Message::Binary(b) => {
+                                            let _ = log_with_level!(s.binary(b).await, error);
+                                        }
+                                        tungstenite::Message::Pong(p) => {
+                                            let _ = log_with_level!(s.pong(&p).await, error);
+                                        }
+                                        tungstenite::Message::Ping(p) => {
+                                            let _ = log_with_level!(s.ping(&p).await, error);
+                                        }
+                                        tungstenite::Message::Close(_) => {
+                                            let _ = log_with_level!(s.close(None).await, error);
+                                            break;
+                                        }
                                         _ => break,
                                     }
                                 }
