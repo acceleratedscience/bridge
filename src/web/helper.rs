@@ -10,7 +10,7 @@ macro_rules! log_with_level {
         match result {
             Ok(_) => result,
             Err(ref e) => {
-                $crate::web::helper::error(e);
+                tracing::error!("Error: {}", e);
                 result
             }
         }
@@ -48,10 +48,6 @@ macro_rules! log_with_level {
     ($res:expr, $level:tt) => {
         compile_error!("Invalid log level. Use error, warn, info, or debug.")
     };
-}
-
-pub fn error(e: impl Error) {
-    tracing::error!("Error: {}", e);
 }
 
 pub(crate) use log_with_level;
@@ -228,9 +224,18 @@ pub mod ws {
                             Some(result) => {
                                 if let Ok(msg) = result {
                                     match msg {
-                                        actix_ws::Message::Text(t) => w.send(tungstenite::Message::Text(t.to_string())).await.unwrap(),
-                                        actix_ws::Message::Binary(b) => w.send(tungstenite::Message::Binary(b.to_vec())).await.unwrap(),
-                                        actix_ws::Message::Ping(p) => w.send(tungstenite::Message::Ping(p.to_vec())).await.unwrap(),
+                                        actix_ws::Message::Text(t) => w
+                                            .send(tungstenite::Message::Text(t.to_string()))
+                                            .await
+                                            .unwrap(),
+                                        actix_ws::Message::Binary(b) => w
+                                            .send(tungstenite::Message::Binary(b.to_vec()))
+                                            .await
+                                            .unwrap(),
+                                        actix_ws::Message::Ping(p) => w
+                                            .send(tungstenite::Message::Ping(p.to_vec()))
+                                            .await
+                                            .unwrap(),
                                         _ => break,
                                     }
                                 }
