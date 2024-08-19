@@ -107,6 +107,7 @@ pub mod forwarding {
         // sigh... this is a workaround due to reqwest and actix-web use different versions of the
         // http crate. At least we can use two versios of the http crate and not get stuck with
         // dependency hell like python.
+        // Discussion on this can be found here: https://github.com/actix/actix-web/issues/3384
         let method = match method.as_str() {
             "OPTIONS" => reqwest::Method::OPTIONS,
             "GET" => reqwest::Method::GET,
