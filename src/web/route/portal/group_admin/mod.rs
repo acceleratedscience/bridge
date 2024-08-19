@@ -61,7 +61,7 @@ pub(super) async fn group(
 
     let user = match result {
         Ok(user) => user,
-        Err(e) => return helper::log_errors(Err(e)),
+        Err(e) => return helper::log_with_level!(Err(e), error),
     };
 
     match user.user_type {
@@ -84,7 +84,7 @@ pub(super) async fn group(
     ctx.insert("name", &user.user_name);
     ctx.insert("group", &user.groups.join(", "));
     ctx.insert("subscriptions", &subs);
-    let content = helper::log_errors(data.render(USER_PAGE, &ctx))?;
+    let content = helper::log_with_level!(data.render(USER_PAGE, &ctx), error)?;
 
     return Ok(HttpResponse::Ok().body(content));
 }
@@ -191,7 +191,8 @@ async fn group_update_user(
     members.iter().for_each(|u| {
         user_form.add(u.email.clone());
     });
-    let content = helper::log_errors(user_form.render(&user.email, &form.group_name, data))?;
+    let content =
+        helper::log_with_level!(user_form.render(&user.email, &form.group_name, data), error)?;
 
     Ok(HttpResponse::Ok()
         .content_type(ContentType::form_url_encoded())
@@ -208,7 +209,7 @@ async fn group_tab_htmx(
     let gc = check_admin(subject, UserType::GroupAdmin)?;
     let query = req.query_string();
     // deserialize into AdminTab
-    let tab = helper::log_errors(serde_urlencoded::from_str::<AdminTabs>(query))?;
+    let tab = helper::log_with_level!(serde_urlencoded::from_str::<AdminTabs>(query), error)?;
 
     // get the group you below to
     let id =
@@ -240,7 +241,7 @@ async fn group_tab_htmx(
             subs.iter().for_each(|s| {
                 profile.add_subscription(s.clone());
             });
-            helper::log_errors(profile.render(data))?
+            helper::log_with_level!(profile.render(data), error)?
         }
         AdminTab::UserModify => {
             let group_name = user.groups.first().ok_or_else(|| {
@@ -256,7 +257,7 @@ async fn group_tab_htmx(
             members.iter().for_each(|u| {
                 user_form.add(u.email.clone());
             });
-            helper::log_errors(user_form.render(&user.email, group_name, data))?
+            helper::log_with_level!(user_form.render(&user.email, group_name, data), error)?
         }
         _ => unreachable!(),
     };

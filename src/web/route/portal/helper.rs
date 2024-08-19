@@ -43,15 +43,22 @@ pub(super) fn check_admin(
         Some(cookie_subject) if cookie_subject.user_type == admin => cookie_subject.into_inner(),
         // All other users
         Some(g) => {
-            return helper::log_errors(Err(GuardianError::UserNotFound(format!(
-                "User {} is not a system admin",
-                g.into_inner().subject
-            ))))
+            return helper::log_with_level!(
+                Err(GuardianError::UserNotFound(format!(
+                    "User {} is not a system admin",
+                    g.into_inner().subject
+                ))),
+                error
+            )
         }
         None => {
-            return helper::log_errors(Err(GuardianError::UserNotFound(
-                "No user passed from middleware... subject not passed from middleware".to_string(),
-            )))
+            return helper::log_with_level!(
+                Err(GuardianError::UserNotFound(
+                    "No user passed from middleware... subject not passed from middleware"
+                        .to_string(),
+                )),
+                error
+            )
         }
     })
 }
@@ -67,7 +74,10 @@ where
     }
     let body = String::from_utf8_lossy(&body);
     let deserializer = serde::de::value::StrDeserializer::<serde::de::value::Error>::new(&body);
-    Ok(helper::log_errors(T::deserialize(deserializer))?)
+    Ok(helper::log_with_level!(
+        T::deserialize(deserializer),
+        error
+    )?)
 }
 
 /// This is a helper function to get all Groups from the database
@@ -75,6 +85,6 @@ pub(super) async fn get_all_groups(db: &DB) -> Result<Vec<Group>> {
     let result: Result<Vec<Group>> = db.find_many(doc! {}, GROUP).await;
     Ok(match result {
         Ok(groups) => groups,
-        Err(e) => return helper::log_errors(Err(e)),
+        Err(e) => return helper::log_with_level!(Err(e), error),
     })
 }

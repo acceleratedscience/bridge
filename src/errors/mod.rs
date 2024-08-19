@@ -59,6 +59,8 @@ pub enum GuardianError {
     FormDeserializeError(String),
     #[error("{0}")]
     RecordSearchError(String),
+    #[error("{0}")]
+    WSError(#[from] actix_web::error::Error),
 }
 
 // Workaround for Infallible, which may get solved by rust-lang: https://github.com/rust-lang/rust/issues/64715
@@ -124,6 +126,7 @@ impl ResponseError for GuardianError {
             GuardianError::URLParseError(_) => StatusCode::INTERNAL_SERVER_ERROR,
             GuardianError::MongoError(_) => StatusCode::INTERNAL_SERVER_ERROR,
             GuardianError::SerdeJsonError(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            GuardianError::WSError(_) => StatusCode::INTERNAL_SERVER_ERROR,
 
             GuardianError::NotAdmin => StatusCode::UNAUTHORIZED,
             GuardianError::Unauthorized(_) => StatusCode::UNAUTHORIZED,

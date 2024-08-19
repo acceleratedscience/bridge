@@ -1,4 +1,5 @@
-use std::{fs::read_to_string, path::PathBuf, str::FromStr, sync::OnceLock};
+use std::sync::LazyLock;
+use std::{fs::read_to_string, path::PathBuf, str::FromStr};
 
 use toml::Value;
 use url::Url;
@@ -7,17 +8,15 @@ use crate::errors::{GuardianError, Result};
 
 pub struct Catalog(pub toml::Table);
 
-pub static CATALOG: OnceLock<Catalog> = OnceLock::new();
-pub static CATALOG_URLS: OnceLock<Vec<(Url, String)>> = OnceLock::new();
-
-pub fn init_once() {
-    let table = toml::from_str(
-        &read_to_string(PathBuf::from_str("config/services.toml").unwrap()).unwrap(),
+pub static CATALOG: LazyLock<Catalog> = LazyLock::new(|| {
+    Catalog(
+        toml::from_str(
+            &read_to_string(PathBuf::from_str("config/services.toml").unwrap()).unwrap(),
+        )
+        .unwrap(),
     )
-    .unwrap();
-    CATALOG.get_or_init(|| Catalog(table));
-    CATALOG_URLS.get_or_init(|| CATALOG.get().unwrap().into());
-}
+});
+pub static CATALOG_URLS: LazyLock<Vec<(Url, String)>> = LazyLock::new(|| LazyLock::force(&CATALOG).into());
 
 impl Catalog {
     pub fn get(&self, service_name: &str) -> Result<Url> {
@@ -69,17 +68,15 @@ mod test {
 
     #[test]
     fn test_catalog() {
-        init_once();
-        let catalog = CATALOG.get().unwrap();
+        let catalog = &CATALOG;
         let service = catalog.get("postman").unwrap();
         assert_eq!(service.as_str(), "https://postman-echo.com/");
     }
 
     #[test]
     fn test_catalog_into() {
-        init_once();
-        let catalog = CATALOG.get().unwrap();
-        let services: Vec<(Url, String)> = catalog.into();
+        let catalog = &CATALOG;
+        let services: Vec<(Url, String)> = LazyLock::force(catalog).into();
         assert_eq!(services.len(), 6);
 
         let postman = services.iter().find(|(_, name)| name == "postman");

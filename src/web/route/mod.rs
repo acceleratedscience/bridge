@@ -15,12 +15,15 @@ pub mod groups;
 pub mod health;
 pub mod member;
 pub mod members;
+pub mod notebook;
 pub mod portal;
 pub mod proxy;
 pub mod user;
 pub mod users;
 
 static APP_VERSION: &str = env!("CARGO_PKG_VERSION");
+
+static APP_VERSSION: &str = env!("CARGO_PKG_VERSION");
 
 #[get("")]
 async fn index(data: Data<Tera>, req: HttpRequest) -> Result<HttpResponse> {

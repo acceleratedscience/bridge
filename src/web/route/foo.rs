@@ -15,7 +15,7 @@ use crate::{
 #[get("")]
 #[instrument]
 async fn foo(data: Data<Tera>) -> Result<HttpResponse> {
-    helper::log_errors(Err(GuardianError::GeneralError("Foo!".to_string())))?
+    helper::log_with_level!(Err(GuardianError::GeneralError("Foo!".to_string())), error)?
 }
 
 #[get("/bar")]

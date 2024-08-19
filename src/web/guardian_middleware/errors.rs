@@ -18,6 +18,7 @@ static ERROR_HTMLS: OnceLock<HashMap<&str, String>> = OnceLock::new();
 pub fn custom_code_handle(data: Data<Tera>) -> ErrorHandlers<BoxBody> {
     let template = ERROR_HTMLS.get_or_init(|| {
         let mut map = HashMap::new();
+        let context_burn = Context::new();
         map.insert(
             "404",
             data.render("pages/404.html", &Context::new())
