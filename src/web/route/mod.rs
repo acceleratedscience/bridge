@@ -36,7 +36,7 @@ async fn index(data: Data<Tera>, req: HttpRequest) -> Result<HttpResponse> {
 
     let mut ctx = Context::new();
     ctx.insert("version", APP_VERSION);
-    let rendered = helper::log_errors(data.render("pages/login.html", &ctx))?;
+    let rendered = helper::log_with_level!(data.render("pages/login.html", &ctx), error)?;
 
     Ok(HttpResponse::Ok().body(rendered))
 }

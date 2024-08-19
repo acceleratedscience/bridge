@@ -22,7 +22,6 @@ use crate::{
         Database,
     },
     errors::{GuardianError, Result},
-    log_error,
     web::helper::{self},
 };
 
