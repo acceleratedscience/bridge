@@ -39,7 +39,7 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
             .wrap(guardian_middleware::custom_code_handle(tera_data))
             .wrap(middleware::NormalizePath::trim())
             .wrap(middleware::Compress::default())
-            .configure(route::notebook::config_notebook)
+            // .configure(route::notebook::config_notebook)
             .service(actix_files::Files::new("/static", "static"))
             .service(
                 web::scope("")
