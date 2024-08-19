@@ -18,29 +18,30 @@ static ERROR_HTMLS: OnceLock<HashMap<&str, String>> = OnceLock::new();
 pub fn custom_code_handle(data: Data<Tera>) -> ErrorHandlers<BoxBody> {
     let template = ERROR_HTMLS.get_or_init(|| {
         let mut map = HashMap::new();
+        let context_burn = Context::new();
         map.insert(
             "404",
-            data.render("404.html", &Context::new())
+            data.render("404.html", &context_burn)
                 .expect("Failed to render 404.html"),
         );
         map.insert(
             "500",
-            data.render("500.html", &Context::new())
+            data.render("500.html", &context_burn)
                 .expect("Failed to render 500.html"),
         );
         map.insert(
             "400",
-            data.render("400.html", &Context::new())
+            data.render("400.html", &context_burn)
                 .expect("Failed to render 400.html"),
         );
         map.insert(
             "401",
-            data.render("401.html", &Context::new())
+            data.render("401.html", &context_burn)
                 .expect("Failed to render 401.html"),
         );
         map.insert(
             "403",
-            data.render("403.html", &Context::new())
+            data.render("403.html", &context_burn)
                 .expect("Failed to render 403.html"),
         );
         map

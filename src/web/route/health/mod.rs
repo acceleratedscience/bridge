@@ -10,7 +10,7 @@ use tera::{Context, Tera};
 use tracing::{error, instrument};
 
 use crate::{
-    errors::{GuardianError, Result},
+    errors::Result,
     web::{guardian_middleware::Htmx, helper, services::CATALOG_URLS},
 };
 
@@ -28,36 +28,30 @@ async fn pulse(data: Data<Tera>) -> Result<HttpResponse> {
 #[get("")]
 #[instrument]
 async fn status(req: HttpRequest, client: Data<Client>) -> Result<HttpResponse> {
-    match CATALOG_URLS.get() {
-        Some(col) => {
-            let is = inference_services::InferenceServicesHealth::new(col, client.as_ref().clone());
+    let is =
+        inference_services::InferenceServicesHealth::new(&CATALOG_URLS, client.as_ref().clone());
 
-            let mut stream = is.create_stream();
-            let mut builder = is.builder();
+    let mut stream = is.create_stream();
+    let mut builder = is.builder();
 
-            while let Some(item) = stream.next().await {
-                match item {
-                    Ok((up, name, elapsed)) => {
-                        if !cfg!(debug_assertions) && name == "postman" {
-                            continue;
-                        };
-                        builder.add_inner_body(up, &name, elapsed);
-                    }
-                    Err(e) => {
-                        // log and continue
-                        error!("Error: {:?}", e);
-                    }
-                }
+    while let Some(item) = stream.next().await {
+        match item {
+            Ok((up, name, elapsed)) => {
+                if !cfg!(debug_assertions) && name == "postman" {
+                    continue;
+                };
+                builder.add_inner_body(up, &name, elapsed);
             }
-
-            Ok(HttpResponse::Ok()
-                .content_type(ContentType::form_url_encoded())
-                .body(builder.render()))
+            Err(e) => {
+                // log and continue
+                error!("Error: {:?}", e);
+            }
         }
-        None => Err(GuardianError::GeneralError(
-            "CATALOG was not initialized".to_string(),
-        )),
     }
+
+    Ok(HttpResponse::Ok()
+        .content_type(ContentType::form_url_encoded())
+        .body(builder.render()))
 }
 
 pub fn config_status(cfg: &mut web::ServiceConfig) {

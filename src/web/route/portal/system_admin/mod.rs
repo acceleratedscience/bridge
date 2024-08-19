@@ -290,8 +290,6 @@ async fn system_tab_htmx(
     // TODO: move group_form and user_form to OnceLock
     let mut group_form = GroupContent::new();
     CATALOG_URLS
-        .get()
-        .ok_or_else(|| GuardianError::GeneralError("Catalog urls not found".to_string()))?
         .iter()
         .for_each(|(_, service_name)| group_form.add(service_name.to_owned()));
 

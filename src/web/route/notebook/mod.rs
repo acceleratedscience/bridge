@@ -8,7 +8,7 @@ use actix_web::{dev::PeerAddr, get, http::Method, web, HttpRequest, HttpResponse
 use tracing::instrument;
 
 use crate::{
-    errors::{GuardianError, Result},
+    errors::Result,
     web::{helper, services::CATALOG},
 };
 
@@ -54,13 +54,7 @@ async fn notebook_forward(
     let service = "notebook";
 
     // look up service and get url
-    let catalog = helper::log_with_level!(
-        CATALOG.get().ok_or_else(|| {
-            GuardianError::GeneralError("Could not get catalog of services".to_string())
-        }),
-        error
-    )?;
-    let mut new_url = helper::log_with_level!(catalog.get(service), error)?;
+    let mut new_url = helper::log_with_level!(CATALOG.get(service), error)?;
     new_url.set_path(path);
     new_url.set_query(req.uri().query());
 
@@ -81,37 +75,6 @@ pub fn config_notebook(cfg: &mut web::ServiceConfig) {
 mod test {
     #[tokio::test]
     async fn test_notebook_forward() {
-        use actix_web::{http::header, test, web, App};
-        use reqwest::Client;
-        use serde_json::json;
-
-        use crate::web::services::CATALOG;
-
-        let mut catalog = CATALOG.get().unwrap();
-        catalog.insert(
-            "notebook".to_string(),
-            "http://localhost:8888/notebook".parse().unwrap(),
-        );
-
-        let client = Client::new();
-
-        let mut app = test::init_service(
-            App::new()
-                .app_data(web::Data::new(client))
-                .configure(super::config_notebook),
-        )
-        .await;
-
-        let req = test::TestRequest::get()
-            .uri("/notebook/api/sessions")
-            .to_request();
-
-        let resp = test::call_service(&mut app, req).await;
-        assert_eq!(resp.status(), 200);
-
-        let body = test::read_body(resp).await;
-        let body = String::from_utf8(body.to_vec()).unwrap();
-        let body: serde_json::Value = serde_json::from_str(&body).unwrap();
-        assert_eq!(body, json!({}));
+        todo!()
     }
 }

@@ -1,5 +1,3 @@
-use std::error::Error;
-
 use mongodb::bson::{to_bson, Bson};
 
 use crate::errors::GuardianError;
@@ -106,9 +104,9 @@ pub mod forwarding {
             }
         });
 
-        // sigh... this is a workaround due to reqwest and actix-web use different versions of
-        // hyper. At least we can use two version of hyper and not get stuck in dependency hell
-        // like python.
+        // sigh... this is a workaround due to reqwest and actix-web use different versions of the
+        // http crate. At least we can use two versios of the http crate and not get stuck with
+        // dependency hell like python.
         let method = match method.as_str() {
             "OPTIONS" => reqwest::Method::OPTIONS,
             "GET" => reqwest::Method::GET,
@@ -160,8 +158,8 @@ pub mod forwarding {
             .filter(|(h, _)| *h != "connection" && *h != "keep-alive" && *h != "content-length")
         {
             // Again copy over seem incredibly inefficient. It sure is, but like before, we do this
-            // because actix-web and reqwest use different versions of hyper. Once Actix-web
-            // updates their hyper version, we can remove this.
+            // because actix-web and reqwest use different versions of http. Once Actix-web
+            // updates their http version, we can remove this.
             let name = header_name.to_string();
             let value = header_value.to_str().unwrap();
 

@@ -40,6 +40,7 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
             .wrap(middleware::NormalizePath::trim())
             .wrap(middleware::Compress::default())
             .configure(route::notebook::config_notebook)
+            .service(actix_files::Files::new("/static", "static"))
             .service(
                 web::scope("")
                     .wrap(guardian_middleware::SecurityHeader)
@@ -50,7 +51,6 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
                     .configure(route::config_index)
                     .configure(route::portal::config_portal),
             )
-            .service(actix_files::Files::new("/static", "static"))
     });
 
     if with_tls {
