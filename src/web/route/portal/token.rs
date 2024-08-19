@@ -30,16 +30,19 @@ pub async fn get_token_for_user(
     let gc = match subject {
         Some(cookie_subject) => cookie_subject.into_inner(),
         None => {
-            return helper::log_errors(Err(GuardianError::UserNotFound(
-                "subject not passed from middleware".to_string(),
-            )))
+            return helper::log_with_level!(
+                Err(GuardianError::UserNotFound(
+                    "subject not passed from middleware".to_string(),
+                )),
+                error
+            )
         }
     };
-    let id = ObjectId::from_str(&gc.subject)
-        .map_err(|e| GuardianError::GeneralError(e.to_string()))?;
+    let id =
+        ObjectId::from_str(&gc.subject).map_err(|e| GuardianError::GeneralError(e.to_string()))?;
 
     // get information about user
-    let user: User = helper::log_errors(
+    let user: User = helper::log_with_level!(
         db.find(
             doc! {
                 "_id": id,
@@ -47,13 +50,14 @@ pub async fn get_token_for_user(
             USER,
         )
         .await,
+        error
     )?;
 
     let scp = if user.groups.is_empty() {
         vec!["".to_string()]
     } else {
         // get models
-        let group: Group = helper::log_errors(
+        let group: Group = helper::log_with_level!(
             db.find(
                 doc! {
                     "name": &user.groups[0]
@@ -61,18 +65,16 @@ pub async fn get_token_for_user(
                 GROUP,
             )
             .await,
+            error
         )?;
         group.subscriptions
     };
 
     // Generate guardian token
-    let token = helper::log_errors(jwt::get_token(
-        &CONFIG.get().unwrap().encoder,
-        TOKEN_LIFETIME,
-        &gc.subject,
-        AUD[0],
-        scp,
-    ))?;
+    let token = helper::log_with_level!(
+        jwt::get_token(&CONFIG.encoder, TOKEN_LIFETIME, &gc.subject, AUD[0], scp),
+        error
+    )?;
 
     Ok(HttpResponse::Ok()
         .content_type(ContentType::form_url_encoded())

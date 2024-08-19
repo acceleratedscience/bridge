@@ -209,7 +209,7 @@ mod test {
 
     #[test]
     fn test_user_form_deserialize() {
-        let form = "sub=123&groups=group1&user_type=system&last_updated_by=me";
+        let form = "email=123&groups=group1&user_type=system&last_updated_by=me";
         let deserializer = serde::de::value::StrDeserializer::<serde::de::value::Error>::new(form);
         let result = UserForm::deserialize(deserializer).unwrap();
         assert_eq!(result.email, "123");

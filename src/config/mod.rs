@@ -2,11 +2,10 @@ use std::{
     fs::{self, read_to_string},
     path::PathBuf,
     str::FromStr,
-    sync::OnceLock,
+    sync::LazyLock,
 };
 
 use jsonwebtoken::{Algorithm, DecodingKey, EncodingKey, Validation};
-use tracing::warn;
 
 pub struct Configuration {
     pub encoder: EncodingKey,
@@ -19,11 +18,14 @@ pub struct Database {
     pub url: String,
 }
 
-pub static CONFIG: OnceLock<Configuration> = OnceLock::new();
+pub static CONFIG: LazyLock<Configuration> = LazyLock::new(init_once);
 
 pub static AUD: [&str; 1] = ["openad-user"];
 
-pub fn init_once() {
+pub fn init_once() -> Configuration {
+    // TODO: remove these unwraps
+    // For now, it's ok because we run this once at start up and we should not start application
+    // without these files
     let private_key = fs::read("certs/private.ec.key").unwrap();
     let private_key = crate::auth::sec1_to_pkcs8(&private_key);
     let encoder = EncodingKey::from_ec_pem(&private_key).unwrap();
@@ -50,15 +52,10 @@ pub fn init_once() {
         },
     };
 
-    if CONFIG
-        .set(Configuration {
-            encoder,
-            decoder,
-            validation,
-            db,
-        })
-        .is_err()
-    {
-        warn!("Configuration already set.");
+    Configuration {
+        encoder,
+        decoder,
+        validation,
+        db,
     }
 }

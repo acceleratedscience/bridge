@@ -52,7 +52,6 @@ impl Profile {
         self.subscriptions.push(subscription);
     }
 
-
     pub fn render(&self, tera: Data<Tera>) -> Result<String> {
         let mut context = tera::Context::new();
         context.insert("group", &self.groups.join(", "));

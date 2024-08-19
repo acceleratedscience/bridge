@@ -29,12 +29,7 @@ static COLLECTIONS: [&str; 2] = [USER, GROUP];
 
 impl DB {
     pub async fn init_once(database: &'static str) -> Result<()> {
-        let db = &CONFIG
-            .get()
-            .ok_or_else(|| {
-                GuardianError::GeneralError("Could not obtain configuration".to_string())
-            })?
-            .db;
+        let db = &CONFIG.db;
         let mongo_database = Client::with_uri_str(&db.url).await?.database(database);
 
         // check if the collections exists, if not create them
@@ -47,17 +42,18 @@ impl DB {
 
         let dbs = Self { mongo_database };
         // create the unique indexes if they do not exist
-        Self::create_index::<User>(&dbs, USER, "sub").await?;
-        Self::create_index::<Group>(&dbs, GROUP, "name").await?;
+        Self::create_index::<User, _>(&dbs, USER, "email", 1).await?;
+        Self::create_index::<Group, _>(&dbs, GROUP, "name", "text").await?;
 
         DBCONN.get_or_init(|| dbs);
 
         Ok(())
     }
 
-    async fn create_index<Z>(db: &DB, collection: &str, field: &str) -> Result<()>
+    async fn create_index<Z, T>(db: &DB, collection: &str, field: &str, index_type: T) -> Result<()>
     where
         Z: Send + Sync + Serialize + DeserializeOwned,
+        T: Into<Bson>,
     {
         let col = Self::get_collection::<Z>(db, collection);
         let mut indexes = col.list_indexes().await?;
@@ -68,7 +64,7 @@ impl DB {
         }
         // create index
         let index_model = IndexModel::builder()
-            .keys(doc! {field: "text"})
+            .keys(doc! {field: index_type})
             .options(
                 IndexOptions::builder()
                     .name(Some(field.to_string()))

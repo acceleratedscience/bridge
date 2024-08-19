@@ -43,10 +43,7 @@ async fn forward(
         })?;
 
     // look up service and get url
-    let catalog = helper::log_errors(CATALOG.get().ok_or_else(|| {
-        GuardianError::GeneralError("Could not get catalog of services".to_string())
-    }))?;
-    let mut new_url = helper::log_errors(catalog.get(service))?;
+    let mut new_url = helper::log_with_level!(CATALOG.get(service), error)?;
     new_url.set_path(path);
     new_url.set_query(req.uri().query());
 

@@ -1,23 +1,54 @@
-use std::error::Error;
-
 use mongodb::bson::{to_bson, Bson};
-use tracing::error;
 
 use crate::errors::GuardianError;
 
-#[inline]
-pub fn log_errors<T, E>(res: Result<T, E>) -> Result<T, E>
-where
-    E: Error,
-{
-    match res {
-        Ok(_) => res,
-        Err(ref e) => {
-            error!("Error: {}", e);
-            res
+macro_rules! log_with_level {
+    ($res:expr, error) => {{
+        let result = $res;
+        match result {
+            Ok(_) => result,
+            Err(ref e) => {
+                tracing::error!("Error: {}", e);
+                result
+            }
         }
-    }
+    }};
+    ($res:expr, warn) => {{
+        let result = $res;
+        match result {
+            Ok(_) => result,
+            Err(ref e) => {
+                tracing::warn!("Warning: {}", e);
+                result
+            }
+        }
+    }};
+    ($res:expr, info) => {{
+        let result = $res;
+        match result {
+            Ok(_) => result,
+            Err(ref e) => {
+                tracing::info!("Info: {}", e);
+                result
+            }
+        }
+    }};
+    ($res:expr, debug) => {{
+        let result = $res;
+        match result {
+            Ok(_) => result,
+            Err(ref e) => {
+                tracing::debug!("Debug: {}", e);
+                result
+            }
+        }
+    }};
+    ($res:expr, $level:tt) => {
+        compile_error!("Invalid log level. Use error, warn, info, or debug.")
+    };
 }
+
+pub(crate) use log_with_level;
 
 pub fn bson<T>(t: T) -> Result<Bson, GuardianError>
 where
@@ -48,8 +79,6 @@ pub mod forwarding {
 
     use actix_web::http::StatusCode;
 
-    use super::log_errors;
-
     use crate::errors::{GuardianError, Result};
 
     // No inline needed... generic are inherently inlined
@@ -75,9 +104,10 @@ pub mod forwarding {
             }
         });
 
-        // sigh... this is a workaround due to reqwest and actix-web use different versions of
-        // hyper. At least we can use two version of hyper and not get stuck in dependency hell
-        // like python. 
+        // sigh... this is a workaround due to reqwest and actix-web use different versions of the
+        // http crate. At least we can use two versios of the http crate and not get stuck with
+        // dependency hell like python.
+        // Discussion on this can be found here: https://github.com/actix/actix-web/issues/3384
         let method = match method.as_str() {
             "OPTIONS" => reqwest::Method::OPTIONS,
             "GET" => reqwest::Method::GET,
@@ -106,10 +136,13 @@ pub mod forwarding {
             None => forwarded_req,
         };
 
-        let res = log_errors(forwarded_req.send().await.map_err(|e| {
-            error!("{:?}", e);
-            GuardianError::GeneralError(e.to_string())
-        }))?;
+        let res = log_with_level!(
+            forwarded_req
+                .send()
+                .await
+                .map_err(|e| { GuardianError::GeneralError(e.to_string()) }),
+            error
+        )?;
 
         let status = res.status().as_u16();
         let status =
@@ -126,8 +159,8 @@ pub mod forwarding {
             .filter(|(h, _)| *h != "connection" && *h != "keep-alive" && *h != "content-length")
         {
             // Again copy over seem incredibly inefficient. It sure is, but like before, we do this
-            // because actix-web and reqwest use different versions of hyper. Once Actix-web
-            // updates their hyper version, we can remove this.
+            // because actix-web and reqwest use different versions of http. Once Actix-web
+            // updates their http version, we can remove this.
             let name = header_name.to_string();
             let value = header_value.to_str().unwrap();
 
@@ -144,75 +177,123 @@ pub mod forwarding {
 pub mod ws {
     use actix_web::{
         rt,
-        web::{self, BytesMut},
+        web::{self},
         HttpRequest, HttpResponse,
     };
-    use awc::http::StatusCode;
-    use futures::{channel::mpsc::unbounded, SinkExt, StreamExt};
 
-    use tokio::io::{AsyncReadExt, AsyncWriteExt};
+    use futures::{SinkExt, StreamExt};
+    use reqwest::StatusCode;
+    use tokio_tungstenite::tungstenite::{self, handshake::client::Request};
 
     use crate::errors::{GuardianError, Result};
 
-    #[inline]
     pub async fn manage_connection<T>(
         req: HttpRequest,
-        mut pl: web::Payload,
+        pl: web::Payload,
         url: T,
     ) -> Result<HttpResponse>
     where
         T: AsRef<str> + Sync + Send,
     {
         let websocket_url = url.as_ref();
-        // start the websocket handshake with the downstream server
-        let mut wsc = awc::Client::new().ws(websocket_url);
 
-        let cookies = req.headers().get_all("cookie");
-        for cookie in cookies {
-            wsc = wsc.header("cookie", cookie.to_str().unwrap());
+        let mut request = Request::builder().uri(websocket_url);
+        for (header_name, header_value) in req.headers().iter() {
+            if let Ok(val) = header_value.to_str() {
+                // this header causes some weird behavior over wss, so we ignore it for now
+                if val == "v1.kernel.websocket.jupyter.org" {
+                    continue;
+                }
+                request = request.header(header_name.to_string(), val);
+            }
         }
+        let request = request.body(()).unwrap();
 
-        let (res, frame) = wsc.connect().await?;
+        let (stream, res) = tokio_tungstenite::connect_async(request).await.unwrap();
         if !res.status().eq(&StatusCode::SWITCHING_PROTOCOLS) {
             return Err(GuardianError::GeneralError(
                 "Failed to establish websocket connection".to_string(),
             ));
         }
-        let mut io = frame.into_parts().io;
-
-        // websocket handshake with the client
-        let mut resp = actix_web_actors::ws::handshake(&req)?;
-        // for (key, value) in res.headers().iter() {
-        //     resp.insert_header((key.as_str(), value.as_bytes()));
-        // }
-
-        let (mut tx, rx) = unbounded();
-        let mut buf = BytesMut::new();
+        // downstream server
+        let (mut w, mut s_stream) = stream.split();
+        // client
+        let (res, mut s, mut c_stream) = actix_ws::handle(&req, pl).unwrap();
 
         rt::spawn(async move {
             loop {
                 tokio::select! {
-                    // body from source.
-                    res = pl.next() => {
-                        match res {
+                    // data to be sent to downstream server
+                    resp = c_stream.next() => {
+                        match resp {
+                            Some(result) => {
+                                if let Ok(msg) = result {
+                                    match msg {
+                                        actix_ws::Message::Text(t) => {
+                                            let _ = log_with_level!(
+                                                w.send(tungstenite::Message::Text(t.to_string())).await,
+                                                error
+                                            );
+                                        }
+                                        actix_ws::Message::Binary(b) => {
+                                            let _ = log_with_level!(
+                                                w.send(tungstenite::Message::Binary(b.to_vec())).await,
+                                                error
+                                            );
+                                        }
+                                        actix_ws::Message::Ping(p) => {
+                                            let _ =
+                                            log_with_level!(w.send(tungstenite::Message::Ping(p.to_vec())).await, error);
+                                        }
+                                        actix_ws::Message::Pong(p) => {
+                                            let _ =
+                                            log_with_level!(w.send(tungstenite::Message::Pong(p.to_vec())).await, error);
+                                        }
+                                        actix_ws::Message::Close(_) => {
+                                            let _ = log_with_level!(w.send(tungstenite::Message::Close(None)).await, error);
+                                            break;
+                                        }
+                                        _ => break,
+                                    }
+                                }
+                            },
                             None => return,
-                            Some(body) => {
-                                let body = body.unwrap();
-                                io.write_all(&body).await.unwrap();
-                            }
                         }
                     }
-
-                    // body from dest.
-                    res = io.read_buf(&mut buf) => {
-                        let size = res.unwrap();
-                        let bytes = buf.split_to(size).freeze();
-                        tx.send(Ok::<_, actix_web::Error>(bytes)).await.unwrap();
+                    // data to be sent to the client
+                    resp = s_stream.next() => {
+                        match resp {
+                            Some(result) => {
+                                if let Ok(msg) = result {
+                                    match msg {
+                                        tungstenite::Message::Text(t) => {
+                                            let _ = log_with_level!(s.text(t).await, error);
+                                        }
+                                        tungstenite::Message::Binary(b) => {
+                                            let _ = log_with_level!(s.binary(b).await, error);
+                                        }
+                                        tungstenite::Message::Pong(p) => {
+                                            let _ = log_with_level!(s.pong(&p).await, error);
+                                        }
+                                        tungstenite::Message::Ping(p) => {
+                                            let _ = log_with_level!(s.ping(&p).await, error);
+                                        }
+                                        tungstenite::Message::Close(_) => {
+                                            let _ = log_with_level!(s.close(None).await, error);
+                                            break;
+                                        }
+                                        _ => break,
+                                    }
+                                }
+                            },
+                            None => return,
+                        }
                     }
                 }
             }
         });
 
-        Ok(resp.streaming(rx))
+        // websocket handshake with the client
+        Ok(res)
     }
 }

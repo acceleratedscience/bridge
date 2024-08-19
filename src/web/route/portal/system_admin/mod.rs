@@ -63,7 +63,7 @@ pub(super) async fn system(
 
     let user = match result {
         Ok(user) => user,
-        Err(e) => return helper::log_errors(Err(e)),
+        Err(e) => return helper::log_with_level!(Err(e), error),
     };
 
     match user.user_type {
@@ -73,10 +73,19 @@ pub(super) async fn system(
         }
     }
 
+    let group_name = user.groups.first().unwrap_or(&"".to_string()).clone();
+
+    let subscriptions: Result<Group> = db.find(doc! {"name": group_name}, GROUP).await;
+    let subs = match subscriptions {
+        Ok(g) => g.subscriptions,
+        Err(_) => vec![],
+    };
+
     let mut ctx = tera::Context::new();
     ctx.insert("name", &user.user_name);
     ctx.insert("group", &user.groups.join(", "));
-    let content = helper::log_errors(data.render(USER_PAGE, &ctx))?;
+    ctx.insert("subscriptions", &subs);
+    let content = helper::log_with_level!(data.render(USER_PAGE, &ctx), error)?;
 
     return Ok(HttpResponse::Ok().body(content));
 }
@@ -103,7 +112,7 @@ async fn system_create_group(
     };
 
     // TODO: check if group already exists, and not rely one dup key from DB
-    let result = helper::log_errors(db.insert(group, GROUP).await);
+    let result = helper::log_with_level!(db.insert(group, GROUP).await, error);
     let content = match result {
         Ok(r) => format!("<p>Group created with id: {}</p>", r),
         Err(e) if e.to_string().contains("dup key") => {
@@ -246,7 +255,6 @@ async fn system_delete_user(
         .delete(doc! {"email": &uf.email}, USER, PhantomData::<User>)
         .await?;
 
-
     let content = format!("<p>User with sub {} has been deleted</p>", uf.email);
     Ok(HttpResponse::Ok()
         .content_type(ContentType::form_url_encoded())
@@ -277,13 +285,11 @@ async fn system_tab_htmx(
 
     let query = req.query_string();
     // deserialize into AdminTab
-    let tab = helper::log_errors(serde_urlencoded::from_str::<AdminTabs>(query))?;
+    let tab = helper::log_with_level!(serde_urlencoded::from_str::<AdminTabs>(query), error)?;
 
     // TODO: move group_form and user_form to OnceLock
     let mut group_form = GroupContent::new();
     CATALOG_URLS
-        .get()
-        .ok_or_else(|| GuardianError::GeneralError("Catalog urls not found".to_string()))?
         .iter()
         .for_each(|(_, service_name)| group_form.add(service_name.to_owned()));
 

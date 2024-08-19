@@ -53,7 +53,6 @@ impl UserContent {
     }
 
     pub fn render(&self, subject: &str, tera: Data<Tera>, template_name: &str) -> Result<String> {
-
         let mut context = tera::Context::new();
         context.insert("subject", &subject);
         context.insert("group_items", &self.group_items);

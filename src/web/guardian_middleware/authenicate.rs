@@ -4,8 +4,7 @@ use actix_web_httpauth::extractors::{
     AuthenticationError,
 };
 
-use crate::web::route::proxy::INFERENCE_HEADER;
-use crate::{auth::jwt::validate_token, config::CONFIG};
+use crate::{auth::jwt::validate_token, config::CONFIG, web::route::proxy::INFERENCE_HEADER};
 
 pub async fn validator(
     req: ServiceRequest,
@@ -20,11 +19,7 @@ pub async fn validator(
         .realm("proxy");
     let error = AuthenticationError::from(config);
 
-    match validate_token(
-        &token,
-        &CONFIG.get().unwrap().decoder,
-        &CONFIG.get().unwrap().validation.clone(),
-    ) {
+    match validate_token(&token, &CONFIG.decoder, &CONFIG.validation) {
         Ok(claims) => {
             if let Some(r) = req.headers().get(INFERENCE_HEADER) {
                 // TODO: handle unwrap_or better

@@ -2,10 +2,9 @@ use std::process::exit;
 
 use guardian::{
     auth::openid,
-    config,
     db::mongo::DB,
     logger::Logger,
-    web::{services, start_server},
+    web::start_server,
 };
 use tracing::error;
 use tracing_subscriber::filter::LevelFilter;
@@ -18,8 +17,6 @@ async fn main() {
         Logger::start(LevelFilter::WARN);
     }
 
-    config::init_once();
-    services::init_once();
     openid::init_once().await;
     if let Err(e) = DB::init_once("guardian").await {
         error!("{e}");

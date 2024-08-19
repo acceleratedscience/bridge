@@ -20,8 +20,7 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
     let server = HttpServer::new(move || {
         let tera = templating::start_template_eng();
         let tera_data = Data::new(tera);
-        let client = reqwest::Client::new();
-        let client_data = Data::new(client);
+        let client_data = Data::new(reqwest::Client::new());
         let db = Data::new({
             match DBCONN.get() {
                 Some(db) => db,
@@ -41,6 +40,7 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
             .wrap(middleware::NormalizePath::trim())
             .wrap(middleware::Compress::default())
             // .configure(route::notebook::config_notebook)
+            .service(actix_files::Files::new("/static", "static"))
             .service(
                 web::scope("")
                     .wrap(guardian_middleware::SecurityHeader)
@@ -51,7 +51,6 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
                     .configure(route::config_index)
                     .configure(route::portal::config_portal),
             )
-            .service(actix_files::Files::new("/static", "static"))
     });
 
     if with_tls {
