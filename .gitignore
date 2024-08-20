@@ -3,3 +3,4 @@
 /config/configurations.toml
 /config/database.toml
 node_modules
+.DS_Store

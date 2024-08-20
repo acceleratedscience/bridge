@@ -23,8 +23,6 @@ pub mod users;
 
 static APP_VERSION: &str = env!("CARGO_PKG_VERSION");
 
-static APP_VERSSION: &str = env!("CARGO_PKG_VERSION");
-
 #[get("")]
 async fn index(data: Data<Tera>, req: HttpRequest) -> Result<HttpResponse> {
     // if cookie exists, redirect to portal
