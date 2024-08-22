@@ -85,6 +85,7 @@ pub(super) async fn system(
     ctx.insert("name", &user.user_name);
     ctx.insert("group", &user.groups.join(", "));
     ctx.insert("subscriptions", &subs);
+    ctx.insert("token", &user.token);
     let content = helper::log_with_level!(data.render(USER_PAGE, &ctx), error)?;
 
     return Ok(HttpResponse::Ok().body(content));

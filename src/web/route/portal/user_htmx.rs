@@ -7,16 +7,18 @@ pub struct Profile {
     pub groups: Vec<String>,
     pub subscriptions: Vec<String>,
     pub name: String,
+    pub token: Option<String>,
 }
 
 pub(super) static PROFILE: &str = "pages/portal_user.html";
 
 impl Profile {
-    pub fn new(name: String) -> Self {
+    pub fn new(name: String, token: Option<String>) -> Self {
         Self {
             groups: Vec::new(),
             subscriptions: Vec::new(),
             name,
+            token,
         }
     }
 
@@ -33,6 +35,7 @@ impl Profile {
         context.insert("group", &self.groups.join(", "));
         context.insert("subscriptions", &self.subscriptions);
         context.insert("name", &self.name);
+        context.insert("token", &self.token);
 
         Ok(tera.render(PROFILE, &context)?)
     }

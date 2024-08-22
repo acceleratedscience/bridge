@@ -46,6 +46,7 @@ pub struct User {
     pub email: String,
     pub groups: Vec<String>,
     pub user_type: UserType,
+    pub token: Option<String>,
     pub created_at: time::OffsetDateTime,
     pub updated_at: time::OffsetDateTime,
     pub last_updated_by: String,

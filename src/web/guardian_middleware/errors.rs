@@ -21,27 +21,27 @@ pub fn custom_code_handle(data: Data<Tera>) -> ErrorHandlers<BoxBody> {
         let context_burn = Context::new();
         map.insert(
             "404",
-            data.render("pages/404.html", &Context::new())
+            data.render("pages/404.html", &context_burn)
                 .expect("Failed to render 404.html"),
         );
         map.insert(
             "500",
-            data.render("pages/500.html", &Context::new())
+            data.render("pages/500.html", &context_burn)
                 .expect("Failed to render 500.html"),
         );
         map.insert(
             "400",
-            data.render("pages/400.html", &Context::new())
+            data.render("pages/400.html", &context_burn)
                 .expect("Failed to render 400.html"),
         );
         map.insert(
             "401",
-            data.render("pages/401.html", &Context::new())
+            data.render("pages/401.html", &context_burn)
                 .expect("Failed to render 401.html"),
         );
         map.insert(
             "403",
-            data.render("pages/403.html", &Context::new())
+            data.render("pages/403.html", &context_burn)
                 .expect("Failed to render 403.html"),
         );
         map

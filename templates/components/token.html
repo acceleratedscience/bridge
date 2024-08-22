@@ -2,10 +2,7 @@
 
 <link rel="stylesheet" href="/static/css/token.css" />
 
-{# DCH - Token should be saved in database #}
-{% set token = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJFUzI1NiJ9.eyJpc3MiOiJndWFyZGlhbiIsImV4cCI6MTcyNjMyOTQ0OCwic3ViIjoiNjZiYjc2NjllMmYxMWYyZWYzOTc5NGZkIiwiYXVkIjoib3BlbmFkLXVzZXIiLCJzY3AiOlsiYm1mbSxnZW5lcmF0aW9uLG1vbGVyIl19.sSP9tywqxohgI33hF-qIrunDxiahfnbn2GYteoB6dWOe9v76d0qR8Mr0353eCHOxTyxbbcg0xbG59KxmnluH6A' %}
-
-<div id="response-token" onclick="clickToCopy(event)">
+<div id="response-token">
 	{% if not token %}
 	<span class="softer">You do not have a token yet.</span>
 	{% else %}

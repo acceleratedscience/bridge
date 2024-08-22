@@ -66,7 +66,7 @@ pub(super) async fn user(
             )
             .await;
 
-        let mut profile = Profile::new(user.user_name);
+        let mut profile = Profile::new(user.user_name, user.token);
 
         let content = match group {
             Ok(group) => {

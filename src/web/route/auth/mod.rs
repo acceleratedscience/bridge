@@ -159,6 +159,7 @@ async fn code_to_response(
                         email: email.clone(),
                         groups: vec![],
                         user_type: UserType::User,
+                        token: None,
                         created_at: time,
                         updated_at: time,
                         last_updated_by: email,

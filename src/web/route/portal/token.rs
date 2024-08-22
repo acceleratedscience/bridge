@@ -1,4 +1,4 @@
-use std::str::FromStr;
+use std::{marker::PhantomData, str::FromStr};
 
 use actix_web::{
     get,
@@ -17,7 +17,7 @@ use crate::{
         Database,
     },
     errors::{GuardianError, Result},
-    web::helper,
+    web::helper::{self, bson},
 };
 
 const TOKEN_LIFETIME: usize = const { 60 * 60 * 24 * 30 };
@@ -75,6 +75,30 @@ pub async fn get_token_for_user(
         jwt::get_token(&CONFIG.encoder, TOKEN_LIFETIME, &gc.subject, AUD[0], scp),
         error
     )?;
+
+    // store thew newly create token in the database
+    let r = helper::log_with_level!(
+        db.update(
+            doc! {
+                "_id": id,
+            },
+            doc! {"$set": doc! {
+            "updated_at": bson(time::OffsetDateTime::now_utc())?,
+            "token": token.clone(),
+            "last_updated_by": user.email }},
+            USER,
+            PhantomData::<User>,
+        )
+        .await,
+        error
+    )?;
+
+    if r.ne(&1) {
+        return helper::log_with_level!(
+            Err(GuardianError::GeneralError("Token not updated".to_string())),
+            error
+        );
+    }
 
     Ok(HttpResponse::Ok()
         .content_type(ContentType::form_url_encoded())
