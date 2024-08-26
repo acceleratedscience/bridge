@@ -27,17 +27,19 @@
 
         cargo run
 
+1.  See the result at [localhost:8080](https://localhost:8080)
+
 ### Destroying Guardian running locally
 
 1.  Stop the Guardian server
 
     Press `Ctrl + C` in the terminal where the server is running or send a sigterm.
 
-2.  Stop the local MongoDB instance
+1.  Stop the local MongoDB instance
 
         docker stop mongodb
 
-3.  Clear build artifacts (optional)
+1.  Clear build artifacts (optional)
 
         cargo clean
 
@@ -51,29 +53,29 @@
 
         just build
 
-2.  Get and use login password for ECR
+1.  Get and use login password for ECR
 
         aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 260533665315.dkr.ecr.us-east-1.amazonaws.com
 
-3.  Tag the container image
+1.  Tag the container image
 
         docker tag guardian:v#.#.# 260533665315.dkr.ecr.us-east-1.amazonaws.com/guardian:v#.#.#
 
-4.  Push the container image to the ECR
+1.  Push the container image to the ECR
 
         docker push 260533665315.dkr.ecr.us-east-1.amazonaws.com/guardian:v#.#.#
 
-5.  Rotate the ECR secret in OpenShift
+1.  Rotate the ECR secret in OpenShift
 
         kubectl delete secret -n guardian ecr-registry
         aws ecr get-login-password --region us-east-1 | kubectl create secret docker-registry ecr-registry --docker-server=260533665315.dkr.ecr.us-east-1.amazonaws.com/guardian --docker-username=AWS --docker-password=$(aws ecr get-login-password --region us-east-1)
 
-6.  Delete currently running pod to have OpenShift spin up a new pod using the new image pushed to ECR
+1.  Delete currently running pod to have OpenShift spin up a new pod using the new image pushed to ECR
 
         # This is not the "recommended" way of deploying
         # This is a temporary solution while we are actively developing the stage env
         kubectl delete pod -n guardian guardian-tls-<pod_id>
 
-7.  Check and ensure the new pod is running
+1.  Check and ensure the new pod is running
 
         kubectl get pods -n guardian
