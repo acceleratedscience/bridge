@@ -5,6 +5,8 @@
 > [!NOTE]
 > This project is under active development. The documentations may change as the project evolves.
 
+<br>
+
 ### Technology powering Guardian
 
 -   Front-end:
@@ -20,6 +22,8 @@
     -   OpenTofu
 -   Database:
     -   MongoDB
+
+<br>
 
 ### Current Architecture
 
@@ -45,6 +49,8 @@ flowchart LR
 	end
 	end
 ```
+
+<br>
 
 ### Possible Future Architecture
 
