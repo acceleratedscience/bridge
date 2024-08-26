@@ -1,34 +1,26 @@
-<div align="center">
-	<img src="../static/img/favicon.svg" width="100px">
-</div>
-</br>
+[&#8592; Back](../)
 
-<p align="center">
-	<a href="https://open.accelerator.cafe" target="_blank">
-		:link: Guardian
-	</a>
-</p>
+# Deployment
 
----
+### Run Guardian locally:
 
-##### How to run Guardian locally:
+1.  Clone the repository
+2.  Create the self-signed certificate and asymmetric key pairs
 
-1. Clone the repository
-2. Create the self-signed certificate and asymmetric key pairs
-    ```bash
-    just certs
-    just gen-curve
-    ```
-3. Create configuration files
+        bash
+        just certs
+        just gen-curve
+
+3.  Create configuration files
     - Use the provided `config/configurations_sample.toml` as a template
     - Copy or rename this file to `config/configurations.toml`
     - Same thing for `config/database_sample.toml` to `config/database.toml`
-4. Start a local MongoDB instance
+4.  Start a local MongoDB instance
     - Ensure you have Docker or Podman installed on your local machine
     ```bash
     just local-mongo
     ```
-5. Start the Guardian server
+5.  Start the Guardian server
     ```bash
     cargo run
     ```

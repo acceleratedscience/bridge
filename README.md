@@ -4,11 +4,15 @@
 
 This repository also contains the [GUI](https://open.accelerator.cafe) to (re)generate access tokens for use with the models.
 
+<br>
+
 ## Documentation
 
 -   [Deployment](/doc/deployment.md)
 -   [Architecture](/doc/architecture.md)
 -   [Runbook](/doc/runbook.md)
+
+<br>
 
 ## Links
 
