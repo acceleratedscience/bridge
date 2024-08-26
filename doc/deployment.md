@@ -7,9 +7,10 @@
 1.  Clone the repository
 2.  Create the self-signed certificate and asymmetric key pairs
 
-        ```bash
-        just certs
-        just gen-curve
+    ```bash
+    just certs
+    just gen-curve
+    ```
 
 3.  Copy or rename the provided configuration files:
 
