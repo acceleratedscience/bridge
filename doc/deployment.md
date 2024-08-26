@@ -12,15 +12,16 @@
         just gen-curve
 
 3.  Create configuration files
-    -   Use the provided `config/configurations_sample.toml` as a template
+    Copy or rename the provided `config/configurations_sample.toml` and `config/database_sample.toml` files to `config/configurations.toml` and `config/database.toml` respectively.
+    <!-- -   Use the provided `config/configurations_sample.toml` as a template
     -   Copy or rename this file to `config/configurations.toml`
-    -   Same thing for `config/database_sample.toml` to `config/database.toml`
+    -   Same thing for `config/database_sample.toml` to `config/database.toml` -->
 4.  Start a local MongoDB instance
 
-    -   Ensure you have Docker or Podman installed on your local machine
+    Ensure you have Docker or Podman installed on your local machine
 
-            bash
-            just local-mongo
+        bash
+        just local-mongo
 
 5.  Start the Guardian server
 
@@ -37,8 +38,9 @@
         docker stop mongodb
 
 3.  (Optional) Clear build artifacts
-    bash
-    cargo clean
+
+        bash
+        cargo clean
 
 ### Updating Guardian on OpenShift
 
