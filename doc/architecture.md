@@ -1,20 +1,11 @@
-<div align="center">
-	<img src="../static/img/favicon.svg" width="100px">
-</div>
-</br>
+[&#8592; Back](../#guardian)
 
-<p align="center">
-	<a href="https://open.accelerator.cafe" target="_blank">
-		:link: Guardian
-	</a>
-</p>
-
----
+# Architecture
 
 > [!NOTE]
 > This project is under active development. The documentations may change as the project evolves.
 
-##### Technology powering Guardian
+### Technology powering Guardian
 
 -   Front-end:
     -   HTMX
@@ -30,7 +21,7 @@
 -   Database:
     -   MongoDB
 
-##### Current Architecture
+### Current Architecture
 
 ```mermaid
 flowchart LR
@@ -55,7 +46,7 @@ flowchart LR
 	end
 ```
 
-##### Possible Future Architecture
+### Possible Future Architecture
 
 ```mermaid
 flowchart TD
