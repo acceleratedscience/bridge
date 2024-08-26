@@ -1,17 +1,11 @@
-![Guardian](static/img/favicon.svg)
-
-<!-- <div style="text-align: center;">
-    <img src="static/img/favicon.svg" alt="Guardian">
-</div> -->
-
 # Guardian
 
 _A proxy server for the Accelerated Discovery Platform_
 
-[staging](https://open.accelerator.cafe)
+This repository also container the GUI to (re)generate access tokens for use with the models, which can be found on the [:link: Staging](https://open.accelerator.cafe) site.
 
-<!-- <p align="center">
-	<a href="https://open.accelerator.cafe" target="_blank">
-		:link: Guardian Stage
-	</a>
-</p> -->
+## Documentation
+
+-   [Deployment](/docs/deployment.md)
+-   [Architecture](/docs/architecture.md)
+-   [Runbook](/docs/runbook.md)
