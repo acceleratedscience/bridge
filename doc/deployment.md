@@ -1,4 +1,4 @@
-[&#8592; Back](../)
+[&#8592; Back!](../#guardian)
 
 # Deployment
 
@@ -12,11 +12,11 @@
         just gen-curve
 
 3.  Create configuration files
-    - Use the provided `config/configurations_sample.toml` as a template
-    - Copy or rename this file to `config/configurations.toml`
-    - Same thing for `config/database_sample.toml` to `config/database.toml`
+    -   Use the provided `config/configurations_sample.toml` as a template
+    -   Copy or rename this file to `config/configurations.toml`
+    -   Same thing for `config/database_sample.toml` to `config/database.toml`
 4.  Start a local MongoDB instance
-    - Ensure you have Docker or Podman installed on your local machine
+    -   Ensure you have Docker or Podman installed on your local machine
     ```bash
     just local-mongo
     ```
