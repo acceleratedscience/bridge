@@ -2,10 +2,15 @@
 
 **A proxy server for the Accelerated Discovery Platform**
 
-This repository also container the GUI to (re)generate access tokens for use with the models, which can be found on the [:link: Staging](https://open.accelerator.cafe) site.
+This repository also contains the [GUI](https://open.accelerator.cafe) to (re)generate access tokens for use with the models.
 
 ## Documentation
 
--   [Deployment](/docs/deployment.md)
--   [Architecture](/docs/architecture.md)
--   [Runbook](/docs/runbook.md)
+-   [Deployment](/doc/deployment.md)
+-   [Architecture](/doc/architecture.md)
+-   [Runbook](/doc/runbook.md)
+
+## Links
+
+-   :link: [Staging GUI](https://open.accelerator.cafe)
+-   :link: [accelerate.science](https://accelerate.science)
