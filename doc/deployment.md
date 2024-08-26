@@ -11,13 +11,14 @@
         just certs
         just gen-curve
 
-3.  Create configuration files
+3.  Copy or rename the provided configuration files:
 
-    Copy or rename the provided `config/configurations_sample.toml` and `config/database_sample.toml` files to `config/configurations.toml` and `config/database.toml` respectively.
+    -   `config/configurations_sample.toml` &#8594; `config/configurations.toml`
+    -   `config/database_sample.toml` &#8594; `config/database.toml`
 
 4.  Start a local MongoDB instance
 
-    Ensure you have Docker or Podman installed on your local machine
+    Ensure you have Docker or Podman installed on your local machine.
 
         bash
         just local-mongo
@@ -31,7 +32,7 @@
 
 1.  Stop the Guardian server
 
-    Press `Ctrl + C` in the terminal where the server is running or send a sigterm
+    Press `Ctrl + C` in the terminal where the server is running or send a sigterm.
 
 2.  Stop the local MongoDB instance
 
