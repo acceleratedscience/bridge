@@ -2,7 +2,7 @@
 
 # Deployment
 
-### Running Guardian locally
+### Initiating Guardian locally
 
 1.  Clone the repository
 2.  Create the self-signed certificate and asymmetric key pairs
@@ -15,13 +15,15 @@
     -   `config/configurations_sample.toml` &#8594; `config/configurations.toml`
     -   `config/database_sample.toml` &#8594; `config/database.toml`
 
-4.  Start a local MongoDB instance
+### Running Guardian locally
+
+1.  Start a local MongoDB instance
 
     Ensure you have Docker or Podman installed on your local machine.
 
         just local-mongo
 
-5.  Start the Guardian server
+1.  Start the Guardian server
 
         cargo run
 
