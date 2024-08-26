@@ -1,15 +1,6 @@
-<div align="center">
-	<img src="../static/img/favicon.svg" width="100px">
-</div>
-</br>
+[&#8592; Back](../#guardian)
 
-<p align="center">
-	<a href="https://open.accelerator.cafe" target="_blank">
-		:link: Guardian
-	</a>
-</p>
-
----
+# Runbook
 
 > [!NOTE]
 > This project is under active development. The run book may change as the project evolves. The run book may also not cover everything. Reach out to the maintainers for the most up-to-date information.
@@ -94,7 +85,9 @@ The best thing to do next is to check the logs from Guardian. You can check the 
 kubectl logs -n guardian guardian-tls-<pod_id>
 ```
 
-#### Example #1
+<br>
+
+### Example #1
 
 > Problem: User reports that they are unable to login. When they try to access the group-admin page, they were faced with a forbidden code 403 error.
 
@@ -144,7 +137,9 @@ kubectl logs -n guardian guardian-tls-<pod_id>
     ```
     While some knowledge of the Rust programming language would help quite a bit, we can see that in this pattern match that indeed there is no cookie.
 
-#### Example #2
+<br>
+
+### Example #2
 
 > Problem: User tried to log in using IBM ID with their @ibm email address. They successfully were redirected to IBM Verify, but when they were redirected back to Guardian, they were faced with an internal server error.
 

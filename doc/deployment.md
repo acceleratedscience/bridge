@@ -2,6 +2,8 @@
 
 # Deployment
 
+<br>
+
 ### Initiating Guardian locally
 
 1.  Clone the repository
@@ -14,6 +16,8 @@
 
     -   `config/configurations_sample.toml` &#8594; `config/configurations.toml`
     -   `config/database_sample.toml` &#8594; `config/database.toml`
+
+<br>
 
 ### Running Guardian locally
 
@@ -29,6 +33,8 @@
 
 1.  See the result at [localhost:8080](https://localhost:8080)
 
+<br>
+
 ### Destroying Guardian running locally
 
 1.  Stop the Guardian server
@@ -42,6 +48,8 @@
 1.  Clear build artifacts (optional)
 
         cargo clean
+
+<br>
 
 ### Updating Guardian on OpenShift
 
