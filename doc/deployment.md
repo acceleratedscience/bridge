@@ -1,4 +1,4 @@
-[&#8592; Back!](../#guardian)
+[&#8592; Back](../#guardian)
 
 # Deployment
 
@@ -19,10 +19,11 @@
 
     -   Ensure you have Docker or Podman installed on your local machine
 
-        bash
-        just local-mongo
+            bash
+            just local-mongo
 
 5.  Start the Guardian server
+
     bash
     cargo run
 
