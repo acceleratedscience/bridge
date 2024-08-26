@@ -33,7 +33,7 @@ use crate::{
     web::helper::{self},
 };
 
-use self::htmx::{GroupContent, UserContent, CREATE_GROUP, DELETE_USER, MODIFY_GROUP, MODIFY_USER};
+use self::htmx::{GroupContent, UserContent, VIEW_GROUP, CREATE_GROUP, MODIFY_GROUP, VIEW_USER, MODIFY_USER, DELETE_USER};
 
 const USER_PAGE: &str = "pages/portal_system.html";
 
@@ -303,11 +303,13 @@ async fn system_tab_htmx(
     UserType::to_array_str()
         .iter()
         .for_each(|t| user_form.add_user(t.to_string()));
-
+    
     let content = match tab.tab {
-        AdminTab::Profile => r#"<br><p class="lead">Profile tab</p>"#.to_string(), // DCH - not needed I think
+        AdminTab::Profile => r#"<br><p>Profile tab</p>"#.to_string(), // DCH - not needed I think
+        AdminTab::GroupView => group_form.render(&user.email, data, VIEW_GROUP)?,
         AdminTab::GroupCreate => group_form.render(&user.email, data, CREATE_GROUP)?,
         AdminTab::GroupModify => group_form.render(&user.email, data, MODIFY_GROUP)?,
+        AdminTab::UserView => user_form.render(&user.email, data, VIEW_USER)?,
         AdminTab::UserModify => user_form.render(&user.email, data, MODIFY_USER)?,
         AdminTab::UserDelete => user_form.render(&user.email, data, DELETE_USER)?,
     };

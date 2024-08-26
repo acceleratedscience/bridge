@@ -33,13 +33,10 @@
 		<cds-button-set>
 			<cds-button href="./">Cancel</cds-button>
 			{% if create %}
-			<cds-button hx-post="/portal/system_admin/hx/group" hx-target="#response" hx-target-400="#response" hx-swap="innerhtml">Submit</cds-button>
+			<cds-button hx-post="/portal/system_admin/hx/group" hx-target="#panel-groups" hx-target-400="#panel-groups" hx-swap="innerhtml">Submit</cds-button>
 			{% else %}
-			<cds-button hx-patch="/portal/system_admin/hx/group" hx-target="#response" hx-target-400="#response" hx-swap="innerhtml">Submit</cds-button>
+			<cds-button hx-patch="/portal/system_admin/hx/group" hx-target="#panel-groups" hx-target-400="#panel-groups" hx-swap="innerhtml">Submit</cds-button>
 			{% endif %}
 		</cds-button-set>
 	</form>
-
-	{# DCH - instead of displaying response, please forward to group detail page (../) #}
-	<div id="response"></div>
 </div>

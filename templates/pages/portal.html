@@ -39,7 +39,7 @@
 			</cds-tabs>
 			<br>
 
-			<!-- Models -->
+			<!-- Panel: Models -->
 			<div id="panel-models" role="tabpanel" aria-labelledby="tab-models">
 				{% if group == "" %}
 				<p>No models available.</p>
@@ -57,11 +57,12 @@
 				{% endif %}
 			</div>
 
-			<!-- Token -->
+			<!-- Panel: Token -->
 			<div id="panel-token" role="tabpanel" aria-labelledby="tab-token">
 				{% include "components/token.html" %}
 			</div>
 
+			<!-- Panel: Others -->
 			{% block panels %}
 			{% endblock panels %}
 		</div>

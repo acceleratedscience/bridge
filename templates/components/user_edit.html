@@ -49,16 +49,13 @@
 		<cds-button-set>
 			<cds-button href="./">Cancel</cds-button>
 			{% if create %}
-			<cds-button hx-post="/portal/system_admin/hx/user" hx-target="#response" hx-target-400="#response" hx-swap="innerhtml">Submit</cds-button>
+			<cds-button hx-post="/portal/system_admin/hx/user" hx-target="#panel-users" hx-target-400="#panel-users" hx-swap="innerhtml">Submit</cds-button>
 			{% else %}
-			<cds-button hx-patch="/portal/system_admin/hx/user" hx-target="#response" hx-target-400="#response" hx-swap="innerhtml">Submit</cds-button>
+			<cds-button hx-patch="/portal/system_admin/hx/user" hx-target="#panel-users" hx-target-400="#panel-users" hx-swap="innerhtml">Submit</cds-button>
 			{% endif %}
 		</cds-button-set>
 	</form>
 
 	<br><br>
-	<a href="/users" class="delete">Delete user</a>
-
-	{# DCH - instead of displaying response, please forward to group detail page (../) #}
-	<div id="response"></div>
+	<a hx-get="system_admin/hx/tab?tab=UserDelete" hx-target="#panel-users" class="delete">Delete user</a>
 </div>
