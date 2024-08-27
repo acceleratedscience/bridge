@@ -25,6 +25,10 @@ impl GroupContent {
         context.insert("subject", &subject);
         context.insert("items", &self.items);
 
+        if template_name == CREATE_GROUP {
+            context.insert("create", &true);
+        }
+
         Ok(tera.render(template_name, &context)?)
     }
 }

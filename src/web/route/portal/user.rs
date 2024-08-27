@@ -77,9 +77,11 @@ pub(super) async fn user(
                     profile.add_subscription(subscription.to_string());
                 });
 
-                helper::log_with_level!(profile.render(data), error)?
+                helper::log_with_level!(profile.render(data, helper::add_token_exp_to_tera), error)?
             }
-            Err(_) => profile.render(data)?,
+            Err(_) => {
+                helper::log_with_level!(profile.render(data, helper::add_token_exp_to_tera), error)?
+            }
         };
 
         return Ok(HttpResponse::Ok().body(content));

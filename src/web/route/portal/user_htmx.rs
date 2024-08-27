@@ -1,5 +1,5 @@
 use actix_web::web::Data;
-use tera::Tera;
+use tera::{Context, Tera};
 
 use crate::errors::Result;
 
@@ -30,12 +30,21 @@ impl Profile {
         self.subscriptions.push(subscription);
     }
 
-    pub fn render(&self, tera: Data<Tera>) -> Result<String> {
+    pub fn render(
+        &self,
+        tera: Data<Tera>,
+        t_exp: impl FnOnce(&mut Context, &str),
+    ) -> Result<String> {
         let mut context = tera::Context::new();
         context.insert("group", &self.groups.join(", "));
         context.insert("subscriptions", &self.subscriptions);
         context.insert("name", &self.name);
         context.insert("token", &self.token);
+
+        // add in the expiration time if token is present
+        if let Some(t) = &self.token {
+            t_exp(&mut context, t);
+        }
 
         Ok(tera.render(PROFILE, &context)?)
     }

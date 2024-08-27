@@ -33,7 +33,10 @@ use crate::{
     web::helper::{self},
 };
 
-use self::htmx::{GroupContent, UserContent, VIEW_GROUP, CREATE_GROUP, MODIFY_GROUP, VIEW_USER, MODIFY_USER, DELETE_USER};
+use self::htmx::{
+    GroupContent, UserContent, CREATE_GROUP, DELETE_USER, MODIFY_GROUP, MODIFY_USER, VIEW_GROUP,
+    VIEW_USER,
+};
 
 const USER_PAGE: &str = "pages/portal_system.html";
 
@@ -86,6 +89,10 @@ pub(super) async fn system(
     ctx.insert("group", &user.groups.join(", "));
     ctx.insert("subscriptions", &subs);
     ctx.insert("token", &user.token);
+    if let Some(token) = &user.token {
+        helper::add_token_exp_to_tera(&mut ctx, token);
+    }
+
     let content = helper::log_with_level!(data.render(USER_PAGE, &ctx), error)?;
 
     return Ok(HttpResponse::Ok().body(content));
@@ -288,30 +295,37 @@ async fn system_tab_htmx(
     // deserialize into AdminTab
     let tab = helper::log_with_level!(serde_urlencoded::from_str::<AdminTabs>(query), error)?;
 
-    // TODO: move group_form and user_form to OnceLock
-    let mut group_form = GroupContent::new();
-    CATALOG_URLS
-        .iter()
-        .for_each(|(_, service_name)| group_form.add(service_name.to_owned()));
-
-    let mut user_form = UserContent::new();
-    get_all_groups(&db)
-        .await
-        .unwrap_or(vec![])
-        .iter()
-        .for_each(|g| user_form.add_group(g.name.to_owned()));
-    UserType::to_array_str()
-        .iter()
-        .for_each(|t| user_form.add_user(t.to_string()));
-    
     let content = match tab.tab {
-        AdminTab::Profile => r#"<br><p>Profile tab</p>"#.to_string(), // DCH - not needed I think
-        AdminTab::GroupView => group_form.render(&user.email, data, VIEW_GROUP)?,
-        AdminTab::GroupCreate => group_form.render(&user.email, data, CREATE_GROUP)?,
-        AdminTab::GroupModify => group_form.render(&user.email, data, MODIFY_GROUP)?,
-        AdminTab::UserView => user_form.render(&user.email, data, VIEW_USER)?,
-        AdminTab::UserModify => user_form.render(&user.email, data, MODIFY_USER)?,
-        AdminTab::UserDelete => user_form.render(&user.email, data, DELETE_USER)?,
+        AdminTab::GroupModify | AdminTab::GroupView | AdminTab::GroupCreate => {
+            let mut group_form = GroupContent::new();
+            CATALOG_URLS
+                .iter()
+                .for_each(|(_, service_name)| group_form.add(service_name.to_owned()));
+            match tab.tab {
+                AdminTab::GroupView => group_form.render(&user.email, data, VIEW_GROUP)?,
+                AdminTab::GroupCreate => group_form.render(&user.email, data, CREATE_GROUP)?,
+                AdminTab::GroupModify => group_form.render(&user.email, data, MODIFY_GROUP)?,
+                _ => unreachable!(),
+            }
+        }
+        AdminTab::UserModify | AdminTab::UserView | AdminTab::UserDelete => {
+            let mut user_form = UserContent::new();
+            get_all_groups(&db)
+                .await
+                .unwrap_or(vec![])
+                .iter()
+                .for_each(|g| user_form.add_group(g.name.to_owned()));
+            UserType::to_array_str()
+                .iter()
+                .for_each(|t| user_form.add_user(t.to_string()));
+            match tab.tab {
+                AdminTab::UserView => user_form.render(&user.email, data, VIEW_USER)?,
+                AdminTab::UserModify => user_form.render(&user.email, data, MODIFY_USER)?,
+                AdminTab::UserDelete => user_form.render(&user.email, data, DELETE_USER)?,
+                _ => unreachable!(),
+            }
+        }
+        AdminTab::Profile => r#"<br><p>Profile tab</p>"#.to_string(),
     };
 
     Ok(HttpResponse::Ok()

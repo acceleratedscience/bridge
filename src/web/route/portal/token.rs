@@ -7,6 +7,7 @@ use actix_web::{
     HttpResponse,
 };
 use mongodb::bson::{doc, oid::ObjectId};
+use tera::Tera;
 
 use crate::{
     auth::jwt,
@@ -25,6 +26,7 @@ const TOKEN_LIFETIME: usize = const { 60 * 60 * 24 * 30 };
 #[get("token")]
 pub async fn get_token_for_user(
     subject: Option<ReqData<GuardianCookie>>,
+    data: Data<Tera>,
     db: Data<&DB>,
 ) -> Result<HttpResponse> {
     let gc = match subject {
@@ -71,8 +73,8 @@ pub async fn get_token_for_user(
     };
 
     // Generate guardian token
-    let token = helper::log_with_level!(
-        jwt::get_token(&CONFIG.encoder, TOKEN_LIFETIME, &gc.subject, AUD[0], scp),
+    let (token, exp) = helper::log_with_level!(
+        jwt::get_token_and_exp(&CONFIG.encoder, TOKEN_LIFETIME, &gc.subject, AUD[0], scp),
         error
     )?;
 
@@ -100,7 +102,12 @@ pub async fn get_token_for_user(
         );
     }
 
+    let mut context = tera::Context::new();
+    context.insert("token", &Some(token));
+    context.insert("token_exp", &exp);
+    let content = helper::log_with_level!(data.render("components/token.html", &context), error)?;
+
     Ok(HttpResponse::Ok()
         .content_type(ContentType::form_url_encoded())
-        .body(token))
+        .body(content))
 }
