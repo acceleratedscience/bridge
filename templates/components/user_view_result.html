@@ -1,0 +1,7 @@
+{# Results template for user search #}
+<div class="list-table">
+
+	{% for user in users %}
+	<div class="list-table-item">{{user.email}} ({{user.user_name}})<div class="btn-wrap"><a hx-get="system_admin/hx/tab?tab=UserModify&user={{user.email}}" hx-target="#panel-users">edit</a></div></div>
+	{% endfor %}
+</div>

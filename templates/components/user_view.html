@@ -1,29 +1,8 @@
-{% set backlink_text = "All users" %}
-{% include "components/backlink.html" %}
-<h1>John Doe</h1>
+{# User search and list template #}
 
-<cds-button hx-get="system_admin/hx/tab?tab=UserModify" hx-target="#panel-users">Edit</cds-button>
+<cds-form-group class="cds-group">
+	<cds-text-input label="Email" name="email" helper-text="partial match allowed" hx-trigger="input delay:1s" hx-get="hx/search_by_email" hx-target="#search-response" hx-swap="innerHtml" required></cds-text-input>
+</cds-form-group>
+
 <br><br>
-
-<div class="key-val-wrap">
-	<div class="key">Name</div>
-	<div class="val">John Doe</div>
-
-	<div class="key">Username</div>
-	<div class="val">john-doe</div>
-
-	<div class="key">Email</div>
-	<div class="val">john.doe@gmail.com</div>
-
-	<div class="key">Group</div>
-	<div class="val">Foobar</div>
-
-	<div class="key">User type</div>
-	<div class="val">User</div>
-
-	<div class="key">Created</div>
-	<div class="val">Jane Dee<br><small>Aug 15, 2024</small></div>
-
-	<div class="key">Last edit</div>
-	<div class="val">Jane Dee<br><small>3 days ago</small></div>
-</div>
+<div id="search-response"></div>

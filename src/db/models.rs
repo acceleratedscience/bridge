@@ -124,6 +124,7 @@ pub enum AdminTab {
 #[derive(Debug, Deserialize, Clone)]
 pub struct AdminTabs {
     pub tab: AdminTab,
+    pub user: String,
 }
 
 #[cfg(test)]

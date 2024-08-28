@@ -23,21 +23,10 @@ System Administrator
 </div>
 
 <!-- Users -->
-<div id="panel-users" role="tabpanel" aria-labelledby="tab-users">
-	{% include 'components/users.html' %}
+<div hx-ext="response-targets">
+	<div id="panel-users" role="tabpanel" aria-labelledby="tab-users">
+		{% include 'components/user_view.html' %}
+	</div>
 </div>
 
-<!-- DCH Delete below  -->
-<!-- <br><br>
-DCH - delete when done<br>
-<b>Group:</b>
-<a href="#" hx-get="system_admin/hx/tab?tab=GroupCreate" hx-target="#temp">Create (broken)</a> /
-<a href="#" hx-get="system_admin/hx/tab?tab=GroupModify" hx-target="#temp">Modify (works)</a>
-
-<br><br>
-<b>User:</b>
-<a href="#" hx-get="system_admin/hx/tab?tab=UserModify" hx-target="#temp">Modify (broken)</a> /
-<a href="#" hx-get="system_admin/hx/tab?tab=UserDelete" hx-target="#temp">Delete (broken)</a>
-
-<div id="temp"></div> -->
 {% endblock panels %}

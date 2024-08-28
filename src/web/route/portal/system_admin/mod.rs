@@ -226,7 +226,7 @@ async fn system_update_user(
         return Ok(HttpResponse::BadRequest()
             .append_header((
                 HTMX_ERROR_RES,
-                format!("<p>User with sub {} does not exist</p>", uf.email),
+                format!("<p>User with email address {} does not exist</p>", uf.email),
             ))
             .finish());
     }
@@ -234,7 +234,7 @@ async fn system_update_user(
     Ok(HttpResponse::Ok()
         .content_type(ContentType::form_url_encoded())
         .body(format!(
-            "<p>User with sub field {} has been updated</p>",
+            "<p>User with email address {} has been updated</p>",
             uf.email
         )))
 }
@@ -298,9 +298,11 @@ async fn system_tab_htmx(
     let content = match tab.tab {
         AdminTab::GroupModify | AdminTab::GroupView | AdminTab::GroupCreate => {
             let mut group_form = GroupContent::new();
+
             CATALOG_URLS
                 .iter()
                 .for_each(|(_, service_name)| group_form.add(service_name.to_owned()));
+
             match tab.tab {
                 AdminTab::GroupView => group_form.render(&user.email, data, VIEW_GROUP)?,
                 AdminTab::GroupCreate => group_form.render(&user.email, data, CREATE_GROUP)?,
@@ -310,6 +312,7 @@ async fn system_tab_htmx(
         }
         AdminTab::UserModify | AdminTab::UserView | AdminTab::UserDelete => {
             let mut user_form = UserContent::new();
+
             get_all_groups(&db)
                 .await
                 .unwrap_or(vec![])
@@ -317,11 +320,16 @@ async fn system_tab_htmx(
                 .for_each(|g| user_form.add_group(g.name.to_owned()));
             UserType::to_array_str()
                 .iter()
-                .for_each(|t| user_form.add_user(t.to_string()));
+                .for_each(|t| user_form.add_user_type(t.to_string()));
+
             match tab.tab {
-                AdminTab::UserView => user_form.render(&user.email, data, VIEW_USER)?,
-                AdminTab::UserModify => user_form.render(&user.email, data, MODIFY_USER)?,
-                AdminTab::UserDelete => user_form.render(&user.email, data, DELETE_USER)?,
+                AdminTab::UserView => user_form.render(&user.email, &tab.user, data, VIEW_USER)?,
+                AdminTab::UserModify => {
+                    user_form.render(&user.email, &tab.user, data, MODIFY_USER)?
+                }
+                AdminTab::UserDelete => {
+                    user_form.render(&user.email, &tab.user, data, DELETE_USER)?
+                }
                 _ => unreachable!(),
             }
         }

@@ -1,61 +1,31 @@
-{# DCH - Replace placholder variables, I'm not sure how to move this data onto the route correctly #}
-{# DCH - This component should be moved into pages/user_edit.html once variables are moved #}
-{# DCH - Email name field should let you override email #}
-{% if not user_items %}{% set user_items = ['user', 'group', 'system'] %}{% endif %}
-{% if not user_type %}{% set user_type = 'system' %}{% endif %}
-{% if not group_items %}{% set group_items = ['Foo','Bar', 'Foobar', 'Baz'] %}{% endif %}
-{% if not subject %}{% set subject = 'john.doe@gmail.com' %}{% endif %}
-
 {% if create %}
 <h3>Create User</h3>
 {% else %}
-<h3><span class="softer">Edit User</span> John Doe</h3>
+<h3><span class="softer">Edit User</span> {{target_user}}</h3>
 {% endif %}
-
-
-<div hx-ext="response-targets">
-	<form class="cds-group">
-		<!-- Hidden: User identifier -->
-		<!-- <cds-text-input label="User identifier" name="user_id" hidden></cds-text-input> -->
-		{# DCH - User ID or other unique identifier #}
-
-		<!-- Name -->
-		<cds-text-input label="Name" name="name" required></cds-text-input>
-
-		<!-- Username -->
-		<cds-text-input label="Username" name="username" required></cds-text-input>
-
-		<!-- Email -->
-		<cds-text-input label="Email" name="email" required></cds-text-input>
-
-		<!-- Groups -->
-		<cds-multi-select title-text="Groups" label="Select groups" name="groups" required>
-			{% for item in group_items %}
-				<cds-multi-select-item value="{{ item }}">{{ item }}</cds-multi-select-item>
-			{% endfor %}
-		</cds-multi-select>
-
-		<!-- User type -->		
-		<cds-dropdown title-text="User type" value="{{ user_type }}">
-			{% for item in user_items %}
-				<cds-dropdown-item value="{{ item }}">{{ item }}</cds-dropdown-item>
-			{% endfor %}
-		</cds-dropdown>
-		
-		<!-- Hidden: Last edit  -->
-		<cds-text-input label="Last edit" name="last_updated_by" hidden value="{{ subject }}"></cds-text-input>
-
-		<!-- Submit -->
-		<cds-button-set>
-			<cds-button href="./">Cancel</cds-button>
-			{% if create %}
-			<cds-button hx-post="/portal/system_admin/hx/user" hx-target="#panel-users" hx-target-400="#panel-users" hx-swap="innerhtml">Submit</cds-button>
-			{% else %}
-			<cds-button hx-patch="/portal/system_admin/hx/user" hx-target="#panel-users" hx-target-400="#panel-users" hx-swap="innerhtml">Submit</cds-button>
-			{% endif %}
-		</cds-button-set>
-	</form>
-
-	<br><br>
-	<a hx-get="system_admin/hx/tab?tab=UserDelete" hx-target="#panel-users" class="delete">Delete user</a>
-</div>
+<form class="cds-group">
+	<!-- Email -->
+	<cds-text-input label="Email" name="email" helper-text="Selected from previous screen" value={{target_user}} required hidden></cds-text-input>
+	<!-- Groups -->
+	<cds-multi-select title-text="Groups" label="Select groups" name="groups" required>
+		{% for item in group_items %}
+		<cds-multi-select-item value="{{ item }}">{{ item }}</cds-multi-select-item>
+		{% endfor %}
+	</cds-multi-select>
+	<!-- User type -->		
+	<cds-dropdown title-text="User type" label="Select user type" name="user_type" required>
+		{% for item in user_items %}
+		<cds-dropdown-item value="{{ item }}">{{ item }}</cds-dropdown-item>
+		{% endfor %}
+	</cds-dropdown>
+	<!-- Hidden: Last edit  -->
+	<cds-text-input label="Last edit" name="last_updated_by" hidden value="{{ subject }}"></cds-text-input>
+	<br>
+	<!-- Submit -->
+	<cds-button-set>
+		<cds-button href="./">Cancel</cds-button>
+		<cds-button type="submit" hx-patch="/portal/system_admin/hx/user" hx-target="#panel-users" hx-target-400="#response" hx-swap="innerhtml">Submit</cds-button>
+	</cds-button-set>
+</form>
+<br>
+<div id="response"></div>

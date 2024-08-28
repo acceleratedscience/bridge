@@ -2,7 +2,7 @@ use std::{marker::PhantomData, sync::OnceLock};
 
 use futures::{StreamExt, TryStreamExt};
 use mongodb::{
-    bson::{doc, Bson, Document},
+    bson::{doc, Bson, Document, Regex},
     options::IndexOptions,
     Client, Collection, Database as MongoDatabase, IndexModel,
 };
@@ -86,7 +86,7 @@ impl DB {
     }
 }
 
-impl<'c, R1> Database<Document, &'c str, R1, Bson, u64> for DB
+impl<'c, R1> Database<Document, &'c str, &'c str, R1, Bson, u64> for DB
 where
     R1: Send + Sync + Serialize + DeserializeOwned,
 {
@@ -177,6 +177,34 @@ where
         let r = col.delete_many(filter).await?;
 
         Ok(r.deleted_count)
+    }
+
+    async fn search_users(
+        &self,
+        name: &'c str,
+        collection: &'c str,
+        _model: PhantomData<R1>,
+    ) -> Result<Vec<R1>> {
+        let mut docs = Vec::new();
+        let col = Self::get_collection(self, collection);
+        let mut cursor = col
+            .find(doc! {
+                "email": doc! {
+                    "$regex": Regex { pattern: "^".to_string() + name, options: "i".to_string() }
+                }
+            })
+            .await?;
+
+        while let Some(doc) = cursor.try_next().await? {
+            docs.push(doc);
+        }
+
+        if docs.is_empty() {
+            return Err(GuardianError::GeneralError(
+                "Could not find any documents".to_string(),
+            ));
+        }
+        Ok(docs)
     }
 }
 

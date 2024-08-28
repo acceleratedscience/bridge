@@ -54,15 +54,16 @@ impl UserContent {
         self.group_items.push(item);
     }
 
-    pub fn add_user(&mut self, item: String) {
+    pub fn add_user_type(&mut self, item: String) {
         self.user_items.push(item);
     }
 
-    pub fn render(&self, subject: &str, tera: Data<Tera>, template_name: &str) -> Result<String> {
+    pub fn render(&self, subject: &str, target: &str, tera: Data<Tera>, template_name: &str) -> Result<String> {
         let mut context = tera::Context::new();
         context.insert("subject", &subject);
         context.insert("group_items", &self.group_items);
         context.insert("user_items", &self.user_items);
+        context.insert("target_user", &target);
 
         Ok(tera.render(template_name, &context)?)
     }
