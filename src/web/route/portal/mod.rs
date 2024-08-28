@@ -6,7 +6,7 @@ use actix_web::{
     http::header::{self, ContentType},
     post,
     web::{self, Data, ReqData},
-    HttpResponse,
+    HttpRequest, HttpResponse,
 };
 use tera::{Context, Tera};
 
@@ -18,7 +18,7 @@ use crate::{
         Database,
     },
     errors::{GuardianError, Result},
-    web::guardian_middleware::{CookieCheck, Htmx},
+    web::guardian_middleware::{CookieCheck, Htmx, HTMX_ERROR_RES},
 };
 
 mod group_admin;
@@ -60,6 +60,7 @@ async fn index(data: Option<ReqData<GuardianCookie>>) -> Result<HttpResponse> {
 
 #[get("search_by_email")]
 async fn search_by_email(
+    req: HttpRequest,
     cookie: Option<ReqData<GuardianCookie>>,
     db: Data<&DB>,
     data: Data<Tera>,
@@ -71,7 +72,36 @@ async fn search_by_email(
         if guardian_cookie.user_type == UserType::SystemAdmin
             || guardian_cookie.user_type == UserType::GroupAdmin
         {
-            let res = db.search_users("choi", USER, PhantomData::<User>).await?;
+            let query = req.query_string().split('=').collect::<Vec<&str>>();
+            // to help the optimizer and prevent bound checks
+            let query = query.as_slice();
+            let length = query.len();
+            // validate the query string
+            let email = if length.eq(&2) && query[0] == "email" {
+                query[1]
+            } else {
+                return Err(GuardianError::QueryDeserializeError(
+                    "Invalid query string".to_string(),
+                ));
+            };
+
+            let res = match db.search_users(email, USER, PhantomData::<User>).await {
+                Ok(documents) => documents,
+                Err(e) => match e {
+                    GuardianError::RecordSearchError(_) => {
+                        return Ok(HttpResponse::BadRequest()
+                            .append_header((
+                                HTMX_ERROR_RES,
+                                format!("No email found for {}", email),
+                            ))
+                            .finish());
+                    }
+                    _ => {
+                        return Err(e);
+                    }
+                },
+            };
+
             let mut ctx = Context::new();
             ctx.insert("users", &res);
             let content = data.render("components/user_view_result.html", &ctx)?;

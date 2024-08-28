@@ -200,7 +200,7 @@ where
         }
 
         if docs.is_empty() {
-            return Err(GuardianError::GeneralError(
+            return Err(GuardianError::RecordSearchError(
                 "Could not find any documents".to_string(),
             ));
         }

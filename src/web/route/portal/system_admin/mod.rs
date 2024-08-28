@@ -34,8 +34,7 @@ use crate::{
 };
 
 use self::htmx::{
-    GroupContent, UserContent, CREATE_GROUP, DELETE_USER, MODIFY_GROUP, MODIFY_USER, VIEW_GROUP,
-    VIEW_USER,
+    GroupContent, UserContent, CREATE_MODIFY_GROUP, MODIFY_USER, VIEW_GROUP, VIEW_USER,
 };
 
 const USER_PAGE: &str = "pages/portal_system.html";
@@ -305,8 +304,9 @@ async fn system_tab_htmx(
 
             match tab.tab {
                 AdminTab::GroupView => group_form.render(&user.email, data, VIEW_GROUP)?,
-                AdminTab::GroupCreate => group_form.render(&user.email, data, CREATE_GROUP)?,
-                AdminTab::GroupModify => group_form.render(&user.email, data, MODIFY_GROUP)?,
+                AdminTab::GroupCreate | AdminTab::GroupModify => {
+                    group_form.render(&user.email, data, CREATE_MODIFY_GROUP)?
+                }
                 _ => unreachable!(),
             }
         }
@@ -323,13 +323,21 @@ async fn system_tab_htmx(
                 .for_each(|t| user_form.add_user_type(t.to_string()));
 
             match tab.tab {
-                AdminTab::UserView => user_form.render(&user.email, &tab.user, data, VIEW_USER)?,
+                AdminTab::UserView => {
+                    user_form.render(&user.email, &tab.user, data, VIEW_USER, None)?
+                }
                 AdminTab::UserModify => {
-                    user_form.render(&user.email, &tab.user, data, MODIFY_USER)?
+                    user_form.render(&user.email, &tab.user, data, MODIFY_USER, None)?
                 }
-                AdminTab::UserDelete => {
-                    user_form.render(&user.email, &tab.user, data, DELETE_USER)?
-                }
+                AdminTab::UserDelete => user_form.render(
+                    &user.email,
+                    &tab.user,
+                    data,
+                    MODIFY_USER,
+                    Some(|ctx: &mut tera::Context| {
+                        ctx.insert("delete", &true);
+                    }),
+                )?,
                 _ => unreachable!(),
             }
         }

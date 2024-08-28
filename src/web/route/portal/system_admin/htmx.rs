@@ -8,8 +8,7 @@ pub struct GroupContent {
 }
 
 pub(super) static VIEW_GROUP: &str = "components/group_view.html";
-pub(super) static CREATE_GROUP: &str = "components/group_edit.html"; // DCH, no need for separate page.
-pub(super) static MODIFY_GROUP: &str = "components/group_edit.html";
+pub(super) static CREATE_MODIFY_GROUP: &str = "components/group_edit.html";
 
 impl GroupContent {
     pub fn new() -> Self {
@@ -25,7 +24,7 @@ impl GroupContent {
         context.insert("subject", &subject);
         context.insert("items", &self.items);
 
-        if template_name == CREATE_GROUP {
+        if template_name == CREATE_MODIFY_GROUP {
             context.insert("create", &true);
         }
 
@@ -40,7 +39,6 @@ pub struct UserContent {
 
 pub(super) static VIEW_USER: &str = "components/user_view.html";
 pub(super) static MODIFY_USER: &str = "components/user_edit.html";
-pub(super) static DELETE_USER: &str = "components/user_edit.html"; // DCH, no need for separate page.
 
 impl UserContent {
     pub fn new() -> Self {
@@ -58,15 +56,22 @@ impl UserContent {
         self.user_items.push(item);
     }
 
-    pub fn render(&self, subject: &str, target: &str, tera: Data<Tera>, template_name: &str) -> Result<String> {
+    pub fn render(
+        &self,
+        subject: &str,
+        target: &str,
+        tera: Data<Tera>,
+        template_name: &str,
+        modifer: Option<fn(&mut tera::Context)>,
+    ) -> Result<String> {
         let mut context = tera::Context::new();
         context.insert("subject", &subject);
         context.insert("group_items", &self.group_items);
         context.insert("user_items", &self.user_items);
         context.insert("target_user", &target);
 
-        if template_name == DELETE_USER {
-            context.insert("delete", &true);
+        if let Some(f) = modifer {
+            f(&mut context);
         }
 
         Ok(tera.render(template_name, &context)?)
