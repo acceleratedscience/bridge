@@ -65,6 +65,10 @@ impl UserContent {
         context.insert("user_items", &self.user_items);
         context.insert("target_user", &target);
 
+        if template_name == DELETE_USER {
+            context.insert("delete", &true);
+        }
+
         Ok(tera.render(template_name, &context)?)
     }
 }
