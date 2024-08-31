@@ -313,6 +313,8 @@ async fn system_tab_htmx(
         AdminTab::UserModify | AdminTab::UserView | AdminTab::UserDelete => {
             let mut user_form = UserContent::new();
 
+            let target_user = tab.user.as_ref().ok_or(GuardianError::GeneralError("No user provided".to_string()))?;
+
             get_all_groups(&db)
                 .await
                 .unwrap_or(vec![])
@@ -324,14 +326,14 @@ async fn system_tab_htmx(
 
             match tab.tab {
                 AdminTab::UserView => {
-                    user_form.render(&user.email, &tab.user, data, VIEW_USER, None)?
+                    user_form.render(&user.email, target_user, data, VIEW_USER, None)?
                 }
                 AdminTab::UserModify => {
-                    user_form.render(&user.email, &tab.user, data, MODIFY_USER, None)?
+                    user_form.render(&user.email, target_user, data, MODIFY_USER, None)?
                 }
                 AdminTab::UserDelete => user_form.render(
                     &user.email,
-                    &tab.user,
+                    target_user,
                     data,
                     MODIFY_USER,
                     Some(|ctx: &mut tera::Context| {

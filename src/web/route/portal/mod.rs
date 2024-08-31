@@ -77,12 +77,12 @@ async fn search_by_email(
             let query = query.as_slice();
             let length = query.len();
             // validate the query string
-            let email = if length.eq(&2) && query[0] == "email" {
+            let email = if length.eq(&2) && query[0] == "email" && !query[1].contains("%20") {
                 query[1]
             } else {
-                return Err(GuardianError::QueryDeserializeError(
-                    "Invalid query string".to_string(),
-                ));
+                return Ok(HttpResponse::BadRequest()
+                    .append_header((HTMX_ERROR_RES, "Invalid query string"))
+                    .finish());
             };
 
             let res = match db.search_users(email, USER, PhantomData::<User>).await {
