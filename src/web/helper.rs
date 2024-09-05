@@ -63,6 +63,16 @@ where
     }
 }
 
+pub fn delimited_string_to_vec(s: Vec<String>, delimiter: &str) -> Vec<String> {
+    let col = Vec::new();
+    (0..s.len()).fold(col, |mut acc, i| {
+        s[i].split(delimiter).for_each(|s| {
+            acc.push(s.to_string());
+        });
+        acc
+    })
+}
+
 pub fn add_token_exp_to_tera(tera: &mut Context, token: &str) {
     let res = validate_token(token, &CONFIG.decoder, &CONFIG.validation);
     match res {

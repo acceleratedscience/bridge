@@ -1,13 +1,7 @@
-{# DCH - Replace placholder variables, I'm not sure how to move this data onto the route correctly #}
-{# DCH - This component should be moved into pages/group_edit.html once variables are moved #}
-{# DCH - Group name field should let you override group #}
-{% if not items %}{% set items = ['Foo', 'Bar'] %}{% endif %}
-{% if not subject %}{% set subject = 'john.doe@gmail.com' %}{% endif %}
-
-{% if create %}
+{% if not group_name %}
 <h3>Create Group</h3>
 {% else %}
-<h3><span class="softer">Edit Group</span> Foobar</h3>
+<h3>Edit Group: {{ group_name }}</h3>
 {% endif %}
 
 <div hx-ext="response-targets">
@@ -17,7 +11,11 @@
 		{# DCH - Group ID or other unique identifier #}
 		
 		<!-- Group name -->
+		{% if not group_name %}
 		<cds-text-input label="Group name" name="name" required></cds-text-input>
+		{% else %}
+		<cds-text-input label="Group name" name="name" value={{ group_name }} hidden></cds-text-input>
+		{% endif %}
 
 		<!-- Subscriptions -->
 		<cds-multi-select title-text="Subscriptions" label="Select models" name="subscriptions" required>
@@ -32,7 +30,7 @@
 		<!-- Submit -->
 		<cds-button-set>
 			<cds-button href="./">Cancel</cds-button>
-			{% if create %}
+			{% if not group_name %}
 			<cds-button hx-post="/portal/system_admin/hx/group" hx-target="#panel-groups" hx-target-400="#panel-groups" hx-swap="innerhtml">Submit</cds-button>
 			{% else %}
 			<cds-button hx-patch="/portal/system_admin/hx/group" hx-target="#panel-groups" hx-target-400="#panel-groups" hx-swap="innerhtml">Submit</cds-button>

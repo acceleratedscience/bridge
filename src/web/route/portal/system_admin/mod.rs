@@ -109,10 +109,12 @@ async fn system_create_group(
     let gf = payload_to_struct::<GroupForm>(pl).await?;
     let now = time::OffsetDateTime::now_utc();
 
+    let subscriptions = helper::delimited_string_to_vec(gf.subscriptions, ",");
+
     let group = Group {
         _id: ObjectId::new(),
         name: gf.name.clone(),
-        subscriptions: gf.subscriptions,
+        subscriptions,
         created_at: now,
         updated_at: now,
         last_updated_by: gf.last_updated_by,
@@ -163,12 +165,15 @@ async fn system_update_group(
     let _ = check_admin(subject, UserType::SystemAdmin)?;
     let gf = payload_to_struct::<GroupForm>(pl).await?;
 
+    // WTH Carbon
+    let subscriptions = helper::delimited_string_to_vec(gf.subscriptions, ",");
+
     let r = db
         .update(
             doc! {"name": &gf.name},
             doc! {"$set": doc! {
                 "name": &gf.name,
-                "subscriptions": &gf.subscriptions,
+                "subscriptions": subscriptions,
                 "updated_at": bson(time::OffsetDateTime::now_utc())?,
                 "last_updated_by": gf.last_updated_by,
             }},
@@ -303,17 +308,47 @@ async fn system_tab_htmx(
                 .for_each(|(_, service_name)| group_form.add(service_name.to_owned()));
 
             match tab.tab {
-                AdminTab::GroupView => group_form.render(&user.email, data, VIEW_GROUP)?,
-                AdminTab::GroupCreate | AdminTab::GroupModify => {
-                    group_form.render(&user.email, data, CREATE_MODIFY_GROUP)?
+                AdminTab::GroupView => {
+                    let groups: Vec<Group> = db.find_many(doc! {}, GROUP).await.unwrap_or(vec![]);
+                    let group_names: Vec<String> =
+                        groups.into_iter().map(|group| group.name).collect();
+
+                    group_form.render(
+                        &user.email,
+                        data,
+                        VIEW_GROUP,
+                        Some(|ctx: &mut tera::Context| {
+                            ctx.insert("groups", &group_names);
+                        }),
+                    )?
                 }
+                AdminTab::GroupCreate => group_form.render(
+                    &user.email,
+                    data,
+                    CREATE_MODIFY_GROUP,
+                    None::<fn(&mut tera::Context)>,
+                )?,
+                AdminTab::GroupModify => match tab.group {
+                    Some(name) => group_form.render(
+                        &user.email,
+                        data,
+                        CREATE_MODIFY_GROUP,
+                        Some(|ctx: &mut tera::Context| {
+                            ctx.insert("group_name", &name);
+                        }),
+                    )?,
+                    None => return Err(GuardianError::GeneralError("No group provided".to_string())),
+                },
                 _ => unreachable!(),
             }
         }
         AdminTab::UserModify | AdminTab::UserView | AdminTab::UserDelete => {
             let mut user_form = UserContent::new();
 
-            let target_user = tab.user.as_ref().ok_or(GuardianError::GeneralError("No user provided".to_string()))?;
+            let target_user = tab
+                .user
+                .as_ref()
+                .ok_or(GuardianError::GeneralError("No user provided".to_string()))?;
 
             get_all_groups(&db)
                 .await
@@ -340,7 +375,7 @@ async fn system_tab_htmx(
                         ctx.insert("delete", &true);
                     }),
                 )?,
-                _ => unreachable!(),
+                _ => unreachable!("Group variants of enum should not be here"),
             }
         }
         AdminTab::Profile => r#"<br><p>Profile tab</p>"#.to_string(),

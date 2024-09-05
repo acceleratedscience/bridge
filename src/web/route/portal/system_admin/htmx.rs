@@ -19,13 +19,19 @@ impl GroupContent {
         self.items.push(item);
     }
 
-    pub fn render(&self, subject: &str, tera: Data<Tera>, template_name: &str) -> Result<String> {
+    pub fn render(
+        &self,
+        subject: &str,
+        tera: Data<Tera>,
+        template_name: &str,
+        modifer: Option<impl Fn(&mut tera::Context)>,
+    ) -> Result<String> {
         let mut context = tera::Context::new();
         context.insert("subject", &subject);
         context.insert("items", &self.items);
 
-        if template_name == CREATE_MODIFY_GROUP {
-            context.insert("create", &true);
+        if let Some(f) = modifer {
+            f(&mut context);
         }
 
         Ok(tera.render(template_name, &context)?)

@@ -1,24 +1,11 @@
 {% set backlink_text = "All groups" %}
-{% include "components/backlink.html" %}
-<h1>Foobar</h1>
-
-<cds-button hx-get="system_admin/hx/tab?tab=GroupModify" hx-target="#panel-groups">Edit</cds-button>
-<br><br>
-
 <div class="key-val-wrap">
-	<div class="key">Name</div>
-	<div class="val">Foobar</div>
-
 	<div class="key">Subscriptions</div>
 	<div class="val list-table">
-		<div class="list-table-item">Model A<div class="btn-wrap"><a hx-get="system_admin/hx/tab?tab=GroupView" hx-target="#panel-groups">view</a><a hx-get="system_admin/hx/tab?tab=GroupModify" hx-target="#panel-groups">edit</a></div></div>
-		<div class="list-table-item">Model B<div class="btn-wrap"><a hx-get="system_admin/hx/tab?tab=GroupView" hx-target="#panel-groups">view</a><a hx-get="system_admin/hx/tab?tab=GroupModify" hx-target="#panel-groups">edit</a></div></div>
-		<div class="list-table-item">Model C<div class="btn-wrap"><a hx-get="system_admin/hx/tab?tab=GroupView" hx-target="#panel-groups">view</a><a hx-get="system_admin/hx/tab?tab=GroupModify" hx-target="#panel-groups">edit</a></div></div>
+		{% for item in groups %}
+		<div class="list-table-item">{{ item }}<div class="btn-wrap"><a hx-get="system_admin/hx/tab?tab=GroupModify&group={{ item }}" hx-target="#panel-groups">view / edit</a></div></div>
+		{% else %}
+		<div class="list-table-item">No groups in the system</div>
+		{% endfor %}
 	</div>
-
-	<div class="key">Created</div>
-	<div class="val">Jane Dee<br><small>Aug 15, 2024</small></div>
-
-	<div class="key">Last edit</div>
-	<div class="val">Jane Dee<br><small>3 days ago</small></div>
 </div>

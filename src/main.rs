@@ -1,11 +1,6 @@
 use std::process::exit;
 
-use guardian::{
-    auth::openid,
-    db::mongo::DB,
-    logger::Logger,
-    web::start_server,
-};
+use guardian::{auth::openid, db::mongo::DB, logger::Logger, web::start_server};
 use tracing::error;
 use tracing_subscriber::filter::LevelFilter;
 

@@ -127,6 +127,7 @@ pub enum AdminTab {
 pub struct AdminTabs {
     pub tab: AdminTab,
     pub user: Option<String>,
+    pub group: Option<String>,
 }
 
 #[cfg(test)]
