@@ -93,7 +93,6 @@ pub(super) async fn group(
 async fn group_update_user(
     db: Data<&DB>,
     mut pl: web::Payload,
-    data: Data<Tera>,
     subject: Option<ReqData<GuardianCookie>>,
 ) -> Result<HttpResponse> {
     let _ = check_admin(subject, UserType::GroupAdmin)?;
@@ -130,7 +129,7 @@ async fn group_update_user(
 
     let mut current_group = user.groups;
 
-    match form.modify_user {
+    let confirmation_message = match form.modify_user {
         ModifyUser::Add => {
             current_group.sort();
             match current_group.binary_search(&form.group_name) {
@@ -147,6 +146,7 @@ async fn group_update_user(
                 }
                 Err(_) => {
                     current_group.push(form.group_name.clone());
+                    "Added"
                 }
             }
         }
@@ -155,6 +155,7 @@ async fn group_update_user(
             match current_group.binary_search(&form.group_name) {
                 Ok(i) => {
                     current_group.remove(i);
+                    "Removed"
                 }
                 Err(_) => {
                     return Ok(HttpResponse::BadRequest()
@@ -169,7 +170,7 @@ async fn group_update_user(
                 }
             }
         }
-    }
+    };
 
     let _ = db
         .update(
@@ -184,19 +185,9 @@ async fn group_update_user(
         )
         .await?;
 
-    let members: Vec<User> = db
-        .find_many(doc! {"groups": &form.group_name }, USER)
-        .await?;
-    let mut user_form = ModifyUserGroup::new();
-    members.iter().for_each(|u| {
-        user_form.add(u.email.clone());
-    });
-    let content =
-        helper::log_with_level!(user_form.render(&user.email, &form.group_name, data), error)?;
-
     Ok(HttpResponse::Ok()
         .content_type(ContentType::form_url_encoded())
-        .body(content))
+        .body(confirmation_message))
 }
 
 #[get("tab")]

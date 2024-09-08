@@ -2,7 +2,7 @@
 	<div class="key">Subscriptions</div>
 	<div class="val list-table">
 		{% for item in groups %}
-		<div class="list-table-item">{{ item }}<div class="btn-wrap"><a hx-get="system_admin/hx/tab?tab=GroupModify&group={{ item }}" hx-target="#panel-groups">view / edit</a></div></div>
+		<div class="list-table-item">{{ item }}<div class="btn-wrap"><a href="" hx-get="system_admin/hx/tab?tab=GroupModify&group={{ item }}" hx-target="#panel-groups">view / edit</a></div></div>
 		{% else %}
 		<div class="list-table-item">No groups in the system</div>
 		{% endfor %}
