@@ -125,8 +125,8 @@ async fn search_by_email(
                         error
                     )?;
 
-                    dbg!(&group);
                     ctx.insert("group", group);
+                    ctx.insert("group_admin", &user.email);
                     "components/user_view_result_group.html"
                 }
                 _ => {

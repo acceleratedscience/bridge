@@ -253,6 +253,8 @@ async fn group_tab_htmx(
 
             let mut context = tera::Context::new();
             context.insert("group_members", &group_members);
+            context.insert("group", group_name);
+            context.insert("group_admin", &user.email);
 
             helper::log_with_level!(data.render("components/member_view.html", &context), error)?
         }
