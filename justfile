@@ -2,7 +2,7 @@ down-local-mongo:
 	docker stop mongodb
 
 build:
-	docker build -t guardian .
+	DOCKER_BUILDKIT=1 docker build -t guardian .
 
 local-mongo:
 	docker run -d --rm --name mongodb \
