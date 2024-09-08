@@ -1,4 +1,4 @@
-use std::marker::PhantomData;
+use std::{marker::PhantomData, str::FromStr};
 
 use actix_web::{
     cookie::{Cookie, SameSite},
@@ -8,7 +8,9 @@ use actix_web::{
     web::{self, Data, ReqData},
     HttpRequest, HttpResponse,
 };
+use mongodb::bson::{doc, oid::ObjectId};
 use tera::{Context, Tera};
+use tracing::warn;
 
 use crate::{
     auth::COOKIE_NAME,
@@ -19,6 +21,7 @@ use crate::{
     },
     errors::{GuardianError, Result},
     web::guardian_middleware::{CookieCheck, Htmx, HTMX_ERROR_RES},
+    web::helper::log_with_level,
 };
 
 mod group_admin;
@@ -28,8 +31,6 @@ mod system_admin;
 mod token;
 mod user;
 mod user_htmx;
-
-pub static PROFILE_MAIN: &str = "components/token.html";
 
 #[get("")]
 async fn index(data: Option<ReqData<GuardianCookie>>) -> Result<HttpResponse> {
@@ -72,6 +73,14 @@ async fn search_by_email(
         if guardian_cookie.user_type == UserType::SystemAdmin
             || guardian_cookie.user_type == UserType::GroupAdmin
         {
+            // Get caller's User data from the database
+            let id = ObjectId::from_str(&guardian_cookie.subject)
+                .map_err(|e| GuardianError::GeneralError(e.to_string()))?;
+            let user: User = match db.find(doc! {"_id": id}, USER).await {
+                Ok(user) => user,
+                Err(e) => return Err(e),
+            };
+
             let query = req.query_string().split('=').collect::<Vec<&str>>();
             // to help the optimizer and prevent bound checks
             let query = query.as_slice();
@@ -104,13 +113,37 @@ async fn search_by_email(
 
             let mut ctx = Context::new();
             ctx.insert("users", &res);
-            let content = data.render("components/user_view_result.html", &ctx)?;
+
+            let template = match guardian_cookie.user_type {
+                UserType::SystemAdmin => "components/user_view_result_system.html",
+                UserType::GroupAdmin => {
+                    let group = log_with_level!(
+                        user.groups.first().ok_or(GuardianError::GeneralError(
+                            "Group admin is not part of any group... this should not happen"
+                                .to_string()
+                        )),
+                        error
+                    )?;
+
+                    dbg!(&group);
+                    ctx.insert("group", group);
+                    "components/user_view_result_group.html"
+                }
+                _ => {
+                    return Ok(HttpResponse::BadRequest()
+                        .append_header((HTMX_ERROR_RES, "User not allowed to view this page"))
+                        .finish());
+                }
+            };
+
+            let content = log_with_level!(data.render(template, &ctx), error)?;
             return Ok(HttpResponse::Ok()
                 .content_type(ContentType::form_url_encoded())
                 .body(content));
         }
     }
 
+    warn!("SHIT");
     Err(GuardianError::UserNotAllowedOnPage(
         "User is not allowed to view this page".to_string(),
     ))

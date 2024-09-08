@@ -1,0 +1,10 @@
+{# Group member view for Group Admins #}
+<div class="list-table">
+	{% for member in group_members %}
+	<div class="list-table-item" id="_{{ member.sub | slugify }}_remove">{{ member.email }} ({{ member.user_name }})
+		<div class="btn-wrap">
+			<a href="" class="remove" hx-patch="group_admin/hx/user" hx-vals='{"remove": "{{ member.email }}"}' hx-target="#_{{ member.sub | slugify }}_remove" hx-swap="outerhtml">remove</a>
+		</div>
+	</div>
+	{% endfor %}
+</div>

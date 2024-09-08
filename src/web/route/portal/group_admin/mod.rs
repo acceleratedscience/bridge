@@ -29,7 +29,7 @@ use crate::{
     },
 };
 
-use self::htmx::{ModifyUserGroup, Profile};
+use self::htmx::ModifyUserGroup;
 
 mod htmx;
 
@@ -226,23 +226,6 @@ async fn group_tab_htmx(
         .await?;
 
     let content = match tab.tab {
-        AdminTab::Profile => {
-            dbg!(&user.groups[0]);
-            let mut profile = Profile::new();
-            let subscriptions: Result<Group> =
-                db.find(doc! {"name": user.groups[0].clone()}, GROUP).await;
-            let subs = match subscriptions {
-                Ok(g) => g.subscriptions,
-                Err(_) => vec![],
-            };
-            user.groups.iter().for_each(|g| {
-                profile.add_group(g.clone());
-            });
-            subs.iter().for_each(|s| {
-                profile.add_subscription(s.clone());
-            });
-            helper::log_with_level!(profile.render(data), error)?
-        }
         AdminTab::UserModify => {
             let group_name = user.groups.first().ok_or_else(|| {
                 GuardianError::GeneralError(
@@ -259,7 +242,25 @@ async fn group_tab_htmx(
             });
             helper::log_with_level!(user_form.render(&user.email, group_name, data), error)?
         }
-        _ => unreachable!(),
+        AdminTab::GroupView => {
+            let group_name = user.groups.first().ok_or_else(|| {
+                GuardianError::GeneralError(
+                    "Group admin doesn't belong to any group... something is not right".to_string(),
+                )
+            })?;
+
+            let group_members: Vec<User> = db.find_many(doc! {"groups": group_name }, USER).await?;
+
+            let mut context = tera::Context::new();
+            context.insert("group_members", &group_members);
+
+            helper::log_with_level!(data.render("components/member_view.html", &context), error)?
+        }
+        _ => {
+            return Ok(HttpResponse::BadRequest()
+                .append_header((HTMX_ERROR_RES, format!("Tab {:?} not found", tab.tab)))
+                .finish());
+        }
     };
 
     Ok(HttpResponse::Ok()

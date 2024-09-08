@@ -1,0 +1,11 @@
+{# Results template for user search for group admin #}
+<div class="list-table">
+
+	{% for user in users %}
+	<div class="list-table-item" id="_{{ user.sub | slugify }}_add">{{user.email}} ({{user.user_name}})
+		<div class="btn-wrap">
+			<a hx-patch="group_admin/hx/user" hx-vals='{"add": "{{ user.email }}", "group": "{{ group }}"}' hx-target="#_{{ user.sub | slugify }}_add">Add</a>
+		</div>
+	</div>
+	{% endfor %}
+</div>
