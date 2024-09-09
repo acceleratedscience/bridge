@@ -1,0 +1,10 @@
+body {
+	padding-top: 3rem;
+}
+
+cds-header cds-header-global-action.logo {
+	pointer-events: none;
+}
+cds-header-name::part(link) {
+	padding-left: 0;
+}

@@ -1,14 +1,20 @@
-<div align="center">
-    <img src="static/favicon.svg" width="100px">
-</div>
-</br>
+# Guardian
 
-<p align="center">
-    <a href="https://open.accelerator.cafe" target="_blank">
-        :link: Guardian
-    </a>
-</p>
+**A proxy server for the Accelerated Discovery Platform**
 
----
+This repository also contains the [GUI](https://open.accelerator.cafe) to (re)generate access tokens for use with the models.
 
-## A proxy server for the Accelerated Science Platform
+<br>
+
+## Documentation
+
+-   [Deployment](/doc/deployment.md)
+-   [Architecture](/doc/architecture.md)
+-   [Runbook](/doc/runbook.md)
+
+<br>
+
+## Links
+
+-   :link: [Staging GUI](https://open.accelerator.cafe)
+-   :link: [accelerate.science](https://accelerate.science)

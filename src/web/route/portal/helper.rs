@@ -85,6 +85,6 @@ pub(super) async fn get_all_groups(db: &DB) -> Result<Vec<Group>> {
     let result: Result<Vec<Group>> = db.find_many(doc! {}, GROUP).await;
     Ok(match result {
         Ok(groups) => groups,
-        Err(e) => return helper::log_with_level!(Err(e), error),
+        Err(e) => return helper::log_with_level!(Err(e), warn),
     })
 }

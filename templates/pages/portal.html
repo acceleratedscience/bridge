@@ -1,0 +1,80 @@
+{% extends "base_user.html" %}
+
+{% block head %}
+<link rel="stylesheet" href="/static/css/token.css" />
+{% endblock head %}
+{% block body %}
+<div class="text-center text-break">
+	<p class="soft-text">Welcome, {{name}}</p>
+	<br>
+	<div class="section-wrap">
+		<div class="section-wrap-h">
+
+			<!-- Group -->
+			<div class="display-item">
+				<div>Your group</div>
+				{% if group == "" %}
+				<div class="softer">-</div>
+				{% else %}
+				<div>{{group}}</div>
+				{% endif %}
+			</div>
+
+			<!-- Role -->
+			<div>
+				<div class="display-item">
+					<div>Your role</div>
+					<div>{% block usertype %}{% endblock usertype %}</div>
+				</div>
+			</div>
+
+		</div>
+
+
+
+		<div>
+			<!-- Tabs -->
+			<cds-tabs value="models">
+				<cds-tab target="panel-models" value="models">Available Models</cds-tab>
+				<cds-tab target="panel-token" value="token">Access Token</cds-tab>
+				{% block tabs %}
+				{% endblock tabs %}
+			</cds-tabs>
+			<br>
+
+			<!-- Panel: Models -->
+			<div id="panel-models" role="tabpanel" aria-labelledby="tab-models">
+				{% if group == "" %}
+				<p>No models available.</p>
+				<p class="small">You need to be member of a group in order to have access to any models.</p>
+				{% else %}
+				<div class="list-table">
+					{# DCH - subscriptions is returning a single string with commas instead of a list #}
+					{# DCH - can we add links to each model? #}
+					{% for model in subscriptions %}
+					<div class="list-table-item">{{model}}<div class="btn-wrap"><a href="">docs</a></div></div>
+					{% endfor %}
+				</div>
+				{% endif %}
+			</div>
+
+			<!-- Panel: Token -->
+			<div id="panel-token" role="tabpanel" aria-labelledby="tab-token">
+				{% include "components/token.html" %}
+			</div>
+
+			<!-- Panel: Others -->
+			{% block panels %}
+			{% endblock panels %}
+		</div>
+
+	</div>
+
+	{% block tabbed %}
+	{% block tabselection %}
+	{% endblock tabselection %}
+	{% block tabcontents %}
+	{% endblock tabcontents %}
+	{% endblock tabbed %}
+</div>
+{% endblock body %}

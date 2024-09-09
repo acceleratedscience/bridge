@@ -159,6 +159,7 @@ async fn code_to_response(
                         email: email.clone(),
                         groups: vec![],
                         user_type: UserType::User,
+                        token: None,
                         created_at: time,
                         updated_at: time,
                         last_updated_by: email,
@@ -199,7 +200,7 @@ async fn code_to_response(
 
     let mut ctx = Context::new();
     ctx.insert("name", &name);
-    let rendered = helper::log_with_level!(data.render("login_success.html", &ctx), error)?;
+    let rendered = helper::log_with_level!(data.render("pages/login_success.html", &ctx), error)?;
 
     let mut cookie_remove = Cookie::build("nonce", "")
         .same_site(SameSite::Lax)

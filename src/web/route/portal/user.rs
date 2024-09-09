@@ -19,7 +19,7 @@ use crate::{
     web::{helper, route::portal::user_htmx::Profile},
 };
 
-const USER_PAGE: &str = "user/user.html";
+const USER_PAGE: &str = "pages/portal_user.html";
 
 #[get("user")]
 #[instrument(skip(data, db, subject))]
@@ -66,7 +66,7 @@ pub(super) async fn user(
             )
             .await;
 
-        let mut profile = Profile::new(user.user_name);
+        let mut profile = Profile::new(user.user_name, user.token);
 
         let content = match group {
             Ok(group) => {
@@ -77,9 +77,11 @@ pub(super) async fn user(
                     profile.add_subscription(subscription.to_string());
                 });
 
-                helper::log_with_level!(profile.render(data), error)?
+                helper::log_with_level!(profile.render(data, helper::add_token_exp_to_tera), error)?
             }
-            Err(_) => profile.render(data)?,
+            Err(_) => {
+                helper::log_with_level!(profile.render(data, helper::add_token_exp_to_tera), error)?
+            }
         };
 
         return Ok(HttpResponse::Ok().body(content));

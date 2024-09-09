@@ -1,4 +1,7 @@
-use std::future::{ready, Ready};
+use std::{
+    future::{ready, Ready},
+    net::SocketAddr,
+};
 
 use actix_web::{
     body::EitherBody,
@@ -6,7 +9,7 @@ use actix_web::{
     Error, HttpResponse,
 };
 use futures::{future::LocalBoxFuture, FutureExt, TryFutureExt};
-use tracing::error;
+use tracing::warn;
 
 pub struct Htmx;
 
@@ -54,7 +57,11 @@ where
                 .map_ok(ServiceResponse::map_into_left_body)
                 .boxed_local(),
             _ => {
-                error!("Request is not an htmx request");
+                let ip = req.peer_addr().map_or_else(
+                    || "unknown".to_string(),
+                    |addr: SocketAddr| addr.to_string(),
+                );
+                warn!("Request is not an htmx request from {}", ip);
                 let res = HttpResponse::BadRequest().finish().map_into_right_body();
                 Box::pin(async { Ok(req.into_response(res)) })
             }

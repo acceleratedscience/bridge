@@ -33,9 +33,11 @@ use crate::{
     web::helper::{self},
 };
 
-use self::htmx::{GroupContent, UserContent, CREATE_GROUP, DELETE_USER, MODIFY_GROUP, MODIFY_USER};
+use self::htmx::{
+    GroupContent, UserContent, CREATE_MODIFY_GROUP, MODIFY_USER, VIEW_GROUP, VIEW_USER,
+};
 
-const USER_PAGE: &str = "system/admin.html";
+const USER_PAGE: &str = "pages/portal_system.html";
 
 #[get("")]
 #[instrument(skip(data, db, subject))]
@@ -85,6 +87,11 @@ pub(super) async fn system(
     ctx.insert("name", &user.user_name);
     ctx.insert("group", &user.groups.join(", "));
     ctx.insert("subscriptions", &subs);
+    ctx.insert("token", &user.token);
+    if let Some(token) = &user.token {
+        helper::add_token_exp_to_tera(&mut ctx, token);
+    }
+
     let content = helper::log_with_level!(data.render(USER_PAGE, &ctx), error)?;
 
     return Ok(HttpResponse::Ok().body(content));
@@ -102,10 +109,12 @@ async fn system_create_group(
     let gf = payload_to_struct::<GroupForm>(pl).await?;
     let now = time::OffsetDateTime::now_utc();
 
+    let subscriptions = helper::delimited_string_to_vec(gf.subscriptions, ",");
+
     let group = Group {
         _id: ObjectId::new(),
         name: gf.name.clone(),
-        subscriptions: gf.subscriptions,
+        subscriptions,
         created_at: now,
         updated_at: now,
         last_updated_by: gf.last_updated_by,
@@ -119,7 +128,7 @@ async fn system_create_group(
             return Ok(HttpResponse::BadRequest()
                 .append_header((
                     HTMX_ERROR_RES,
-                    format!("<p>Group named {} already exists</p>", gf.name),
+                    format!("<p>Group '{}' already exists</p>", gf.name),
                 ))
                 .finish());
         }
@@ -135,15 +144,15 @@ async fn system_create_group(
 // requires. For now, you can delete them through the db
 // #[delete("group")]
 // async fn system_delete_group(db: Data<&DB>, form: web::Form<Group>) -> Result<HttpResponse> {
-//     let group = form.into_inner();
-//     let _ = db
-//         .delete(doc! {"name": &group.name}, GROUP, PhantomData::<Group>)
-//         .await?;
+//	 let group = form.into_inner();
+//	 let _ = db
+//		 .delete(doc! {"name": &group.name}, GROUP, PhantomData::<Group>)
+//		 .await?;
 //
-//     let content = format!("<p>Group named {} has been deleted</p>", group.name);
-//     Ok(HttpResponse::Ok()
-//         .content_type(ContentType::form_url_encoded())
-//         .body(content))
+//	 let content = format!("<p>Group '{}' has been deleted</p>", group.name);
+//	 Ok(HttpResponse::Ok()
+//		 .content_type(ContentType::form_url_encoded())
+//		 .body(content))
 // }
 
 #[patch("group")]
@@ -156,12 +165,15 @@ async fn system_update_group(
     let _ = check_admin(subject, UserType::SystemAdmin)?;
     let gf = payload_to_struct::<GroupForm>(pl).await?;
 
+    // WTH Carbon
+    let subscriptions = helper::delimited_string_to_vec(gf.subscriptions, ",");
+
     let r = db
         .update(
             doc! {"name": &gf.name},
             doc! {"$set": doc! {
                 "name": &gf.name,
-                "subscriptions": &gf.subscriptions,
+                "subscriptions": subscriptions,
                 "updated_at": bson(time::OffsetDateTime::now_utc())?,
                 "last_updated_by": gf.last_updated_by,
             }},
@@ -174,14 +186,14 @@ async fn system_update_group(
         return Ok(HttpResponse::BadRequest()
             .append_header((
                 HTMX_ERROR_RES,
-                format!("<p>Group named {} does not exist</p>", gf.name),
+                format!("<p>Group '{}' does not exist</p>", gf.name),
             ))
             .finish());
     }
 
     Ok(HttpResponse::Ok()
         .content_type(ContentType::form_url_encoded())
-        .body(format!("<p>Group named {} has been updated</p>", gf.name)))
+        .body(format!("<p>Group '{}' has been updated</p>", gf.name)))
 }
 
 #[patch("user")]
@@ -218,7 +230,7 @@ async fn system_update_user(
         return Ok(HttpResponse::BadRequest()
             .append_header((
                 HTMX_ERROR_RES,
-                format!("<p>User with sub {} does not exist</p>", uf.email),
+                format!("<p>User with email address {} does not exist</p>", uf.email),
             ))
             .finish());
     }
@@ -226,7 +238,7 @@ async fn system_update_user(
     Ok(HttpResponse::Ok()
         .content_type(ContentType::form_url_encoded())
         .body(format!(
-            "<p>User with sub field {} has been updated</p>",
+            "<p>User with email address {} has been updated</p>",
             uf.email
         )))
 }
@@ -287,28 +299,86 @@ async fn system_tab_htmx(
     // deserialize into AdminTab
     let tab = helper::log_with_level!(serde_urlencoded::from_str::<AdminTabs>(query), error)?;
 
-    // TODO: move group_form and user_form to OnceLock
-    let mut group_form = GroupContent::new();
-    CATALOG_URLS
-        .iter()
-        .for_each(|(_, service_name)| group_form.add(service_name.to_owned()));
-
-    let mut user_form = UserContent::new();
-    get_all_groups(&db)
-        .await
-        .unwrap_or(vec![])
-        .iter()
-        .for_each(|g| user_form.add_group(g.name.to_owned()));
-    UserType::to_array_str()
-        .iter()
-        .for_each(|t| user_form.add_user(t.to_string()));
-
     let content = match tab.tab {
-        AdminTab::Profile => r#"<br><p class="lead">Profile tab</p>"#.to_string(),
-        AdminTab::GroupCreate => group_form.render(&user.email, data, CREATE_GROUP)?,
-        AdminTab::GroupModify => group_form.render(&user.email, data, MODIFY_GROUP)?,
-        AdminTab::UserModify => user_form.render(&user.email, data, MODIFY_USER)?,
-        AdminTab::UserDelete => user_form.render(&user.email, data, DELETE_USER)?,
+        AdminTab::GroupModify | AdminTab::GroupView | AdminTab::GroupCreate => {
+            let mut group_form = GroupContent::new();
+
+            CATALOG_URLS
+                .iter()
+                .for_each(|(_, service_name)| group_form.add(service_name.to_owned()));
+
+            match tab.tab {
+                AdminTab::GroupView => {
+                    let groups: Vec<Group> = db.find_many(doc! {}, GROUP).await.unwrap_or(vec![]);
+                    let group_names: Vec<String> =
+                        groups.into_iter().map(|group| group.name).collect();
+
+                    group_form.render(
+                        &user.email,
+                        data,
+                        VIEW_GROUP,
+                        Some(|ctx: &mut tera::Context| {
+                            ctx.insert("groups", &group_names);
+                        }),
+                    )?
+                }
+                AdminTab::GroupCreate => group_form.render(
+                    &user.email,
+                    data,
+                    CREATE_MODIFY_GROUP,
+                    None::<fn(&mut tera::Context)>,
+                )?,
+                AdminTab::GroupModify => match tab.group {
+                    Some(name) => group_form.render(
+                        &user.email,
+                        data,
+                        CREATE_MODIFY_GROUP,
+                        Some(|ctx: &mut tera::Context| {
+                            ctx.insert("group_name", &name);
+                        }),
+                    )?,
+                    None => return Err(GuardianError::GeneralError("No group provided".to_string())),
+                },
+                _ => unreachable!(),
+            }
+        }
+        AdminTab::UserModify | AdminTab::UserView | AdminTab::UserDelete => {
+            let mut user_form = UserContent::new();
+
+            let target_user = tab
+                .user
+                .as_ref()
+                .ok_or(GuardianError::GeneralError("No user provided".to_string()))?;
+
+            get_all_groups(&db)
+                .await
+                .unwrap_or(vec![])
+                .iter()
+                .for_each(|g| user_form.add_group(g.name.to_owned()));
+            UserType::to_array_str()
+                .iter()
+                .for_each(|t| user_form.add_user_type(t.to_string()));
+
+            match tab.tab {
+                AdminTab::UserView => {
+                    user_form.render(&user.email, target_user, data, VIEW_USER, None)?
+                }
+                AdminTab::UserModify => {
+                    user_form.render(&user.email, target_user, data, MODIFY_USER, None)?
+                }
+                AdminTab::UserDelete => user_form.render(
+                    &user.email,
+                    target_user,
+                    data,
+                    MODIFY_USER,
+                    Some(|ctx: &mut tera::Context| {
+                        ctx.insert("delete", &true);
+                    }),
+                )?,
+                _ => unreachable!("Group variants of enum should not be here"),
+            }
+        }
+        AdminTab::Profile => r#"<br><p>Profile tab</p>"#.to_string(),
     };
 
     Ok(HttpResponse::Ok()

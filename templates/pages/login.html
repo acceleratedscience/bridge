@@ -1,0 +1,17 @@
+{% extends "base_guest.html" %}
+
+{% block htmx %}{% endblock htmx %}
+
+{% block body %}
+<h1>Guardian</h1>
+<p>Welcome to the Accelerated Discovery Platform.</p>
+<p>This is Guardian: your gateway to the future of scientific discovery.</p>
+<p class="small">v{{ version }}</p>
+<br>
+<cds-button-set>
+	<cds-button kind="secondary" href="/auth/login?w3">IBM W3 *</cds-button>
+	<cds-button kind="primary" href="/auth/login?ibm">IBM ID</cds-button>
+</cds-button-set>
+<br>
+<p class="small">* IBM employees</p>
+{% endblock body %}

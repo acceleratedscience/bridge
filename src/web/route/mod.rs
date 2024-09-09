@@ -15,7 +15,7 @@ pub mod notebook;
 pub mod portal;
 pub mod proxy;
 
-static APP_VERSSION: &str = env!("CARGO_PKG_VERSION");
+static APP_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[get("")]
 async fn index(data: Data<Tera>, req: HttpRequest) -> Result<HttpResponse> {
@@ -27,8 +27,8 @@ async fn index(data: Data<Tera>, req: HttpRequest) -> Result<HttpResponse> {
     }
 
     let mut ctx = Context::new();
-    ctx.insert("version", APP_VERSSION);
-    let rendered = helper::log_with_level!(data.render("login.html", &ctx), error)?;
+    ctx.insert("version", APP_VERSION);
+    let rendered = helper::log_with_level!(data.render("pages/login.html", &ctx), error)?;
 
     Ok(HttpResponse::Ok().body(rendered))
 }

@@ -17,17 +17,31 @@ where
     pub scp: Vec<String>,
 }
 
+impl<T> Claims<T>
+where
+    T: AsRef<str>,
+{
+    pub fn token_exp_as_string(&self) -> String {
+        match time::OffsetDateTime::from_unix_timestamp(self.exp as i64) {
+            Ok(d) => {
+                d.to_string()
+            }
+            Err(_) => "Not a valid timestamp".to_string(),
+        }
+    }
+}
+
 const ISSUER: &str = "guardian";
 
 /// Generate a token with the given lifetime and uuid. This is an expensive operation, cache as
 /// much as possible
-pub fn get_token(
+pub fn get_token_and_exp(
     key: &EncodingKey,
     token_lifetime: usize,
     sub: &str,
     aud: &str,
     scp: Vec<String>,
-) -> Result<String> {
+) -> Result<(String, String)> {
     // Get exp UNIX EPOC
     let start = SystemTime::now();
     let since_epoc = start.duration_since(UNIX_EPOCH)?;
@@ -41,7 +55,7 @@ pub fn get_token(
         scp,
     };
     let token = encode(&Header::new(Algorithm::ES256), &claims, key)?;
-    Ok(token)
+    Ok((token, claims.token_exp_as_string()))
 }
 
 /// Validate token. If token is valid, return the claims, is not return an error

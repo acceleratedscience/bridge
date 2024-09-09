@@ -1,4 +1,4 @@
-use std::str::FromStr;
+use std::{marker::PhantomData, str::FromStr};
 
 use actix_web::{
     get,
@@ -7,6 +7,7 @@ use actix_web::{
     HttpResponse,
 };
 use mongodb::bson::{doc, oid::ObjectId};
+use tera::Tera;
 
 use crate::{
     auth::jwt,
@@ -17,7 +18,7 @@ use crate::{
         Database,
     },
     errors::{GuardianError, Result},
-    web::helper,
+    web::helper::{self, bson},
 };
 
 const TOKEN_LIFETIME: usize = const { 60 * 60 * 24 * 30 };
@@ -25,6 +26,7 @@ const TOKEN_LIFETIME: usize = const { 60 * 60 * 24 * 30 };
 #[get("token")]
 pub async fn get_token_for_user(
     subject: Option<ReqData<GuardianCookie>>,
+    data: Data<Tera>,
     db: Data<&DB>,
 ) -> Result<HttpResponse> {
     let gc = match subject {
@@ -71,12 +73,41 @@ pub async fn get_token_for_user(
     };
 
     // Generate guardian token
-    let token = helper::log_with_level!(
-        jwt::get_token(&CONFIG.encoder, TOKEN_LIFETIME, &gc.subject, AUD[0], scp),
+    let (token, exp) = helper::log_with_level!(
+        jwt::get_token_and_exp(&CONFIG.encoder, TOKEN_LIFETIME, &gc.subject, AUD[0], scp),
         error
     )?;
 
+    // store thew newly create token in the database
+    let r = helper::log_with_level!(
+        db.update(
+            doc! {
+                "_id": id,
+            },
+            doc! {"$set": doc! {
+            "updated_at": bson(time::OffsetDateTime::now_utc())?,
+            "token": token.clone(),
+            "last_updated_by": user.email }},
+            USER,
+            PhantomData::<User>,
+        )
+        .await,
+        error
+    )?;
+
+    if r.ne(&1) {
+        return helper::log_with_level!(
+            Err(GuardianError::GeneralError("Token not updated".to_string())),
+            error
+        );
+    }
+
+    let mut context = tera::Context::new();
+    context.insert("token", &Some(token));
+    context.insert("token_exp", &exp);
+    let content = helper::log_with_level!(data.render("components/token.html", &context), error)?;
+
     Ok(HttpResponse::Ok()
         .content_type(ContentType::form_url_encoded())
-        .body(format!("<p class='lead'>{}</p>", token)))
+        .body(content))
 }

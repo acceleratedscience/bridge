@@ -7,8 +7,8 @@ pub struct GroupContent {
     items: Vec<String>,
 }
 
-pub(super) static CREATE_GROUP: &str = "system/create_group.html";
-pub(super) static MODIFY_GROUP: &str = "system/modify_group.html";
+pub(super) static VIEW_GROUP: &str = "components/group_view.html";
+pub(super) static CREATE_MODIFY_GROUP: &str = "components/group_edit.html";
 
 impl GroupContent {
     pub fn new() -> Self {
@@ -19,10 +19,20 @@ impl GroupContent {
         self.items.push(item);
     }
 
-    pub fn render(&self, subject: &str, tera: Data<Tera>, template_name: &str) -> Result<String> {
+    pub fn render(
+        &self,
+        subject: &str,
+        tera: Data<Tera>,
+        template_name: &str,
+        modifer: Option<impl Fn(&mut tera::Context)>,
+    ) -> Result<String> {
         let mut context = tera::Context::new();
         context.insert("subject", &subject);
         context.insert("items", &self.items);
+
+        if let Some(f) = modifer {
+            f(&mut context);
+        }
 
         Ok(tera.render(template_name, &context)?)
     }
@@ -33,8 +43,8 @@ pub struct UserContent {
     user_items: Vec<String>,
 }
 
-pub(super) static DELETE_USER: &str = "system/delete_user.html";
-pub(super) static MODIFY_USER: &str = "system/modify_user.html";
+pub(super) static VIEW_USER: &str = "components/user_view.html";
+pub(super) static MODIFY_USER: &str = "components/user_edit.html";
 
 impl UserContent {
     pub fn new() -> Self {
@@ -48,15 +58,27 @@ impl UserContent {
         self.group_items.push(item);
     }
 
-    pub fn add_user(&mut self, item: String) {
+    pub fn add_user_type(&mut self, item: String) {
         self.user_items.push(item);
     }
 
-    pub fn render(&self, subject: &str, tera: Data<Tera>, template_name: &str) -> Result<String> {
+    pub fn render(
+        &self,
+        subject: &str,
+        target: &str,
+        tera: Data<Tera>,
+        template_name: &str,
+        modifer: Option<fn(&mut tera::Context)>,
+    ) -> Result<String> {
         let mut context = tera::Context::new();
         context.insert("subject", &subject);
         context.insert("group_items", &self.group_items);
         context.insert("user_items", &self.user_items);
+        context.insert("target_user", &target);
+
+        if let Some(f) = modifer {
+            f(&mut context);
+        }
 
         Ok(tera.render(template_name, &context)?)
     }

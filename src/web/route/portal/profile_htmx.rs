@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use actix_web::web::Data;
 use tera::Tera;
 
@@ -9,7 +10,7 @@ pub struct Profile {
     pub name: String,
 }
 
-pub(super) static PROFILE: &str = "profile.html";
+pub(super) static PROFILE: &str = "components/token.html";
 
 impl Profile {
     pub fn new(name: String) -> Self {

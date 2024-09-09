@@ -1,0 +1,25 @@
+{% extends "base_user.html" %}
+
+{% block body %}
+{# DCH - Replace placholder variables, I'm not sure how to move this data onto the route correctly #}
+
+<h3>Add Member</h3>
+
+<div hx-ext="response-targets">
+	<form class="cds-group">
+		<!-- Email -->
+		<cds-text-input label="Email" name="email" required></cds-text-input>
+		
+		<div class="err-msg">Error message goes here</div>
+
+		<!-- Submit -->
+		<cds-button-set>
+			<cds-button href="/">Cancel</cds-button>
+			<cds-button hx-post="/portal/system_admin/hx/user" hx-target="#response" hx-target-400="#response" hx-swap="innerhtml">Submit</cds-button>
+		</cds-button-set>
+
+	</form>
+</div>
+
+
+{% endblock body %}

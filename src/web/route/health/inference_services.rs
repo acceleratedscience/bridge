@@ -20,10 +20,7 @@ impl<'a> InferenceServicesHealth<'a> {
     }
 
     pub fn builder(&self) -> ListBuilder {
-        let outer_body = (
-            r##"<div class="bd-example m-0 border-0 text-start"><ol class="list-group list-group-flush">"##,
-            r##"</ol></div><button type="button" class="btn btn-primary" hx-get="/pulse/status" hx-target="#status" hx-swap="innerHTML">Refresh Status</button>"##,
-        );
+        let outer_body = (r##"<div class="status-card small">"##, r##"</div>"##);
         ListBuilder {
             outer_body,
             inner_body: String::new(),
@@ -54,19 +51,15 @@ impl<'a> ListBuilder<'a> {
     pub fn add_inner_body(&mut self, up: bool, name: &str, elapsed: u128) {
         let status = if up { "up" } else { "down" };
         let state = if elapsed.gt(&500) {
-            "text-bg-danger"
+            "status-danger"
         } else {
-            "text-bg-success"
+            "status-success"
         };
 
         self.inner_body.push_str(&format!(
-            r##"<li class="list-group-item d-flex justify-content-between align-items-start">
-                <div class="ms-2 me-auto">
-                    <div class="fw-bold">{}</div>
-                    Service is currently {}
-                </div>
-                <span class="badge {} rounded-pill">{} ms</span>
-            </li>"##,
+            r##"<div><b>{}</b></div>
+				<div>Service is currently {}.</div>
+				<div class="{}">{} ms</div>"##,
             name, status, state, elapsed
         ));
     }

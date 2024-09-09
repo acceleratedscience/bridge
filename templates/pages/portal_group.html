@@ -1,0 +1,24 @@
+{% extends "pages/portal.html" %}
+
+{% block title %}Guardian Portal | Group Admin Profile{% endblock title %}
+
+{% block htmx %}
+{{ super() }}
+<script src="https://unpkg.com/htmx-ext-response-targets@2.0.0/response-targets.js"></script>
+{% endblock htmx %}
+
+{% block usertype %}
+Group Admin
+{% endblock usertype %}
+
+{% block tabs %}
+<cds-tab target="panel-members" value="groups">Members</cds-tab>
+{% endblock tabs %}
+
+{% block panels %}
+<!-- Members -->
+<div id="panel-members" role="tabpanel" aria-labelledby="tab-members">
+	<cds-button size="sm" hx-get="group_admin/hx/tab?tab=UserModify" hx-target="#panel-members" hx-swap="innerhtml">Add member</cds-button>
+	<cds-button size="sm" hx-get="group_admin/hx/tab?tab=GroupView" hx-target="#panel-members" hx-swap="innerhtml">View members</cds-button>
+</div>
+{% endblock panels %}

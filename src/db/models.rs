@@ -38,6 +38,7 @@ impl From<UserType> for &str {
 }
 
 pub static USER: &str = "users";
+// User struct is the Rust representation of the user collection in the database
 #[derive(Debug, Deserialize, Serialize)]
 pub struct User {
     pub _id: ObjectId,
@@ -46,6 +47,7 @@ pub struct User {
     pub email: String,
     pub groups: Vec<String>,
     pub user_type: UserType,
+    pub token: Option<String>,
     pub created_at: time::OffsetDateTime,
     pub updated_at: time::OffsetDateTime,
     pub last_updated_by: String,
@@ -70,6 +72,7 @@ pub struct UserDeleteForm {
 }
 
 pub static GROUP: &str = "groups";
+// Group struct is the Rust representation of the group collection in the database
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Group {
     pub _id: ObjectId,
@@ -112,8 +115,10 @@ pub struct GuardianCookie {
 #[derive(Debug, Deserialize, Clone)]
 pub enum AdminTab {
     Profile,
+    GroupView,
     GroupCreate,
     GroupModify,
+    UserView,
     UserModify,
     UserDelete,
 }
@@ -121,6 +126,8 @@ pub enum AdminTab {
 #[derive(Debug, Deserialize, Clone)]
 pub struct AdminTabs {
     pub tab: AdminTab,
+    pub user: Option<String>,
+    pub group: Option<String>,
 }
 
 #[cfg(test)]

@@ -1,0 +1,40 @@
+{% if not group_name %}
+<h3>Create Group</h3>
+{% else %}
+<h3>Edit Group: {{ group_name }}</h3>
+{% endif %}
+
+<div hx-ext="response-targets">
+	<form class="cds-group">
+		<!-- Hidden: Group identifier -->
+		<!-- <cds-text-input label="Group identifier" name="group_id" hidden></cds-text-input> -->
+		{# DCH - Group ID or other unique identifier #}
+		
+		<!-- Group name -->
+		{% if not group_name %}
+		<cds-text-input label="Group name" name="name" required></cds-text-input>
+		{% else %}
+		<cds-text-input label="Group name" name="name" value={{ group_name }} hidden></cds-text-input>
+		{% endif %}
+
+		<!-- Subscriptions -->
+		<cds-multi-select title-text="Subscriptions" label="Select models" name="subscriptions" required>
+			{% for item in items %}
+				<cds-multi-select-item value="{{ item }}">{{ item }}</cds-multi-select-item>
+			{% endfor %}
+		</cds-multi-select>
+
+		<!-- Hidden: Last edit  -->
+		<cds-text-input label="Last edit" name="last_updated_by" hidden value="{{ subject }}"></cds-text-input>
+
+		<!-- Submit -->
+		<cds-button-set>
+			<cds-button href="./">Cancel</cds-button>
+			{% if not group_name %}
+			<cds-button hx-post="/portal/system_admin/hx/group" hx-target="#panel-groups" hx-target-400="#panel-groups" hx-swap="innerhtml">Submit</cds-button>
+			{% else %}
+			<cds-button hx-patch="/portal/system_admin/hx/group" hx-target="#panel-groups" hx-target-400="#panel-groups" hx-swap="innerhtml">Submit</cds-button>
+			{% endif %}
+		</cds-button-set>
+	</form>
+</div>

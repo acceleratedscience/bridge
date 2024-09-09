@@ -46,10 +46,10 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
                     .wrap(guardian_middleware::SecurityHeader)
                     .configure(route::auth::config_auth)
                     .configure(route::health::config_status)
-                    .configure(route::foo::config_foo)
                     .configure(route::proxy::config_proxy)
                     .configure(route::config_index)
-                    .configure(route::portal::config_portal),
+                    .configure(route::portal::config_portal)
+                    .configure(route::foo::config_foo),
             )
     });
 

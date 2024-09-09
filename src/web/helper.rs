@@ -1,5 +1,8 @@
 use mongodb::bson::{to_bson, Bson};
+use tera::Context;
 
+use crate::auth::jwt::validate_token;
+use crate::config::CONFIG;
 use crate::errors::GuardianError;
 
 macro_rules! log_with_level {
@@ -57,6 +60,28 @@ where
     match to_bson(&t) {
         Ok(bson) => Ok(bson),
         Err(e) => Err(GuardianError::GeneralError(e.to_string())),
+    }
+}
+
+pub fn delimited_string_to_vec(s: Vec<String>, delimiter: &str) -> Vec<String> {
+    let col = Vec::new();
+    (0..s.len()).fold(col, |mut acc, i| {
+        s[i].split(delimiter).for_each(|s| {
+            acc.push(s.to_string());
+        });
+        acc
+    })
+}
+
+pub fn add_token_exp_to_tera(tera: &mut Context, token: &str) {
+    let res = validate_token(token, &CONFIG.decoder, &CONFIG.validation);
+    match res {
+        Ok(claims) => {
+            tera.insert("token_exp", &claims.token_exp_as_string());
+        }
+        Err(_) => {
+            tera.insert("token_exp", "Not a valid token");
+        }
     }
 }
 

@@ -1,0 +1,10 @@
+<link rel="stylesheet" href="/static/css/nav.css" />
+<cds-header aria-label="IBM Platform Name">
+	<cds-header-global-action class="logo">{% include 'icons/icn-bee.html' %}</cds-header-global-action>
+	<cds-header-name href="/" prefix="IBM">Guardian Portal</cds-header-name>
+	<div class="cds--header__global">
+		<cds-header-global-action aria-label="Log out" tooltip-text="Log out" kind="primary" size="lg" tooltip-alignment="right" tooltip-position="bottom" type="button" hx-post="hx/logout">
+			{% include 'icons/icn-logout.html' %}
+		</cds-header-global-action>
+	</div>
+</cds-header>
