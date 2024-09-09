@@ -84,6 +84,11 @@ pub(super) async fn group(
     ctx.insert("name", &user.user_name);
     ctx.insert("group", &user.groups.join(", "));
     ctx.insert("subscriptions", &subs);
+    ctx.insert("token", &user.token);
+    if let Some(token) = &user.token {
+        helper::add_token_exp_to_tera(&mut ctx, token);
+    }
+
     let content = helper::log_with_level!(data.render(USER_PAGE, &ctx), error)?;
 
     return Ok(HttpResponse::Ok().body(content));
