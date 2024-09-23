@@ -5,9 +5,9 @@ use actix_web::{
     web::{self, Data},
     App, HttpServer,
 };
-use tracing::error;
+use tracing::{error, level_filters::LevelFilter};
 
-use crate::{db::mongo::DBCONN, templating};
+use crate::{auth::openid, db::mongo::{DB, DBCONN}, logger::Logger, templating};
 
 mod guardian_middleware;
 mod helper;
@@ -17,6 +17,19 @@ mod tls;
 pub use route::proxy::services;
 
 pub async fn start_server(with_tls: bool) -> Result<()> {
+
+    if cfg!(debug_assertions) {
+        Logger::start(LevelFilter::INFO);
+    } else {
+        Logger::start(LevelFilter::WARN);
+    }
+
+    openid::init_once().await;
+    if let Err(e) = DB::init_once("guardian").await {
+        error!("{e}");
+        exit(1);
+    }
+
     let server = HttpServer::new(move || {
         let tera = templating::start_template_eng();
         let tera_data = Data::new(tera);
