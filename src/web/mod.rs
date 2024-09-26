@@ -7,7 +7,12 @@ use actix_web::{
 };
 use tracing::{error, level_filters::LevelFilter};
 
-use crate::{auth::openid, db::mongo::{DB, DBCONN}, logger::Logger, templating};
+use crate::{
+    auth::openid,
+    db::mongo::{DB, DBCONN},
+    logger::Logger,
+    templating,
+};
 
 mod guardian_middleware;
 mod helper;
@@ -16,8 +21,22 @@ mod tls;
 
 pub use route::proxy::services;
 
+/// Starts the Guardian server either with or without TLS.
+///
+/// # Example
+/// ```
+/// use guardian::web::start_server;
+/// let tls = true;
+/// let result = start_server(tls).await;
+///
+/// match result {
+///    Ok(_) => println!("Server started successfully"),
+///    Err(e) => eprintln!("Error starting server: {e}"),
+/// }
+/// ```
 pub async fn start_server(with_tls: bool) -> Result<()> {
-
+    // Not configurable by the caller
+    // Either INFO or WARN based on release mode
     if cfg!(debug_assertions) {
         Logger::start(LevelFilter::INFO);
     } else {
