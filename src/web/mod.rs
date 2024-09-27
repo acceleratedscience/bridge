@@ -24,7 +24,7 @@ pub use route::proxy::services;
 /// Starts the Guardian server either with or without TLS.
 ///
 /// # Example
-/// ```
+/// ```ignore
 /// use guardian::web::start_server;
 /// let tls = true;
 /// let result = start_server(tls).await;

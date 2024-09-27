@@ -1,10 +1,11 @@
 use mongodb::bson::{to_bson, Bson};
 use tera::Context;
 
-use crate::auth::jwt::validate_token;
-use crate::config::CONFIG;
-use crate::errors::GuardianError;
+use crate::{auth::jwt::validate_token, config::CONFIG, errors::GuardianError};
 
+/// This macro logs the error, warn, info, or debug level of the error message.
+/// Macro is used instead of a helper function to leverage debug symbols and print out line
+/// numbers.
 macro_rules! log_with_level {
     ($res:expr, error) => {{
         let result = $res;
@@ -320,5 +321,28 @@ pub mod ws {
 
         // websocket handshake with the client
         Ok(res)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_delimited_string_to_vec() {
+        let s = vec!["a,b,c".to_string(), "d,e,f".to_string()];
+        let delimiter = ",";
+        let res = delimited_string_to_vec(s, delimiter);
+        assert_eq!(
+            res,
+            vec![
+                "a".to_string(),
+                "b".to_string(),
+                "c".to_string(),
+                "d".to_string(),
+                "e".to_string(),
+                "f".to_string()
+            ]
+        );
     }
 }
