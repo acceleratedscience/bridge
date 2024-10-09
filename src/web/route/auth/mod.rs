@@ -13,7 +13,7 @@ use tracing::instrument;
 
 use crate::{
     auth::{
-        openid::{self, get_openid_provider, OpenID},
+        openid::{get_openid_provider, OpenID, OpenIDProvider},
         COOKIE_NAME,
     },
     db::{
@@ -56,30 +56,30 @@ async fn login(req: HttpRequest) -> Result<HttpResponse> {
         .finish())
 }
 
-#[get("/redirect")]
+#[get("/callback/{provider}")]
 #[instrument(skip(data, db))]
-async fn redirect(req: HttpRequest, data: Data<Tera>, db: Data<&DB>) -> Result<HttpResponse> {
+async fn callback(
+    req: HttpRequest,
+    data: Data<Tera>,
+    db: Data<&DB>,
+    path: web::Path<String>,
+) -> Result<HttpResponse> {
     let query = req.query_string();
     let deserializer = serde::de::value::StrDeserializer::<serde::de::value::Error>::new(query);
     let callback_response =
         helper::log_with_level!(CallBackResponse::deserialize(deserializer), error)?;
 
-    let openid = helper::log_with_level!(get_openid_provider(openid::OpenIDProvider::W3), error)?;
+    let openid_kind = Into::<OpenIDProvider>::into(path.into_inner().as_str());
+    if let OpenIDProvider::None = openid_kind {
+        return helper::log_with_level!(
+            Err(GuardianError::GeneralError(
+                "Invalid Open id connect provider".to_string()
+            )),
+            error
+        );
+    }
 
-    // get token from auth server
-    code_to_response(callback_response.code, req, openid, data, db).await
-}
-
-#[get("/callback")]
-#[instrument(skip(data, db))]
-async fn callback(req: HttpRequest, data: Data<Tera>, db: Data<&DB>) -> Result<HttpResponse> {
-    let query = req.query_string();
-    let deserializer = serde::de::value::StrDeserializer::<serde::de::value::Error>::new(query);
-    let callback_response =
-        helper::log_with_level!(CallBackResponse::deserialize(deserializer), error)?;
-
-    let openid =
-        helper::log_with_level!(get_openid_provider(openid::OpenIDProvider::IbmId), error)?;
+    let openid = helper::log_with_level!(get_openid_provider(openid_kind), error)?;
 
     // get token from auth server
     code_to_response(callback_response.code, req, openid, data, db).await
@@ -220,7 +220,6 @@ pub fn config_auth(cfg: &mut web::ServiceConfig) {
     cfg.service(
         web::scope("/auth")
             .service(login)
-            .service(redirect)
             .service(callback),
     );
 }

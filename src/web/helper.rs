@@ -200,6 +200,7 @@ pub mod forwarding {
     }
 }
 
+/// Websocket proxying utilities
 pub mod ws {
     use actix_web::{
         rt,
