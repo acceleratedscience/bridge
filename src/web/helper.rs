@@ -167,7 +167,9 @@ pub mod forwarding {
         }
 
         for (header_name, header_value) in req.headers().iter() {
-            // this header causes some weird behavior over wss, so we ignore it for now
+            if header_name == "authorization" || header_name == "inference-service" {
+                continue;
+            }
             headers.insert(
                 ReqwestHeaderName::from_str(header_name.as_ref()).unwrap(),
                 ReqwestHeaderValue::from_str(header_value.to_str().unwrap()).unwrap(),
