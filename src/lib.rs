@@ -5,3 +5,4 @@ pub mod errors;
 pub mod logger;
 pub mod templating;
 pub mod web;
+pub mod kube;

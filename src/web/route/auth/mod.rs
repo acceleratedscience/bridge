@@ -29,6 +29,8 @@ use self::deserialize::CallBackResponse;
 
 mod deserialize;
 
+const NONCE_COOKIE: &str = "nonce";
+
 #[get("/login")]
 #[instrument]
 async fn login(req: HttpRequest) -> Result<HttpResponse> {
@@ -42,7 +44,7 @@ async fn login(req: HttpRequest) -> Result<HttpResponse> {
 
     // store nonce with the client that expires in 5 minutes, if the user does not complete the
     // authentication process in 5 minutes, they will be required to start over
-    let cookie = Cookie::build("nonce", url.2.secret())
+    let cookie = Cookie::build(NONCE_COOKIE, url.2.secret())
         .expires(time::OffsetDateTime::now_utc() + time::Duration::minutes(5))
         .same_site(SameSite::Lax)
         .http_only(true)
@@ -96,7 +98,7 @@ async fn code_to_response(
 
     // get nonce cookie from client
     let nonce = helper::log_with_level!(
-        req.cookie("nonce")
+        req.cookie(NONCE_COOKIE)
             .ok_or_else(|| GuardianError::NonceCookieNotFound),
         error
     )?;
@@ -202,7 +204,7 @@ async fn code_to_response(
     ctx.insert("name", &name);
     let rendered = helper::log_with_level!(data.render("pages/login_success.html", &ctx), error)?;
 
-    let mut cookie_remove = Cookie::build("nonce", "")
+    let mut cookie_remove = Cookie::build(NONCE_COOKIE, "")
         .same_site(SameSite::Lax)
         .http_only(true)
         .secure(true)
@@ -217,9 +219,5 @@ async fn code_to_response(
 }
 
 pub fn config_auth(cfg: &mut web::ServiceConfig) {
-    cfg.service(
-        web::scope("/auth")
-            .service(login)
-            .service(callback),
-    );
+    cfg.service(web::scope("/auth").service(login).service(callback));
 }
