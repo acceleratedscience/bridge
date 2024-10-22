@@ -98,6 +98,9 @@ pub mod forwarding {
         web, HttpRequest, HttpResponse,
     };
     use futures::StreamExt;
+    use reqwest::header::{
+        HeaderMap, HeaderName as ReqwestHeaderName, HeaderValue as ReqwestHeaderValue,
+    };
     use tokio::sync::mpsc;
     use tokio_stream::wrappers::UnboundedReceiverStream;
     use tracing::error;
@@ -108,7 +111,7 @@ pub mod forwarding {
 
     // No inline needed... generic are inherently inlined
     pub async fn forward<T>(
-        _req: HttpRequest,
+        req: HttpRequest,
         mut payload: web::Payload,
         method: Method,
         peer_addr: Option<PeerAddr>,
@@ -156,10 +159,22 @@ pub mod forwarding {
 
         // TODO: This forwarded implementation is incomplete as it only handles the unofficial
         // X-Forwarded-For header but not the official Forwarded one.
-        let forwarded_req = match peer_addr {
-            Some(PeerAddr(addr)) => forwarded_req.header("X-Forwarded-For", addr.ip().to_string()),
-            None => forwarded_req,
-        };
+        let mut headers = HeaderMap::new();
+        if let Some(PeerAddr(addr)) = peer_addr {
+            if let Ok(ip) = addr.ip().to_string().parse() {
+                headers.insert("X-Forwarded-For", ip);
+            }
+        }
+
+        for (header_name, header_value) in req.headers().iter() {
+            // this header causes some weird behavior over wss, so we ignore it for now
+            headers.insert(
+                ReqwestHeaderName::from_str(header_name.as_ref()).unwrap(),
+                ReqwestHeaderValue::from_str(header_value.to_str().unwrap()).unwrap(),
+            );
+        }
+
+        let forwarded_req = forwarded_req.headers(headers);
 
         let res = log_with_level!(
             forwarded_req
