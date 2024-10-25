@@ -9,6 +9,21 @@ pub struct NotebookSpec {
     template: NotebookTemplateSpec,
 }
 
+impl Default for NotebookSpec {
+    fn default() -> Self {
+        Self {
+            template: NotebookTemplateSpec {
+                spec: PodSpec {
+                    containers: vec![ContainerSpec {
+                        name: "notebook".to_string(),
+                        image: "jupyter/minimal-notebook".to_string(),
+                    }],
+                },
+            },
+        }
+    }
+}
+
 #[derive(Deserialize, Serialize, Clone, Debug, JsonSchema)]
 pub struct NotebookTemplateSpec {
     spec: PodSpec,
