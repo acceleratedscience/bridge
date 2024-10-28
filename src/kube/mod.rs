@@ -33,7 +33,14 @@ where
 {
     pub fn new(model: M) -> Self {
         Self {
-            client: KUBECLIENT.get().unwrap().clone(),
+            client: {
+                let Some(client) = KUBECLIENT.get() else {
+                    unreachable!(
+                        "K8s client not initialized... should never happen as long as init_once is called first"
+                    );
+                };
+                client.clone()
+            },
             model,
         }
     }

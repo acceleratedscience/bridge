@@ -9,14 +9,14 @@ pub struct NotebookSpec {
     template: NotebookTemplateSpec,
 }
 
-impl Default for NotebookSpec {
-    fn default() -> Self {
-        Self {
+impl NotebookSpec {
+    pub fn new(name: &str, image: &str) -> Self {
+        NotebookSpec {
             template: NotebookTemplateSpec {
                 spec: PodSpec {
                     containers: vec![ContainerSpec {
-                        name: "notebook".to_string(),
-                        image: "jupyter/minimal-notebook".to_string(),
+                        name: name.to_string(),
+                        image: image.to_string(),
                     }],
                 },
             },
