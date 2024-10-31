@@ -10,6 +10,7 @@ use tracing::{error, level_filters::LevelFilter};
 use crate::{
     auth::openid,
     db::mongo::{DB, DBCONN},
+    kube,
     logger::Logger,
     templating,
 };
@@ -44,6 +45,7 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
     }
 
     openid::init_once().await;
+    kube::init_once().await;
     if let Err(e) = DB::init_once("guardian").await {
         error!("{e}");
         exit(1);

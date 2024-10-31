@@ -63,6 +63,10 @@ pub enum GuardianError {
     WSError(#[from] actix_web::error::Error),
     #[error("{0}")]
     KubeError(#[from] kube::Error),
+    #[error("{0}")]
+    NotebookExistsError(String),
+    #[error("{0}")]
+    NotebookAccessError(String),
 }
 
 // Workaround for Infallible, which may get solved by rust-lang: https://github.com/rust-lang/rust/issues/64715
@@ -139,6 +143,9 @@ impl ResponseError for GuardianError {
 
             GuardianError::UserNotFound(_) => StatusCode::FORBIDDEN,
             GuardianError::UserNotAllowedOnPage(_) => StatusCode::FORBIDDEN,
+            GuardianError::NotebookAccessError(_) => StatusCode::FORBIDDEN,
+
+            GuardianError::NotebookExistsError(_) => StatusCode::CONFLICT,
         }
     }
 }

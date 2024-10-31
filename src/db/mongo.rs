@@ -58,6 +58,7 @@ impl DB {
         let col = Self::get_collection::<Z>(db, collection);
         let mut indexes = col.list_indexes().await?;
         while let Some(Ok(index)) = indexes.next().await {
+            // If the index already exists, return
             if collection == index.keys.to_string() {
                 return Ok(());
             }
@@ -239,6 +240,7 @@ mod tests {
                     groups: vec!["ibm".to_string()],
                     user_type: UserType::SystemAdmin,
                     token: None,
+                    notebook: None,
                     created_at: time,
                     updated_at: time,
                     last_updated_by: "choi.mina@gmail.com".to_string(),

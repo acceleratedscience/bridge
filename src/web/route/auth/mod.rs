@@ -162,6 +162,7 @@ async fn code_to_response(
                         groups: vec![],
                         user_type: UserType::User,
                         token: None,
+                        notebook: None,
                         created_at: time,
                         updated_at: time,
                         last_updated_by: email,

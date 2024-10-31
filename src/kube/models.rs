@@ -10,14 +10,23 @@ pub struct NotebookSpec {
 }
 
 impl NotebookSpec {
-    pub fn new(name: &str, image: &str) -> Self {
+    pub fn new(
+        name: String,
+        image: String,
+        image_pull_policy: String,
+        image_pull_secret: String,
+    ) -> Self {
         NotebookSpec {
             template: NotebookTemplateSpec {
                 spec: PodSpec {
                     containers: vec![ContainerSpec {
-                        name: name.to_string(),
-                        image: image.to_string(),
+                        name,
+                        image,
+                        image_pull_policy,
                     }],
+                    image_pull_secrets: ImagePullSecret {
+                        name: image_pull_secret,
+                    },
                 },
             },
         }
@@ -32,12 +41,21 @@ pub struct NotebookTemplateSpec {
 #[derive(Deserialize, Serialize, Clone, Debug, JsonSchema)]
 pub struct PodSpec {
     containers: Vec<ContainerSpec>,
+    #[serde(rename = "imagePullSecrets")]
+    image_pull_secrets: ImagePullSecret,
+}
+
+#[derive(Deserialize, Serialize, Clone, Debug, JsonSchema)]
+pub struct ImagePullSecret {
+    name: String,
 }
 
 #[derive(Deserialize, Serialize, Clone, Debug, JsonSchema)]
 pub struct ContainerSpec {
     name: String,
     image: String,
+    #[serde(rename = "imagePullPolicy")]
+    image_pull_policy: String,
 }
 
 #[cfg(test)]
@@ -47,33 +65,31 @@ mod test {
 
     #[test]
     fn test_notebook_spec() {
-        let notebook_spec = NotebookSpec {
-            template: NotebookTemplateSpec {
-                spec: PodSpec {
-                    containers: vec![ContainerSpec {
-                        name: "notebook".to_string(),
-                        image: "jupyter/minimal-notebook".to_string(),
-                    }],
-                },
-            },
-        };
+        let name = "notebook".to_string();
+        let image = "gcr.io/kubeflow-images-public/tensorflow-2.1.0-notebook-gpu:1.0.0".to_string();
+        let image_pull_policy = "Always".to_string();
+        let image_pull_secret = "gcr-secret".to_string();
 
-        let notebook_spec_json = json!({
+        let spec = NotebookSpec::new(name, image, image_pull_policy, image_pull_secret);
+
+        let expected = json!({
             "template": {
                 "spec": {
                     "containers": [
                         {
                             "name": "notebook",
-                            "image": "jupyter/minimal-notebook"
+                            "image": "gcr.io/kubeflow-images-public/tensorflow-2.1.0-notebook-gpu:1.0.0",
+                            "imagePullPolicy": "Always"
                         }
-                    ]
+                    ],
+                    "imagePullSecrets": {
+                        "name": "gcr-secret"
+                    }
                 }
             }
         });
 
-        assert_eq!(
-            serde_json::to_value(&notebook_spec).unwrap(),
-            notebook_spec_json
-        );
+        let actual = serde_json::to_value(&spec).unwrap();
+        assert_eq!(actual, expected);
     }
 }

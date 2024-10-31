@@ -1,15 +1,16 @@
 use std::{fmt::Debug, sync::OnceLock};
 
-use k8s_openapi::{Metadata, Resource};
 use kube::{
-    api::{DeleteParams, ObjectMeta, PostParams},
-    Api, Client,
+    api::{DeleteParams, PostParams},
+    Api, Client, Resource,
 };
+use reqwest::StatusCode;
 use serde::{Deserialize, Serialize};
 
 use crate::errors::Result;
 
 mod models;
+pub use models::{Notebook, NotebookSpec};
 
 #[allow(dead_code)]
 pub struct KubeAPI<M> {
@@ -29,7 +30,8 @@ pub async fn init_once() {
 
 impl<M> KubeAPI<M>
 where
-    M: Resource + Metadata<Ty = ObjectMeta> + Clone + Debug + for<'a> Deserialize<'a> + Serialize,
+    M: Resource + Clone + Debug + for<'a> Deserialize<'a> + Serialize,
+    <M as Resource>::DynamicType: Default,
 {
     pub fn new(model: M) -> Self {
         Self {
@@ -52,10 +54,15 @@ where
         Ok(res)
     }
 
-    pub async fn delete(&self, name: &str) -> Result<()> {
+    pub async fn delete(&self, name: &str) -> Result<StatusCode> {
         let crd = Api::<M>::all(self.client.clone());
         let dp = DeleteParams::default();
-        crd.delete(name, &dp).await?;
-        Ok(())
+        let status = match crd.delete(name, &dp).await? {
+            // resource is in the process of being deleted
+            either::Either::Left(_) => StatusCode::PROCESSING,
+            // resource has been deleted
+            either::Either::Right(_) => StatusCode::OK,
+        };
+        Ok(status)
     }
 }
