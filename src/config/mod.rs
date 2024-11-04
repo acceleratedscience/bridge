@@ -12,6 +12,7 @@ pub struct Configuration {
     pub decoder: DecodingKey,
     pub validation: Validation,
     pub db: Database,
+    pub notebook_image: String,
 }
 
 pub struct Database {
@@ -52,10 +53,13 @@ pub fn init_once() -> Configuration {
         },
     };
 
+    let notebook_image = table["notebook"]["jupyter"]["image"].as_str().unwrap().to_string();
+
     Configuration {
         encoder,
         decoder,
         validation,
         db,
+        notebook_image,
     }
 }

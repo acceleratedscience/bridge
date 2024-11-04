@@ -19,14 +19,11 @@ use actix_web::{
 use tracing::instrument;
 
 use crate::{
-    db::{
+    config::CONFIG, db::{
         models::{GuardianCookie, User, USER},
         mongo::DB,
         Database,
-    },
-    errors::{GuardianError, Result},
-    kube::{KubeAPI, Notebook, NotebookSpec},
-    web::{helper, services::CATALOG},
+    }, errors::{GuardianError, Result}, kube::{KubeAPI, Notebook, NotebookSpec}, web::{helper, services::CATALOG}
 };
 
 const NOTEBOOK_SUB_NAME: &str = "notebook";
@@ -97,13 +94,14 @@ async fn notebook_create(
         };
 
         // Create a notebook
+        let name = format!("notebook-{}", user._id);
         let notebook = Notebook::new(
-            "hi",
+            &name,
             NotebookSpec::new(
-                "user-notbook".to_string(),
-                "image".to_string(),
-                "Always".to_string(),
-                "image-secret".to_string(),
+                name.clone(),
+                CONFIG.notebook_image.clone(),
+                "IfNotPresent".to_string(),
+                "quay-notebook-secret".to_string(),
             ),
         );
         KubeAPI::new(notebook).create().await?;

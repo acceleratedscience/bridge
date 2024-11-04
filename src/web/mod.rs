@@ -5,6 +5,7 @@ use actix_web::{
     web::{self, Data},
     App, HttpServer,
 };
+use rustls::crypto::CryptoProvider;
 use tracing::{error, level_filters::LevelFilter};
 
 use crate::{
@@ -45,7 +46,7 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
     }
 
     openid::init_once().await;
-    kube::init_once().await;
+    // kube::init_once().await;
     if let Err(e) = DB::init_once("guardian").await {
         error!("{e}");
         exit(1);
@@ -77,6 +78,7 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
             .service(actix_files::Files::new("/static", "static"))
             .service(
                 web::scope("")
+                    // .wrap(guardian_middleware::Maintainence)
                     .wrap(guardian_middleware::SecurityHeader)
                     .configure(route::auth::config_auth)
                     .configure(route::health::config_status)
