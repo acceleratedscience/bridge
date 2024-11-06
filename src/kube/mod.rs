@@ -1,11 +1,13 @@
 use std::{fmt::Debug, sync::OnceLock};
 
+use k8s_openapi::NamespaceResourceScope;
 use kube::{
     api::{DeleteParams, PostParams},
     Api, Client, Resource,
 };
 use reqwest::StatusCode;
 use serde::{Deserialize, Serialize};
+use tracing::info;
 
 use crate::errors::Result;
 
@@ -25,12 +27,14 @@ pub async fn init_once() {
     let client = Client::try_default()
         .await
         .expect("Failed to connect to k8s");
+    info!("Connected to k8s");
     KUBECLIENT.get_or_init(|| client);
 }
 
 impl<M> KubeAPI<M>
 where
     M: Resource + Clone + Debug + for<'a> Deserialize<'a> + Serialize,
+    M: Resource<Scope = NamespaceResourceScope>,
     <M as Resource>::DynamicType: Default,
 {
     pub fn new(model: M) -> Self {
@@ -48,14 +52,14 @@ where
     }
 
     pub async fn create(&self) -> Result<M> {
-        let crd = Api::<M>::all(self.client.clone());
+        let crd = Api::<M>::namespaced(self.client.clone(), "guardian");
         let pp = PostParams::default();
         let res = crd.create(&pp, &self.model).await?;
         Ok(res)
     }
 
     pub async fn delete(&self, name: &str) -> Result<StatusCode> {
-        let crd = Api::<M>::all(self.client.clone());
+        let crd = Api::<M>::namespaced(self.client.clone(), "guardian");
         let dp = DeleteParams::default();
         let status = match crd.delete(name, &dp).await? {
             // resource is in the process of being deleted

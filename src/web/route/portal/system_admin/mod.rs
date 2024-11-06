@@ -18,8 +18,8 @@ use crate::{
     db::models::{AdminTab, AdminTabs, GroupForm, UserDeleteForm, UserForm},
     web::{
         guardian_middleware::{Htmx, HTMX_ERROR_RES},
-        helper::bson,
-        route::portal::helper::{check_admin, get_all_groups, payload_to_struct},
+        helper::{bson, payload_to_struct},
+        route::portal::helper::{check_admin, get_all_groups},
         services::CATALOG_URLS,
     },
 };

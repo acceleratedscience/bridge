@@ -19,11 +19,15 @@ use actix_web::{
 use tracing::instrument;
 
 use crate::{
-    config::CONFIG, db::{
+    config::CONFIG,
+    db::{
         models::{GuardianCookie, User, USER},
         mongo::DB,
         Database,
-    }, errors::{GuardianError, Result}, kube::{KubeAPI, Notebook, NotebookSpec}, web::{helper, services::CATALOG}
+    },
+    errors::{GuardianError, Result},
+    kube::{KubeAPI, Notebook, NotebookSpec},
+    web::{helper, services::CATALOG},
 };
 
 const NOTEBOOK_SUB_NAME: &str = "notebook";
@@ -59,67 +63,98 @@ async fn notebook_ws_session(
 
 #[post("/create")]
 async fn notebook_create(
-    subject: Option<ReqData<GuardianCookie>>,
+    // subject: Option<ReqData<GuardianCookie>>,
     db: Data<&DB>,
 ) -> Result<HttpResponse> {
-    if let Some(_subject) = subject {
-        let guardian_cookie = _subject.into_inner();
-        let id = ObjectId::from_str(&guardian_cookie.subject)
-            .map_err(|e| GuardianError::GeneralError(e.to_string()))?;
+    // if let Some(_subject) = subject {
+    // let guardian_cookie = _subject.into_inner();
+    // let id = ObjectId::from_str(&guardian_cookie.subject)
+    //     .map_err(|e| GuardianError::GeneralError(e.to_string()))?;
 
-        // check if the user can create a notebook
-        let result: Result<User> = db
-            .find(
-                doc! {
-                    "_id": id,
-                },
-                USER,
-            )
-            .await;
-        let user = match result {
-            Ok(user) => {
-                if !user.sub.contains(NOTEBOOK_SUB_NAME) {
-                    return Err(GuardianError::NotebookAccessError(
-                        "User not allowed to create a notebook".to_string(),
-                    ));
-                }
-                user
-            }
-            Err(e) => return helper::log_with_level!(Err(e), error),
-        };
-        if user.notebook.is_some() {
-            return Err(GuardianError::NotebookExistsError(
-                "Notebook already exists".to_string(),
-            ));
-        };
+    // // check if the user can create a notebook
+    // let result: Result<User> = db
+    //     .find(
+    //         doc! {
+    //             "_id": id,
+    //         },
+    //         USER,
+    //     )
+    //     .await;
+    // let user = match result {
+    //     Ok(user) => {
+    //         if !user.sub.contains(NOTEBOOK_SUB_NAME) {
+    //             return Err(GuardianError::NotebookAccessError(
+    //                 "User not allowed to create a notebook".to_string(),
+    //             ));
+    //         }
+    //         user
+    //     }
+    //     Err(e) => return helper::log_with_level!(Err(e), error),
+    // };
+    // if user.notebook.is_some() {
+    //     return Err(GuardianError::NotebookExistsError(
+    //         "Notebook already exists".to_string(),
+    //     ));
+    // };
 
-        // Create a notebook
-        let name = format!("notebook-{}", user._id);
-        let notebook = Notebook::new(
-            &name,
-            NotebookSpec::new(
-                name.clone(),
-                CONFIG.notebook_image.clone(),
-                "IfNotPresent".to_string(),
-                "quay-notebook-secret".to_string(),
-            ),
-        );
-        KubeAPI::new(notebook).create().await?;
+    // Create a notebook
+    let name = format!("notebook-{}", "testtest");
+    let notebook = Notebook::new(
+        &name,
+        NotebookSpec::new(
+            name.clone(),
+            CONFIG.notebook_image.clone(),
+            "IfNotPresent".to_string(),
+            "quay-notebook-secret".to_string(),
+            Some(vec![
+                "jupyter".to_string(),
+                "notebook".to_string(),
+            ]),
+            Some(vec![
+                "--NotebookApp.password=".to_string(),
+                "--NotebookApp.token=".to_string(),
+            ]),
+            "notebook-volume".to_string(),
+            "/opt/app-root/src".to_string(),
+        ),
+    );
+    helper::log_with_level!(KubeAPI::new(notebook).create().await, error)?;
 
-        return Ok(HttpResponse::Ok().finish());
-    }
-
-    helper::log_with_level!(
-        Err(GuardianError::UserNotFound(
-            "subject not passed from middleware".to_string(),
-        )),
-        error
-    )
+    Ok(HttpResponse::Ok().finish())
+    // }
+    //
+    // helper::log_with_level!(
+    //     Err(GuardianError::UserNotFound(
+    //         "subject not passed from middleware".to_string(),
+    //     )),
+    //     error
+    // )
 }
 
 #[delete("/delete")]
-async fn notebook_delete() -> HttpResponse {
-    HttpResponse::Ok().finish()
+async fn notebook_delete() -> Result<HttpResponse> {
+    let name = format!("notebook-{}", "testtest");
+    let notebook = Notebook::new(
+        &name,
+        NotebookSpec::new(
+            name.clone(),
+            CONFIG.notebook_image.clone(),
+            "IfNotPresent".to_string(),
+            "quay-notebook-secret".to_string(),
+            Some(vec![
+                "jupyter".to_string(),
+                "notebook".to_string(),
+            ]),
+            Some(vec![
+                "--NotebookApp.password=".to_string(),
+                "--NotebookApp.token=".to_string(),
+            ]),
+            "notebook-volume".to_string(),
+            "/opt/app-root/src".to_string(),
+        ),
+    );
+    helper::log_with_level!(KubeAPI::new(notebook).delete(&name).await, error)?;
+    Ok(HttpResponse::Ok().finish())
 }
 
 #[instrument(skip(payload))]
@@ -148,6 +183,8 @@ pub fn config_notebook(cfg: &mut web::ServiceConfig) {
         web::scope("/notebook")
             .service(notebook_ws_subscribe)
             .service(notebook_ws_session)
+            .service(notebook_create)
+            .service(notebook_delete)
             .default_service(web::to(notebook_forward)),
     );
 }

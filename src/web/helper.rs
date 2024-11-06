@@ -1,7 +1,10 @@
+use actix_web::web;
 use mongodb::bson::{to_bson, Bson};
+use serde::Deserialize;
 use tera::Context;
+use tokio_stream::StreamExt;
 
-use crate::{auth::jwt::validate_token, config::CONFIG, errors::GuardianError};
+use crate::{auth::jwt::validate_token, config::CONFIG, errors::GuardianError, errors::Result};
 
 /// This macro logs the error, warn, info, or debug level of the error message.
 /// Macro is used instead of a helper function to leverage debug symbols and print out line
@@ -54,7 +57,7 @@ macro_rules! log_with_level {
 
 pub(crate) use log_with_level;
 
-pub fn bson<T>(t: T) -> Result<Bson, GuardianError>
+pub fn bson<T>(t: T) -> Result<Bson>
 where
     T: serde::Serialize,
 {
@@ -84,6 +87,20 @@ pub fn add_token_exp_to_tera(tera: &mut Context, token: &str) {
             tera.insert("token_exp", "Not a valid token");
         }
     }
+}
+
+pub(super) async fn payload_to_struct<T>(mut payload: web::Payload) -> Result<T>
+where
+    T: Deserialize<'static>,
+{
+    let mut body = web::BytesMut::new();
+    while let Some(chunk) = payload.next().await {
+        let chunk = chunk.unwrap();
+        body.extend_from_slice(&chunk);
+    }
+    let body = String::from_utf8_lossy(&body);
+    let deserializer = serde::de::value::StrDeserializer::<serde::de::value::Error>::new(&body);
+    Ok(log_with_level!(T::deserialize(deserializer), error)?)
 }
 
 /// http proxying utilities

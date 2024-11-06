@@ -11,7 +11,7 @@ use actix_web::{
 };
 use futures::{future::LocalBoxFuture, FutureExt, TryFutureExt};
 
-static MAINTENANCE_WINDOWS: RwLock<bool> = RwLock::new(false);
+static MAINTENANCE_WINDOWS: RwLock<bool> = RwLock::new(true);
 
 pub struct Maintainence;
 
@@ -49,21 +49,24 @@ where
     forward_ready!(service);
 
     fn call(&self, req: ServiceRequest) -> Self::Future {
-        match MAINTENANCE_WINDOWS.try_read() {
-            Ok(rg) => {
-                if *rg {
-                    // Guardian under maintenance
-                    return Box::pin(async move {
-                        Ok(req.into_response(
-                            HttpResponse::Found()
-                                .append_header((header::LOCATION, "/maintenance"))
-                                .finish()
-                                .map_into_right_body(),
-                        ))
-                    });
+        // check if the request url is already to /maintenance
+        if req.path().ne("/maintenance") {
+            match MAINTENANCE_WINDOWS.try_read() {
+                Ok(rg) => {
+                    if *rg {
+                        // Guardian under maintenance
+                        return Box::pin(async move {
+                            Ok(req.into_response(
+                                HttpResponse::Found()
+                                    .append_header((header::LOCATION, "/maintenance"))
+                                    .finish()
+                                    .map_into_right_body(),
+                            ))
+                        });
+                    }
                 }
+                Err(_e) => (),
             }
-            Err(_e) => (),
         }
 
         self.service
