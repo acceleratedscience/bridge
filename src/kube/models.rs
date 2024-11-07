@@ -1,3 +1,8 @@
+use std::collections::BTreeMap;
+
+use k8s_openapi::api::core::v1::{PersistentVolumeClaim, VolumeResourceRequirements};
+use k8s_openapi::apimachinery::pkg::api::resource::Quantity;
+use kube::api::ObjectMeta;
 use kube::CustomResource;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -110,6 +115,36 @@ pub struct PersistentVolumeClaimSpec {
     claim_name: String,
     #[serde(rename = "readOnly")]
     read_only: Option<bool>,
+}
+
+// PVC Spec
+pub struct PVCSpec {
+    pub spec: PersistentVolumeClaim,
+}
+
+impl PVCSpec {
+    pub fn new(name: String, storage_size: usize) -> Self {
+        Self {
+            spec: PersistentVolumeClaim {
+                metadata: ObjectMeta {
+                    name: Some(name + "-pvc"),
+                    ..Default::default()
+                },
+                spec: Some(k8s_openapi::api::core::v1::PersistentVolumeClaimSpec {
+                    access_modes: Some(vec!["ReadWriteOnce".to_string()]),
+                    resources: Some(VolumeResourceRequirements {
+                        requests: Some(BTreeMap::from([(
+                            "storage".to_string(),
+                            Quantity(storage_size.to_string() + "Gi"),
+                        )])),
+                        ..Default::default()
+                    }),
+                    ..Default::default()
+                }),
+                ..Default::default()
+            },
+        }
+    }
 }
 
 #[cfg(test)]

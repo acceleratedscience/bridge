@@ -2,6 +2,7 @@
 //! notebook, we use the forward function from the helper module. But we also introduce to
 //! websocket endpoints.
 
+use k8s_openapi::api::core::v1::PersistentVolumeClaim;
 use serde::Deserialize;
 
 use actix_web::{
@@ -10,7 +11,7 @@ use actix_web::{
     get,
     http::Method,
     post,
-    web::{self, Data, ReqData},
+    web::{self, Data},
     HttpRequest, HttpResponse,
 };
 use tracing::instrument;
@@ -19,7 +20,7 @@ use crate::{
     config::CONFIG,
     db::mongo::DB,
     errors::Result,
-    kube::{KubeAPI, Notebook, NotebookSpec},
+    kube::{KubeAPI, Notebook, NotebookSpec, PVCSpec},
     web::{helper, services::CATALOG},
 };
 
@@ -90,6 +91,10 @@ async fn notebook_create(
     //     ));
     // };
 
+    // Create a PVC
+    let pvc = PVCSpec::new("notebook-volume".to_string(), 1);
+    helper::log_with_level!(KubeAPI::new(pvc.spec).create().await, error)?;
+
     // Create a notebook
     let name = format!("notebook-{}", "testtest");
     let notebook = Notebook::new(
@@ -126,6 +131,10 @@ async fn notebook_create(
 async fn notebook_delete() -> Result<HttpResponse> {
     let name = format!("notebook-{}", "testtest");
     helper::log_with_level!(KubeAPI::<Notebook>::delete(&name).await, error)?;
+    helper::log_with_level!(
+        KubeAPI::<PersistentVolumeClaim>::delete("notebook-volume-pvc").await,
+        error
+    )?;
     Ok(HttpResponse::Ok().finish())
 }
 
