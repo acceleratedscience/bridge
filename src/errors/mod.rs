@@ -67,6 +67,8 @@ pub enum GuardianError {
     NotebookExistsError(String),
     #[error("{0}")]
     NotebookAccessError(String),
+    #[error("{0}")]
+    KubeClientError(String),
 }
 
 // Workaround for Infallible, which may get solved by rust-lang: https://github.com/rust-lang/rust/issues/64715
@@ -134,6 +136,7 @@ impl ResponseError for GuardianError {
             GuardianError::SerdeJsonError(_) => StatusCode::INTERNAL_SERVER_ERROR,
             GuardianError::WSError(_) => StatusCode::INTERNAL_SERVER_ERROR,
             GuardianError::KubeError(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            GuardianError::KubeClientError(_) => StatusCode::INTERNAL_SERVER_ERROR,
 
             GuardianError::NotAdmin => StatusCode::UNAUTHORIZED,
             GuardianError::Unauthorized(_) => StatusCode::UNAUTHORIZED,

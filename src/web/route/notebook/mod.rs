@@ -2,9 +2,6 @@
 //! notebook, we use the forward function from the helper module. But we also introduce to
 //! websocket endpoints.
 
-use std::str::FromStr;
-
-use mongodb::bson::{doc, oid::ObjectId};
 use serde::Deserialize;
 
 use actix_web::{
@@ -20,12 +17,8 @@ use tracing::instrument;
 
 use crate::{
     config::CONFIG,
-    db::{
-        models::{GuardianCookie, User, USER},
-        mongo::DB,
-        Database,
-    },
-    errors::{GuardianError, Result},
+    db::mongo::DB,
+    errors::Result,
     kube::{KubeAPI, Notebook, NotebookSpec},
     web::{helper, services::CATALOG},
 };
@@ -106,13 +99,11 @@ async fn notebook_create(
             CONFIG.notebook_image.clone(),
             "IfNotPresent".to_string(),
             "quay-notebook-secret".to_string(),
-            Some(vec![
-                "jupyter".to_string(),
-                "notebook".to_string(),
-            ]),
+            Some(vec!["jupyter".to_string(), "notebook".to_string()]),
             Some(vec![
                 "--NotebookApp.password=".to_string(),
                 "--NotebookApp.token=".to_string(),
+                "--NotebookApp.notebook_dir='/opt/app-root/src'".to_string(),
             ]),
             "notebook-volume".to_string(),
             "/opt/app-root/src".to_string(),
@@ -134,26 +125,7 @@ async fn notebook_create(
 #[delete("/delete")]
 async fn notebook_delete() -> Result<HttpResponse> {
     let name = format!("notebook-{}", "testtest");
-    let notebook = Notebook::new(
-        &name,
-        NotebookSpec::new(
-            name.clone(),
-            CONFIG.notebook_image.clone(),
-            "IfNotPresent".to_string(),
-            "quay-notebook-secret".to_string(),
-            Some(vec![
-                "jupyter".to_string(),
-                "notebook".to_string(),
-            ]),
-            Some(vec![
-                "--NotebookApp.password=".to_string(),
-                "--NotebookApp.token=".to_string(),
-            ]),
-            "notebook-volume".to_string(),
-            "/opt/app-root/src".to_string(),
-        ),
-    );
-    helper::log_with_level!(KubeAPI::new(notebook).delete(&name).await, error)?;
+    helper::log_with_level!(KubeAPI::<Notebook>::delete(&name).await, error)?;
     Ok(HttpResponse::Ok().finish())
 }
 
