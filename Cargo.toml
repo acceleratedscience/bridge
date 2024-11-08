@@ -50,7 +50,7 @@ serde_urlencoded = "0.7.1"
 # Error handling
 thiserror = "2"
 # DB
-mongodb = "=3.0"
+mongodb = "~3.0"
 #macro
 utils = { path = "utils" }
 # Kubernetes

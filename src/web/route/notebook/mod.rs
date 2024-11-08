@@ -17,7 +17,6 @@ use actix_web::{
 use tracing::instrument;
 
 use crate::{
-    config::CONFIG,
     db::mongo::DB,
     errors::Result,
     kube::{KubeAPI, Notebook, NotebookSpec, PVCSpec},
@@ -101,8 +100,6 @@ async fn notebook_create(
         &name,
         NotebookSpec::new(
             name.clone(),
-            CONFIG.notebook_image.clone(),
-            "IfNotPresent".to_string(),
             "quay-notebook-secret".to_string(),
             Some(vec!["jupyter".to_string(), "notebook".to_string()]),
             Some(vec![

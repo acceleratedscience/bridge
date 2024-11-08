@@ -7,6 +7,8 @@ use kube::CustomResource;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
+use crate::config::CONFIG;
+
 // Define the Notebook CRD struct
 #[derive(CustomResource, Deserialize, Serialize, Clone, Debug, JsonSchema)]
 #[kube(group = "kubeflow.org", version = "v1", kind = "Notebook", namespaced)]
@@ -17,8 +19,6 @@ pub struct NotebookSpec {
 impl NotebookSpec {
     pub fn new(
         name: String,
-        image: String,
-        image_pull_policy: String,
         image_pull_secret: String,
         command: Option<Vec<String>>,
         args: Option<Vec<String>>,
@@ -30,8 +30,8 @@ impl NotebookSpec {
                 spec: PodSpec {
                     containers: vec![ContainerSpec {
                         name,
-                        image,
-                        image_pull_policy,
+                        image: CONFIG.notebook_image.clone(),
+                        image_pull_policy: CONFIG.notebook_image_pull_policy.clone(),
                         volume_mounts: Some(vec![VolumeMount {
                             name: volume_name.clone(),
                             mount_path: volume_mount_path,
@@ -117,7 +117,7 @@ pub struct PersistentVolumeClaimSpec {
     read_only: Option<bool>,
 }
 
-// PVC Spec
+// Define the PVC Spec
 pub struct PVCSpec {
     pub spec: PersistentVolumeClaim,
 }
@@ -155,8 +155,6 @@ mod test {
     #[test]
     fn test_notebook_spec() {
         let name = "notebook".to_string();
-        let image = "gcr.io/kubeflow-images-public/tensorflow-2.1.0-notebook-gpu:1.0.0".to_string();
-        let image_pull_policy = "Always".to_string();
         let image_pull_secret = "gcr-secret".to_string();
         let volume_name = "notebook-volume".to_string();
         let volume_mount_path = "/mnt/notebook".to_string();
@@ -165,8 +163,6 @@ mod test {
 
         let spec = NotebookSpec::new(
             name,
-            image,
-            image_pull_policy,
             image_pull_secret,
             command,
             args,
@@ -180,8 +176,8 @@ mod test {
                     "containers": [
                         {
                             "name": "notebook",
-                            "image": "gcr.io/kubeflow-images-public/tensorflow-2.1.0-notebook-gpu:1.0.0",
-                            "imagePullPolicy": "Always",
+                            "image": CONFIG.notebook_image,
+                            "imagePullPolicy": CONFIG.notebook_image_pull_policy,
                             "volumeMounts": [
                                 {
                                     "name": "notebook-volume",
@@ -203,7 +199,7 @@ mod test {
                             "persistentVolumeClaim": {
                                 "claimName": "notebook-volume-pvc",
                                 "readOnly": null
-                            },
+                            }
                         }
                     ]
                 }

@@ -1,0 +1,4 @@
+[notebook]
+	[notebook.jupyter]
+	image = "quay.io/ibmdpdev/openad_workbench"
+	image_pull_policy = "IfNotPresent"
