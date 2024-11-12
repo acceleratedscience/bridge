@@ -209,4 +209,31 @@ mod test {
         let actual = serde_json::to_value(&spec).unwrap();
         assert_eq!(actual, expected);
     }
+
+    #[test]
+    fn test_pvc_spec() {
+        let name = "notebook-volume".to_string();
+        let storage_size = 10;
+
+        let spec = PVCSpec::new(name, storage_size);
+
+        let expected = json!({
+            "apiVersion": "v1",
+            "kind": "PersistentVolumeClaim",
+            "metadata": {
+                "name": "notebook-volume-pvc"
+            },
+            "spec": {
+                "accessModes": ["ReadWriteOnce"],
+                "resources": {
+                    "requests": {
+                        "storage": "10Gi"
+                    }
+                }
+            }
+        });
+
+        let actual = serde_json::to_value(&spec.spec).unwrap();
+        assert_eq!(actual, expected);
+    }
 }

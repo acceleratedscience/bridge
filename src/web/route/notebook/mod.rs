@@ -2,6 +2,8 @@
 //! notebook, we use the forward function from the helper module. But we also introduce to
 //! websocket endpoints.
 
+use std::str::FromStr;
+
 use k8s_openapi::api::core::v1::PersistentVolumeClaim;
 use serde::Deserialize;
 
@@ -15,6 +17,7 @@ use actix_web::{
     HttpRequest, HttpResponse,
 };
 use tracing::instrument;
+use url::Url;
 
 use crate::{
     db::mongo::DB,
@@ -103,9 +106,12 @@ async fn notebook_create(
             "quay-notebook-secret".to_string(),
             Some(vec!["jupyter".to_string(), "notebook".to_string()]),
             Some(vec![
-                "--NotebookApp.password=".to_string(),
-                "--NotebookApp.token=".to_string(),
+                "--NotebookApp.password=''".to_string(),
+                "--NotebookApp.token=''".to_string(),
                 "--NotebookApp.notebook_dir='/opt/app-root/src'".to_string(),
+                "--NotebookApp.base_url='notebook'".to_string(),
+                "--NotebookApp.allow_origin='*'".to_string(),
+                "--NotebookApp.trust_xheaders=True".to_string(),
             ]),
             "notebook-volume".to_string(),
             "/opt/app-root/src".to_string(),
@@ -148,7 +154,7 @@ async fn notebook_forward(
     let service = "notebook";
 
     // look up service and get url
-    let mut new_url = helper::log_with_level!(CATALOG.get(service), error)?;
+    let mut new_url = Url::from_str("http://localhost:8888")?;
     new_url.set_path(path);
     new_url.set_query(req.uri().query());
 

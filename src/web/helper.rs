@@ -116,8 +116,12 @@ pub mod forwarding {
         web, HttpRequest, HttpResponse,
     };
     use futures::StreamExt;
+    use reqwest::header::{
+        HeaderMap, HeaderName as ReqwestHeaderName, HeaderValue as ReqwestHeaderValue,
+    };
     use tokio::sync::mpsc;
-    use tokio_stream::wrappers::UnboundedReceiverStream;
+    // use tokio_stream::wrappers::UnboundedReceiverStream;
+    use tokio_stream::wrappers::ReceiverStream;
     use tracing::error;
 
     use actix_web::http::StatusCode;
@@ -126,7 +130,7 @@ pub mod forwarding {
 
     // No inline needed... generic are inherently inlined
     pub async fn forward<T>(
-        _req: HttpRequest,
+        req: HttpRequest,
         mut payload: web::Payload,
         method: Method,
         peer_addr: Option<PeerAddr>,
@@ -136,11 +140,11 @@ pub mod forwarding {
     where
         T: AsRef<str> + Send + Sync,
     {
-        let (tx, rx) = mpsc::unbounded_channel();
+        let (tx, rx) = mpsc::channel(2048);
 
         actix_web::rt::spawn(async move {
             while let Some(chunk) = payload.next().await {
-                if let Err(e) = tx.send(chunk) {
+                if let Err(e) = tx.send(chunk).await {
                     error!("{:?}", e);
                     return;
                 }
@@ -170,14 +174,28 @@ pub mod forwarding {
 
         let forwarded_req = client
             .request(method, new_url.as_ref())
-            .body(reqwest::Body::wrap_stream(UnboundedReceiverStream::new(rx)));
+            .body(reqwest::Body::wrap_stream(ReceiverStream::new(rx)));
 
         // TODO: This forwarded implementation is incomplete as it only handles the unofficial
         // X-Forwarded-For header but not the official Forwarded one.
-        let forwarded_req = match peer_addr {
-            Some(PeerAddr(addr)) => forwarded_req.header("X-Forwarded-For", addr.ip().to_string()),
-            None => forwarded_req,
-        };
+        let mut headers = HeaderMap::new();
+        if let Some(PeerAddr(addr)) = peer_addr {
+            if let Ok(ip) = addr.ip().to_string().parse() {
+                headers.insert("X-Forwarded-For", ip);
+            }
+        }
+
+        for (header_name, header_value) in req.headers().iter() {
+            if header_name == "authorization" || header_name == "inference-service" {
+                continue;
+            }
+            headers.insert(
+                ReqwestHeaderName::from_str(header_name.as_ref()).unwrap(),
+                ReqwestHeaderValue::from_str(header_value.to_str().unwrap()).unwrap(),
+            );
+        }
+
+        let forwarded_req = forwarded_req.headers(headers);
 
         let res = log_with_level!(
             forwarded_req
@@ -295,13 +313,23 @@ pub mod ws {
                                         }
                                         actix_ws::Message::Close(_) => {
                                             let _ = log_with_level!(w.send(tungstenite::Message::Close(None)).await, error);
+                                            let _ = log_with_level!(w.close().await, error);
+                                            let _ = log_with_level!(s.close(None).await, error);
                                             break;
                                         }
-                                        _ => break,
+                                        _ => {
+                                            let _ = log_with_level!(w.close().await, error);
+                                            let _ = log_with_level!(s.close(None).await, error);
+                                            break;
+                                        }
                                     }
                                 }
                             },
-                            None => return,
+                            None => {
+                                let _ = log_with_level!(w.close().await, error);
+                                let _ = log_with_level!(s.close(None).await, error);
+                                break;
+                            }
                         }
                     }
                     // data to be sent to the client
@@ -324,13 +352,22 @@ pub mod ws {
                                         }
                                         tungstenite::Message::Close(_) => {
                                             let _ = log_with_level!(s.close(None).await, error);
+                                            let _ = log_with_level!(w.close().await, error);
                                             break;
                                         }
-                                        _ => break,
+                                        _ => {
+                                            let _ = log_with_level!(s.close(None).await, error);
+                                            let _ = log_with_level!(w.close().await, error);
+                                            break;
+                                        }
                                     }
                                 }
                             },
-                            None => return,
+                            None => {
+                                let _ = log_with_level!(s.close(None).await, error);
+                                let _ = log_with_level!(w.close().await, error);
+                                break;
+                            }
                         }
                     }
                 }

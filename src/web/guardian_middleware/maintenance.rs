@@ -11,7 +11,7 @@ use actix_web::{
 };
 use futures::{future::LocalBoxFuture, FutureExt, TryFutureExt};
 
-static MAINTENANCE_WINDOWS: RwLock<bool> = RwLock::new(true);
+static MAINTENANCE_WINDOWS: RwLock<bool> = RwLock::new(false);
 
 pub struct Maintainence;
 

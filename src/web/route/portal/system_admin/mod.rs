@@ -20,7 +20,7 @@ use crate::{
         guardian_middleware::{Htmx, HTMX_ERROR_RES},
         helper::{bson, payload_to_struct},
         route::portal::helper::{check_admin, get_all_groups},
-        services::CATALOG_URLS,
+        services::CATALOG,
     },
 };
 use crate::{
@@ -303,9 +303,16 @@ async fn system_tab_htmx(
         AdminTab::GroupModify | AdminTab::GroupView | AdminTab::GroupCreate => {
             let mut group_form = GroupContent::new();
 
-            CATALOG_URLS
+            CATALOG
+                .0
+                .get("services")
+                .and_then(|v| v.as_table())
+                .ok_or(GuardianError::GeneralError("No services found".to_string()))?
                 .iter()
-                .for_each(|(_, service_name)| group_form.add(service_name.to_owned()));
+                .for_each(|(k, _)| {
+                    // TODO: remove this clone and use &'static str
+                    group_form.add(k.clone());
+                });
 
             match tab.tab {
                 AdminTab::GroupView => {
@@ -337,7 +344,9 @@ async fn system_tab_htmx(
                             ctx.insert("group_name", &name);
                         }),
                     )?,
-                    None => return Err(GuardianError::GeneralError("No group provided".to_string())),
+                    None => {
+                        return Err(GuardianError::GeneralError("No group provided".to_string()))
+                    }
                 },
                 _ => unreachable!(),
             }
