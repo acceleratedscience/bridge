@@ -1,9 +1,10 @@
 use std::collections::BTreeMap;
 
-use k8s_openapi::api::core::v1::{PersistentVolumeClaim, VolumeResourceRequirements};
-use k8s_openapi::apimachinery::pkg::api::resource::Quantity;
-use kube::api::ObjectMeta;
-use kube::CustomResource;
+use k8s_openapi::{
+    api::core::v1::{PersistentVolumeClaim, VolumeResourceRequirements},
+    apimachinery::pkg::api::resource::Quantity,
+};
+use kube::{api::ObjectMeta, CustomResource};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -22,6 +23,7 @@ impl NotebookSpec {
         image_pull_secret: String,
         command: Option<Vec<String>>,
         args: Option<Vec<String>>,
+        notebook_env: Option<Vec<String>>,
         volume_name: String,
         volume_mount_path: String,
     ) -> Self {
@@ -38,6 +40,12 @@ impl NotebookSpec {
                         }]),
                         command,
                         args,
+                        env: Some(vec![EnvVar {
+                            name: "NOTEBOOK_ARGS".to_string(),
+                            // resorting to default here if the vec is empty, but the vec should
+                            // never be empty
+                            value: notebook_env.unwrap_or_default().join(" "),
+                        }]),
                     }],
                     image_pull_secrets: Some(vec![ImagePullSecret {
                         name: image_pull_secret,
@@ -84,6 +92,13 @@ pub struct ContainerSpec {
     volume_mounts: Option<Vec<VolumeMount>>,
     command: Option<Vec<String>>,
     args: Option<Vec<String>>,
+    env: Option<Vec<EnvVar>>,
+}
+
+#[derive(Deserialize, Serialize, Clone, Debug, JsonSchema)]
+pub struct EnvVar {
+    name: String,
+    value: String,
 }
 
 #[derive(Deserialize, Serialize, Clone, Debug, JsonSchema)]
@@ -114,6 +129,7 @@ pub struct PersistentVolumeClaimSpec {
     #[serde(rename = "claimName")]
     claim_name: String,
     #[serde(rename = "readOnly")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     read_only: Option<bool>,
 }
 
@@ -160,12 +176,14 @@ mod test {
         let volume_mount_path = "/mnt/notebook".to_string();
         let command = Some(vec!["/bin/bash".to_string()]);
         let args = Some(vec!["-c".to_string(), "echo 'Hello, World!'".to_string()]);
+        let env = Some(vec!["FOO=bar".to_string()]);
 
         let spec = NotebookSpec::new(
             name,
             image_pull_secret,
             command,
             args,
+            env,
             volume_name,
             volume_mount_path,
         );
@@ -176,8 +194,8 @@ mod test {
                     "containers": [
                         {
                             "name": "notebook",
-                            "image": CONFIG.notebook_image,
-                            "imagePullPolicy": CONFIG.notebook_image_pull_policy,
+                            "image": "quay.io/ibmdpdev/openad_workbench:latest",
+                            "imagePullPolicy": "IfNotPresent",
                             "volumeMounts": [
                                 {
                                     "name": "notebook-volume",
@@ -185,7 +203,13 @@ mod test {
                                 }
                             ],
                             "command": ["/bin/bash"],
-                            "args": ["-c", "echo 'Hello, World!'"]
+                            "args": ["-c", "echo 'Hello, World!'"],
+                            "env": [
+                                {
+                                    "name": "NOTEBOOK_ARGS",
+                                    "value": "FOO=bar"
+                                }
+                            ]
                         }
                     ],
                     "imagePullSecrets": [
@@ -197,8 +221,7 @@ mod test {
                         {
                             "name": "notebook-volume",
                             "persistentVolumeClaim": {
-                                "claimName": "notebook-volume-pvc",
-                                "readOnly": null
+                                "claimName": "notebook-volume-pvc"
                             }
                         }
                     ]

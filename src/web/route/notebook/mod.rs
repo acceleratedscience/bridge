@@ -2,31 +2,41 @@
 //! notebook, we use the forward function from the helper module. But we also introduce to
 //! websocket endpoints.
 
-use std::str::FromStr;
+use std::{marker::PhantomData, str::FromStr};
 
 use k8s_openapi::api::core::v1::PersistentVolumeClaim;
+use mongodb::bson::doc;
 use serde::Deserialize;
 
 use actix_web::{
+    cookie::Cookie,
     delete,
     dev::PeerAddr,
     get,
     http::Method,
     post,
-    web::{self, Data},
+    web::{self, Data, ReqData},
     HttpRequest, HttpResponse,
 };
 use tracing::instrument;
 use url::Url;
 
 use crate::{
-    db::mongo::DB,
-    errors::Result,
+    db::{
+        models::{GuardianCookie, NotebookCookie, User, USER},
+        mongo::{ObjectID, DB},
+        Database,
+    },
+    errors::{GuardianError, Result},
     kube::{KubeAPI, Notebook, NotebookSpec, PVCSpec},
-    web::{helper, services::CATALOG},
+    web::{
+        guardian_middleware::{CookieCheck, NotebookCookieCheck},
+        helper::{self, bson},
+    },
 };
 
 const NOTEBOOK_SUB_NAME: &str = "notebook";
+const NOTEBOOK_PORT: &str = "8888";
 
 #[get("/api/events/subscribe")]
 async fn notebook_ws_subscribe(req: HttpRequest, pl: web::Payload) -> Result<HttpResponse> {
@@ -50,8 +60,8 @@ async fn notebook_ws_session(
     let session_id = session_id.session_id.clone();
 
     let url = format!(
-        "ws://localhost:8888/notebook/api/kernels/{}/channels?session_id={}",
-        kernel_id, session_id
+        "ws://localhost:8888/{}/api/kernels/{}/channels?session_id={}",
+        NOTEBOOK_SUB_NAME, kernel_id, session_id
     );
 
     helper::ws::manage_connection(req, pl, url).await
@@ -59,83 +69,124 @@ async fn notebook_ws_session(
 
 #[post("/create")]
 async fn notebook_create(
-    // subject: Option<ReqData<GuardianCookie>>,
+    subject: Option<ReqData<GuardianCookie>>,
     db: Data<&DB>,
 ) -> Result<HttpResponse> {
-    // if let Some(_subject) = subject {
-    // let guardian_cookie = _subject.into_inner();
-    // let id = ObjectId::from_str(&guardian_cookie.subject)
-    //     .map_err(|e| GuardianError::GeneralError(e.to_string()))?;
+    if let Some(_subject) = subject {
+        let guardian_cookie = _subject.into_inner();
+        let id = ObjectID::new(&guardian_cookie.subject);
 
-    // // check if the user can create a notebook
-    // let result: Result<User> = db
-    //     .find(
-    //         doc! {
-    //             "_id": id,
-    //         },
-    //         USER,
-    //     )
-    //     .await;
-    // let user = match result {
-    //     Ok(user) => {
-    //         if !user.sub.contains(NOTEBOOK_SUB_NAME) {
-    //             return Err(GuardianError::NotebookAccessError(
-    //                 "User not allowed to create a notebook".to_string(),
-    //             ));
-    //         }
-    //         user
-    //     }
-    //     Err(e) => return helper::log_with_level!(Err(e), error),
-    // };
-    // if user.notebook.is_some() {
-    //     return Err(GuardianError::NotebookExistsError(
-    //         "Notebook already exists".to_string(),
-    //     ));
-    // };
+        // check if the user can create a notebook
+        let result: Result<User> = db
+            .find(
+                doc! {
+                    "_id": id.clone().into_inner(),
+                },
+                USER,
+            )
+            .await;
+        let user = match result {
+            Ok(user) => {
+                if !user.sub.contains(NOTEBOOK_SUB_NAME) {
+                    return Err(GuardianError::NotebookAccessError(
+                        "User not allowed to create a notebook".to_string(),
+                    ));
+                }
+                user
+            }
+            Err(e) => return helper::log_with_level!(Err(e), error),
+        };
+        if user.notebook.is_some() {
+            return Err(GuardianError::NotebookExistsError(
+                "Notebook already exists".to_string(),
+            ));
+        };
 
-    // Create a PVC
-    let pvc = PVCSpec::new("notebook-volume".to_string(), 1);
-    helper::log_with_level!(KubeAPI::new(pvc.spec).create().await, error)?;
+        // User is allowed to create a notebook, but notebook does not exist... so create one
+        // Create a PVC at 1Gi
+        let pvc = PVCSpec::new(
+            notebook_helper::make_notebook_volume_name(&guardian_cookie.subject),
+            1,
+        );
+        helper::log_with_level!(KubeAPI::new(pvc.spec).create().await, error)?;
+        // Create a notebook
+        let name = notebook_helper::make_notebook_name(&guardian_cookie.subject);
+        let notebook = Notebook::new(
+            &name,
+            NotebookSpec::new(
+                name.clone(),
+                "quay-notebook-secret".to_string(),
+                None,
+                None,
+                // TODO: Move this somewhere else
+                Some(vec![
+                    "--ServerApp.token=''".to_string(),
+                    "--ServerApp.password=''".to_string(),
+                    "--ServerApp.base_url='notebook'".to_string(),
+                    "--ServerApp.allow_origin='*'".to_string(),
+                    "--ServerApp.trust_xheaders=True".to_string(),
+                    "--ServerApp.notebook_dir='/opt/app-root/src'".to_string(),
+                    "--ServerApp.quit_button=False".to_string(),
+                ]),
+                "notebook-volume".to_string(),
+                "/opt/app-root/src".to_string(),
+            ),
+        );
+        helper::log_with_level!(KubeAPI::new(notebook).create().await, error)?;
 
-    // Create a notebook
-    let name = format!("notebook-{}", "testtest");
-    let notebook = Notebook::new(
-        &name,
-        NotebookSpec::new(
-            name.clone(),
-            "quay-notebook-secret".to_string(),
-            Some(vec!["jupyter".to_string(), "notebook".to_string()]),
-            Some(vec![
-                "--NotebookApp.password=''".to_string(),
-                "--NotebookApp.token=''".to_string(),
-                "--NotebookApp.notebook_dir='/opt/app-root/src'".to_string(),
-                "--NotebookApp.base_url='notebook'".to_string(),
-                "--NotebookApp.allow_origin='*'".to_string(),
-                "--NotebookApp.trust_xheaders=True".to_string(),
-            ]),
-            "notebook-volume".to_string(),
-            "/opt/app-root/src".to_string(),
-        ),
-    );
-    helper::log_with_level!(KubeAPI::new(notebook).create().await, error)?;
+        let current_time = time::OffsetDateTime::now_utc();
+        db.update(
+            doc! {
+                "_id": id.into_inner(),
+            },
+            doc! {
+                "$set": doc! {
+                    "notebook": bson(current_time)?,
+                },
+            },
+            USER,
+            PhantomData::<User>,
+        )
+        .await?;
 
-    Ok(HttpResponse::Ok().finish())
-    // }
-    //
-    // helper::log_with_level!(
-    //     Err(GuardianError::UserNotFound(
-    //         "subject not passed from middleware".to_string(),
-    //     )),
-    //     error
-    // )
+        // Create notebook cookie
+        let notebook_cookie = Cookie::build("notebook", &guardian_cookie.subject)
+            .path("/notebook")
+            .secure(true)
+            .http_only(true)
+            .finish();
+
+        return Ok(HttpResponse::Ok().cookie(notebook_cookie).finish());
+    }
+
+    helper::log_with_level!(
+        Err(GuardianError::UserNotFound(
+            "subject not passed from middleware".to_string(),
+        )),
+        error
+    )
 }
 
 #[delete("/delete")]
-async fn notebook_delete() -> Result<HttpResponse> {
-    let name = format!("notebook-{}", "testtest");
+async fn notebook_delete(notebook_cookie: Option<ReqData<NotebookCookie>>) -> Result<HttpResponse> {
+    // get the notebook cookie
+    let notebook_cookie = match notebook_cookie {
+        Some(cookie) => cookie.into_inner(),
+        None => {
+            return helper::log_with_level!(
+                Err(GuardianError::NotebookAccessError(
+                    "Notebook cookie not found".to_string(),
+                )),
+                error
+            )
+        }
+    };
+
+    let name = notebook_helper::make_notebook_name(&notebook_cookie.subject);
+    let pvc_name = notebook_helper::make_notebook_volume_name(&notebook_cookie.subject);
     helper::log_with_level!(KubeAPI::<Notebook>::delete(&name).await, error)?;
     helper::log_with_level!(
-        KubeAPI::<PersistentVolumeClaim>::delete("notebook-volume-pvc").await,
+        KubeAPI::<PersistentVolumeClaim>::delete(&pvc_name).await,
         error
     )?;
     Ok(HttpResponse::Ok().finish())
@@ -151,8 +202,6 @@ async fn notebook_forward(
 ) -> Result<HttpResponse> {
     let path = req.uri().path();
 
-    let service = "notebook";
-
     // look up service and get url
     let mut new_url = Url::from_str("http://localhost:8888")?;
     new_url.set_path(path);
@@ -161,15 +210,32 @@ async fn notebook_forward(
     helper::forwarding::forward(req, payload, method, peer_addr, client, new_url).await
 }
 
-#[allow(dead_code)]
+mod notebook_helper {
+    pub(super) fn make_notebook_name(subject: &str) -> String {
+        format!("{}-notebook", subject)
+    }
+
+    pub(super) fn make_notebook_volume_name(subject: &str) -> String {
+        format!("{}-notebook-volume", subject)
+    }
+}
+
 pub fn config_notebook(cfg: &mut web::ServiceConfig) {
     cfg.service(
         web::scope("/notebook")
-            .service(notebook_ws_subscribe)
-            .service(notebook_ws_session)
-            .service(notebook_create)
-            .service(notebook_delete)
-            .default_service(web::to(notebook_forward)),
+            .service(
+                web::scope("")
+                    .wrap(CookieCheck)
+                    .service(notebook_create)
+                    .service(notebook_delete),
+            )
+            .service(
+                web::scope("")
+                    .wrap(NotebookCookieCheck)
+                    .service(notebook_ws_subscribe)
+                    .service(notebook_ws_session)
+                    .default_service(web::to(notebook_forward)),
+            ),
     );
 }
 

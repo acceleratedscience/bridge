@@ -14,7 +14,6 @@ use crate::errors::{GuardianError, Result};
 mod models;
 pub use models::{Notebook, NotebookSpec, PVCSpec};
 
-#[allow(dead_code)]
 pub struct KubeAPI<M> {
     model: M,
 }

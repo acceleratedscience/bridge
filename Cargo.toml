@@ -10,6 +10,10 @@ path = "./src/main.rs"
 [workspace]
 members = ["utils"]
 
+[features]
+notebook = ["kube"]
+kube = []
+
 [dependencies]
 # Async dep
 tokio = {version = "1", features = ["full"]}

@@ -112,6 +112,12 @@ pub struct GuardianCookie {
     pub subject: String,
     pub user_type: UserType,
 }
+ 
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct NotebookCookie {
+    /// The name of the subject the owns notebook CRD
+    pub subject: String,
+}
 
 #[derive(Debug, Deserialize, Clone)]
 pub enum AdminTab {
