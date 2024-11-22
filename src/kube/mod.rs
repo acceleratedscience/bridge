@@ -1,8 +1,8 @@
 use std::{fmt::Debug, sync::OnceLock};
 
-use k8s_openapi::NamespaceResourceScope;
+use k8s_openapi::{api::core::v1::Namespace, NamespaceResourceScope};
 use kube::{
-    api::{DeleteParams, PostParams},
+    api::{DeleteParams, ObjectMeta, PostParams},
     Api, Client, Resource,
 };
 use reqwest::StatusCode;
@@ -12,14 +12,13 @@ use tracing::info;
 use crate::errors::{GuardianError, Result};
 
 mod models;
-pub use models::{Notebook, NotebookSpec, PVCSpec};
+pub use models::{Notebook, NotebookSpec, PVCSpec, NAMESPACE};
 
 pub struct KubeAPI<M> {
     model: M,
 }
 
 static KUBECLIENT: OnceLock<Client> = OnceLock::new();
-const NAMESPACE: &str = "guardian";
 
 pub async fn init_once() {
     // ok to fail since we should not start if we can't connect to k8s
@@ -66,5 +65,26 @@ where
             either::Either::Right(_) => StatusCode::OK,
         };
         Ok(status)
+    }
+
+    /// Create a namespace if it does not exist. Returns `None` if the namespace already exists.
+    /// Returns `Some(())` if the namespace was created.
+    pub async fn make_namespace(name: &str) -> Result<Option<()>> {
+        let ns = Api::<Namespace>::all(Self::get_kube_client()?.clone());
+        if ns.get_opt(name).await?.is_some() {
+            return Ok(None);
+        }
+
+        let new_ns = Namespace {
+            metadata: ObjectMeta {
+                name: Some(name.to_string()),
+                ..Default::default()
+            },
+            spec: Default::default(),
+            status: Default::default(),
+        };
+
+        ns.create(&PostParams::default(), &new_ns).await?;
+        Ok(Some(()))
     }
 }

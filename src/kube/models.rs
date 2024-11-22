@@ -10,6 +10,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::config::CONFIG;
 
+pub const NAMESPACE: &str = "notebook";
+
 // Define the Notebook CRD struct
 #[derive(CustomResource, Deserialize, Serialize, Clone, Debug, JsonSchema)]
 #[kube(group = "kubeflow.org", version = "v1", kind = "Notebook", namespaced)]
@@ -53,7 +55,7 @@ impl NotebookSpec {
                     volumes: Some(vec![VolumeSpec {
                         name: volume_name.clone(),
                         persistent_volume_claim: Some(PersistentVolumeClaimSpec {
-                            claim_name: volume_name + "-pvc",
+                            claim_name: volume_name,
                             read_only: None,
                         }),
                         config_map: None,
@@ -143,7 +145,7 @@ impl PVCSpec {
         Self {
             spec: PersistentVolumeClaim {
                 metadata: ObjectMeta {
-                    name: Some(name + "-pvc"),
+                    name: Some(name),
                     ..Default::default()
                 },
                 spec: Some(k8s_openapi::api::core::v1::PersistentVolumeClaimSpec {

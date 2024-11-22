@@ -140,7 +140,7 @@ pub mod forwarding {
     where
         T: AsRef<str> + Send + Sync,
     {
-        let (tx, rx) = mpsc::channel(2048);
+        let (tx, rx) = mpsc::channel(128);
 
         actix_web::rt::spawn(async move {
             while let Some(chunk) = payload.next().await {
