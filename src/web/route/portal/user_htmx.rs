@@ -45,6 +45,9 @@ impl Profile {
         if let Some(t) = &self.token {
             t_exp(&mut context, t);
         }
+        if self.subscriptions.contains(&"notebook".to_string()) {
+            context.insert("notebook", &true);
+        }
 
         Ok(tera.render(PROFILE, &context)?)
     }

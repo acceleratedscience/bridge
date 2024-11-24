@@ -4,6 +4,7 @@ pub mod jwt;
 pub mod openid;
 
 pub static COOKIE_NAME: &str = "guardian-user";
+pub static NOTEBOOK_COOKIE_NAME: &str = "guardian-notebook";
 
 /// Convert SEC1 to PKCS8
 pub fn sec1_to_pkcs8(secret_pem: &[u8]) -> Vec<u8> {

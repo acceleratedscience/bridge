@@ -8,7 +8,7 @@ use actix_web::{
 use futures::{future::LocalBoxFuture, FutureExt, TryFutureExt};
 use tracing::warn;
 
-use crate::{auth::COOKIE_NAME, db::models::NotebookCookie, kube::NAMESPACE};
+use crate::{auth::NOTEBOOK_COOKIE_NAME, db::models::NotebookCookie};
 
 pub struct NotebookCookieCheck;
 
@@ -46,7 +46,7 @@ where
     forward_ready!(service);
 
     fn call(&self, req: ServiceRequest) -> Self::Future {
-        match req.cookie(COOKIE_NAME).map(|c| c.value().to_string()) {
+        match req.cookie(NOTEBOOK_COOKIE_NAME).map(|c| c.value().to_string()) {
             Some(v) => {
                 let guardian_cookie_result = serde_json::from_str::<NotebookCookie>(&v);
                 match guardian_cookie_result {

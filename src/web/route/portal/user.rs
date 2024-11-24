@@ -68,21 +68,16 @@ pub(super) async fn user(
 
         let mut profile = Profile::new(user.user_name, user.token);
 
-        let content = match group {
-            Ok(group) => {
-                user.groups.iter().for_each(|group| {
-                    profile.add_group(group.to_string());
-                });
-                group.subscriptions.iter().for_each(|subscription| {
-                    profile.add_subscription(subscription.to_string());
-                });
-
-                helper::log_with_level!(profile.render(data, helper::add_token_exp_to_tera), error)?
-            }
-            Err(_) => {
-                helper::log_with_level!(profile.render(data, helper::add_token_exp_to_tera), error)?
-            }
-        };
+        if let Ok(group) = group {
+            user.groups.iter().for_each(|group| {
+                profile.add_group(group.to_string());
+            });
+            group.subscriptions.iter().for_each(|subscription| {
+                profile.add_subscription(subscription.to_string());
+            });
+        }
+        let content =
+            helper::log_with_level!(profile.render(data, helper::add_token_exp_to_tera), error)?;
 
         return Ok(HttpResponse::Ok().body(content));
     }

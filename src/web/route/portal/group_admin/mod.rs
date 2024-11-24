@@ -1,4 +1,4 @@
-use std::{marker::PhantomData, str::FromStr};
+use std::{marker::PhantomData, ops::Deref, str::FromStr};
 
 use actix_web::{
     get,
@@ -25,7 +25,7 @@ use crate::{
     web::{
         guardian_middleware::{Htmx, HTMX_ERROR_RES},
         helper::{self, bson},
-        route::portal::helper::check_admin,
+        route::{notebook::NOTEBOOK_SUB_NAME, portal::helper::check_admin},
     },
 };
 
@@ -87,6 +87,14 @@ pub(super) async fn group(
     ctx.insert("token", &user.token);
     if let Some(token) = &user.token {
         helper::add_token_exp_to_tera(&mut ctx, token);
+    }
+    if subs
+        .iter()
+        .map(Deref::deref)
+        .collect::<Vec<&str>>()
+        .contains(&NOTEBOOK_SUB_NAME)
+    {
+        ctx.insert("notebook", &true);
     }
 
     let content = helper::log_with_level!(data.render(USER_PAGE, &ctx), error)?;

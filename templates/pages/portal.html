@@ -37,6 +37,9 @@
 			<cds-tabs value="models">
 				<cds-tab target="panel-models" value="models">Available Models</cds-tab>
 				<cds-tab target="panel-token" value="token">Access Token</cds-tab>
+				{% if notebook %}
+					<cds-tab target="panel-notebook" value="notebook">Notebook</cds-tab>
+				{% endif %}
 				{% block tabs %}
 				{% endblock tabs %}
 			</cds-tabs>
@@ -62,6 +65,12 @@
 			<div id="panel-token" role="tabpanel" aria-labelledby="tab-token">
 				{% include "components/token.html" %}
 			</div>
+
+			{% if notebook %}
+			<div id="panel-notebook" role="tabpanel" aria-labelledby="tab-notebook">
+				{% include "components/notebook.html" %}
+			</div>
+			{% endif %}
 
 			<!-- Panel: Others -->
 			{% block panels %}

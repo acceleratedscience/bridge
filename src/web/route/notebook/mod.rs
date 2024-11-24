@@ -22,6 +22,7 @@ use tracing::{info, instrument, warn};
 use url::Url;
 
 use crate::{
+    auth::NOTEBOOK_COOKIE_NAME,
     db::{
         models::{Group, GuardianCookie, NotebookCookie, User, GROUP, USER},
         mongo::{ObjectID, DB},
@@ -30,12 +31,12 @@ use crate::{
     errors::{GuardianError, Result},
     kube::{KubeAPI, Notebook, NotebookSpec, PVCSpec, NAMESPACE},
     web::{
-        guardian_middleware::{CookieCheck, NotebookCookieCheck},
+        guardian_middleware::{CookieCheck, Htmx, NotebookCookieCheck},
         helper::{self, bson},
     },
 };
 
-const NOTEBOOK_SUB_NAME: &str = NAMESPACE;
+pub const NOTEBOOK_SUB_NAME: &str = NAMESPACE;
 const NOTEBOOK_PORT: &str = "8888";
 
 #[get("{name}/api/events/subscribe")]
@@ -202,6 +203,7 @@ async fn notebook_create(
             },
             doc! {
                 "$set": doc! {
+                    "updated_at": bson(time::OffsetDateTime::now_utc())?,
                     "notebook": bson(current_time)?,
                 },
             },
@@ -210,8 +212,15 @@ async fn notebook_create(
         )
         .await?;
 
+        let notebook_cookie = NotebookCookie {
+            subject: guardian_cookie.subject,
+        };
+        let json = serde_json::to_string(&notebook_cookie).map_err(|e| {
+            GuardianError::GeneralError(format!("Could not serialize notebook cookie: {}", e))
+        })?;
+
         // Create notebook cookie
-        let notebook_cookie = Cookie::build(NOTEBOOK_SUB_NAME, &guardian_cookie.subject)
+        let notebook_cookie = Cookie::build(NOTEBOOK_COOKIE_NAME, &json)
             .path("/notebook")
             .same_site(SameSite::Strict)
             .secure(true)
@@ -262,7 +271,8 @@ async fn notebook_delete(
         },
         doc! {
             "$unset": doc! {
-                "notebook": "",
+                "updated_at": bson(time::OffsetDateTime::now_utc())?,
+                "notebook": null,
             },
         },
         USER,
@@ -271,7 +281,7 @@ async fn notebook_delete(
     .await?;
 
     // delete the cookie
-    let mut notebook_cookie = Cookie::build(NOTEBOOK_SUB_NAME, "")
+    let mut notebook_cookie = Cookie::build(NOTEBOOK_COOKIE_NAME, "")
         .path("/notebook")
         .same_site(SameSite::Strict)
         .secure(true)
@@ -344,12 +354,13 @@ mod notebook_helper {
             };
         }
         match path {
+            // TODO: This is super cumbersome... FIX IT FIX IT!
             Some(p) => format!(
-                "{}://{}.{}.svc.cluster.local:{}/notebook/{}/{}/{}",
+                "{}://{}-0.{}.pod.cluster.local:{}/notebook/{}/{}/{}",
                 protocol, name, NAMESPACE, NOTEBOOK_PORT, NAMESPACE, name, p
             ),
             None => format!(
-                "{}://{}.{}.svc.cluster.local:{}/notebook/{}/{}",
+                "{}://{}-0.{}.pod.cluster.local:{}/notebook/{}/{}",
                 protocol, name, NAMESPACE, NOTEBOOK_PORT, NAMESPACE, name
             ),
         }
@@ -365,8 +376,9 @@ pub fn config_notebook(cfg: &mut web::ServiceConfig) {
             .default_service(web::to(notebook_forward)),
     )
     .service(
-        web::scope("/notebook_manage")
+        web::scope("/notebook_manage/hx")
             .wrap(CookieCheck)
+            .wrap(Htmx)
             .service(notebook_create)
             .service(notebook_delete),
     );
