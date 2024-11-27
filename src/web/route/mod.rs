@@ -7,7 +7,12 @@ use actix_web::{
 };
 use tera::{Context, Tera};
 
-use crate::{auth::COOKIE_NAME, db::models::MaintenanceMode, errors::Result, web::helper::{self, payload_to_struct}};
+use crate::{
+    auth::COOKIE_NAME,
+    db::models::MaintenanceMode,
+    errors::Result,
+    web::helper::{self, payload_to_struct},
+};
 
 pub mod auth;
 pub mod foo;

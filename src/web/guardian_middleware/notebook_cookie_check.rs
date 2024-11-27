@@ -46,7 +46,10 @@ where
     forward_ready!(service);
 
     fn call(&self, req: ServiceRequest) -> Self::Future {
-        match req.cookie(NOTEBOOK_COOKIE_NAME).map(|c| c.value().to_string()) {
+        match req
+            .cookie(NOTEBOOK_COOKIE_NAME)
+            .map(|c| c.value().to_string())
+        {
             Some(v) => {
                 let guardian_cookie_result = serde_json::from_str::<NotebookCookie>(&v);
                 match guardian_cookie_result {

@@ -17,7 +17,8 @@ use tracing::instrument;
 use crate::{
     db::{
         models::{
-            AdminTab, AdminTabs, Group, GroupForm, GuardianCookie, NotebookStatusCookie, User, UserDeleteForm, UserForm, UserNotebook, UserType, GROUP, USER
+            AdminTab, AdminTabs, Group, GroupForm, GuardianCookie, NotebookStatusCookie, User,
+            UserDeleteForm, UserForm, UserNotebook, UserType, GROUP, USER,
         },
         mongo::DB,
         Database,

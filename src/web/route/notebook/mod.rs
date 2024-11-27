@@ -18,13 +18,17 @@ use actix_web::{
     web::{self, Data, ReqData},
     HttpRequest, HttpResponse,
 };
+use tera::{Context, Tera};
 use tracing::{info, instrument, warn};
 use url::Url;
 
 use crate::{
     auth::{NOTEBOOK_COOKIE_NAME, NOTEBOOK_STATUS_COOKIE_NAME},
     db::{
-        models::{Group, GuardianCookie, NotebookCookie, NotebookStatusCookie, User, GROUP, USER},
+        models::{
+            Group, GuardianCookie, NotebookCookie, NotebookStatusCookie, User, UserNotebook, GROUP,
+            USER,
+        },
         mongo::{ObjectID, DB},
         Database,
     },
@@ -110,6 +114,7 @@ async fn notebook_ws_session(
 async fn notebook_create(
     subject: Option<ReqData<GuardianCookie>>,
     db: Data<&DB>,
+    data: Data<Tera>,
 ) -> Result<HttpResponse> {
     if let Some(_subject) = subject {
         let guardian_cookie = _subject.into_inner();
@@ -239,17 +244,23 @@ async fn notebook_create(
             .finish();
         let notebook_status_cookie =
             Cookie::build(NOTEBOOK_STATUS_COOKIE_NAME, &notebook_status_json)
-                .path("/notebook_health")
+                .path("/")
                 .same_site(SameSite::Strict)
                 .secure(true)
                 .http_only(true)
                 .max_age(time::Duration::days(1))
                 .finish();
 
+        let content = helper::log_with_level!(
+            data.render("components/notebook/poll.html", &Context::new()),
+            error
+        )?;
+
         return Ok(HttpResponse::Ok()
             .cookie(notebook_cookie)
             .cookie(notebook_status_cookie)
-            .finish());
+            .content_type(ContentType::form_url_encoded())
+            .body(content));
     }
 
     helper::log_with_level!(
@@ -263,6 +274,7 @@ async fn notebook_create(
 #[delete("/delete")]
 async fn notebook_delete(
     subject: Option<ReqData<GuardianCookie>>,
+    data: Data<Tera>,
     db: Data<&DB>,
 ) -> Result<HttpResponse> {
     // get the notebook cookie
@@ -309,7 +321,7 @@ async fn notebook_delete(
         .http_only(true)
         .finish();
     let mut notebook_status_cookie = Cookie::build(NOTEBOOK_STATUS_COOKIE_NAME, "")
-        .path("/notebook_health")
+        .path("/")
         .same_site(SameSite::Strict)
         .secure(true)
         .http_only(true)
@@ -317,14 +329,21 @@ async fn notebook_delete(
     notebook_cookie.make_removal();
     notebook_status_cookie.make_removal();
 
+    let content = helper::log_with_level!(
+        data.render("components/notebook/start.html", &Context::new()),
+        error
+    )?;
+
     Ok(HttpResponse::Ok()
         .cookie(notebook_cookie)
         .cookie(notebook_status_cookie)
-        .finish())
+        .content_type(ContentType::form_url_encoded())
+        .body(content))
 }
 
 #[get("status")]
 async fn notebook_status(
+    data: Data<Tera>,
     subject: Option<ReqData<GuardianCookie>>,
     notebook_cookie: Option<ReqData<NotebookStatusCookie>>,
 ) -> Result<HttpResponse> {
@@ -341,9 +360,10 @@ async fn notebook_status(
     };
 
     // check status on k8s
-    let ready =
-        KubeAPI::<Pod>::check_pod_running(&(notebook_helper::make_notebook_name(&guardian_cookie.subject) + "-0"))
-            .await?;
+    let ready = KubeAPI::<Pod>::check_pod_running(
+        &(notebook_helper::make_notebook_name(&guardian_cookie.subject) + "-0"),
+    )
+    .await?;
 
     if ready {
         let notebook_status_cookie = NotebookStatusCookie {
@@ -356,24 +376,30 @@ async fn notebook_status(
                 e
             ))
         })?;
-        let notebook_status_cookie =
+        let notebook_status_cookie_updated =
             Cookie::build(NOTEBOOK_STATUS_COOKIE_NAME, &notebook_status_json)
-                .path("/notebook_health")
+                .path("/")
                 .same_site(SameSite::Strict)
                 .secure(true)
                 .http_only(true)
                 .max_age(time::Duration::days(1))
                 .finish();
 
+        let notebook = Into::<UserNotebook>::into((&guardian_cookie, &notebook_status_cookie));
+        let mut ctx = Context::new();
+        ctx.insert("notebook", &notebook);
+        let content =
+            helper::log_with_level!(data.render("components/notebook/ready.html", &ctx), error)?;
+
         // Status code 286 is HTMX specific to stop caller from polling again
         return Ok(HttpResponse::build(StatusCode::from_u16(286).unwrap())
             .content_type(ContentType::form_url_encoded())
-            .cookie(notebook_status_cookie)
-            .body("hi"));
+            .cookie(notebook_status_cookie_updated)
+            .body(content));
     }
 
     // This will make the htmx on client side poll
-    Ok(HttpResponse::Ok().finish())
+    Ok(HttpResponse::ServiceUnavailable().finish())
 }
 
 #[instrument(skip(payload))]
@@ -412,7 +438,7 @@ async fn notebook_forward(
 }
 
 pub mod notebook_helper {
-    use crate::db::models::{NotebookStatusCookie, User, UserNotebook};
+    use crate::db::models::{GuardianCookie, NotebookStatusCookie, User, UserNotebook};
     use crate::kube::NAMESPACE;
     use crate::web::route::notebook::NOTEBOOK_PORT;
 
@@ -470,6 +496,19 @@ pub mod notebook_helper {
             }
         }
     }
+
+    impl From<(&GuardianCookie, &NotebookStatusCookie)> for UserNotebook {
+        fn from(
+            (guardian_cookie, notebook_status_cookie): (&GuardianCookie, &NotebookStatusCookie),
+        ) -> Self {
+            UserNotebook {
+                url: make_path(&make_notebook_name(&guardian_cookie.subject), None),
+                name: guardian_cookie.subject.clone(),
+                start_time: notebook_status_cookie.start_time.clone(),
+                status: notebook_status_cookie.status.clone(),
+            }
+        }
+    }
 }
 
 pub fn config_notebook(cfg: &mut web::ServiceConfig) {
@@ -483,7 +522,7 @@ pub fn config_notebook(cfg: &mut web::ServiceConfig) {
     .service(
         web::scope("/notebook_manage/hx")
             .wrap(CookieCheck)
-            .wrap(Htmx)
+            // .wrap(Htmx)
             .service(notebook_create)
             .service(notebook_delete)
             .service(notebook_status),

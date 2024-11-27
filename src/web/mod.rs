@@ -49,6 +49,7 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
         .install_default()
         .expect("Cannot install default provider");
 
+    // Singletons
     openid::init_once().await;
     kube::init_once().await;
     if let Err(e) = DB::init_once("guardian").await {
@@ -79,6 +80,7 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
             .wrap(middleware::NormalizePath::trim())
             .wrap(middleware::Compress::default())
             .service(actix_files::Files::new("/static", "static"))
+            .configure(route::notebook::config_notebook)
             .service(
                 web::scope("")
                     .wrap(guardian_middleware::Maintainence)
@@ -86,7 +88,6 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
                     .configure(route::auth::config_auth)
                     .configure(route::health::config_status)
                     .configure(route::proxy::config_proxy)
-                    .configure(route::notebook::config_notebook)
                     .configure(route::config_index)
                     .configure(route::portal::config_portal)
                     .configure(route::foo::config_foo),

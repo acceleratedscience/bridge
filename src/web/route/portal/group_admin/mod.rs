@@ -15,8 +15,8 @@ use tracing::instrument;
 use crate::{
     db::{
         models::{
-            AdminTab, AdminTabs, Group, GuardianCookie, ModifyUser, User, UserGroupMod, UserType,
-            GROUP, USER,
+            AdminTab, AdminTabs, Group, GuardianCookie, ModifyUser, NotebookStatusCookie, User,
+            UserGroupMod, UserNotebook, UserType, GROUP, USER,
         },
         mongo::DB,
         Database,
@@ -40,6 +40,7 @@ const USER_PAGE: &str = "pages/portal_group.html";
 pub(super) async fn group(
     data: Data<Tera>,
     req: HttpRequest,
+    nsc: Option<ReqData<NotebookStatusCookie>>,
     db: Data<&DB>,
     subject: Option<ReqData<GuardianCookie>>,
 ) -> Result<HttpResponse> {
@@ -80,10 +81,11 @@ pub(super) async fn group(
         Err(_) => vec![],
     };
 
-    let notebook = user
-        .notebook
-        .map(|n| n.to_string())
-        .unwrap_or("None".to_string());
+    let mut notebook = Into::<UserNotebook>::into(&user);
+    if let Some(nsc) = nsc {
+        let nsc = nsc.into_inner();
+        notebook.status = nsc.status;
+    }
 
     let mut ctx = tera::Context::new();
     ctx.insert("name", &user.user_name);
