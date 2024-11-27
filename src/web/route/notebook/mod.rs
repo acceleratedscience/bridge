@@ -4,16 +4,16 @@
 
 use std::{marker::PhantomData, str::FromStr};
 
-use k8s_openapi::api::core::v1::PersistentVolumeClaim;
+use k8s_openapi::api::core::v1::{PersistentVolumeClaim, Pod};
 use mongodb::bson::doc;
 use serde::Deserialize;
 
 use actix_web::{
-    cookie::{Cookie, SameSite},
+    cookie::{self, Cookie, SameSite},
     delete,
     dev::PeerAddr,
     get,
-    http::Method,
+    http::{header::ContentType, Method, StatusCode},
     post,
     web::{self, Data, ReqData},
     HttpRequest, HttpResponse,
@@ -22,9 +22,9 @@ use tracing::{info, instrument, warn};
 use url::Url;
 
 use crate::{
-    auth::NOTEBOOK_COOKIE_NAME,
+    auth::{NOTEBOOK_COOKIE_NAME, NOTEBOOK_STATUS_COOKIE_NAME},
     db::{
-        models::{Group, GuardianCookie, NotebookCookie, User, GROUP, USER},
+        models::{Group, GuardianCookie, NotebookCookie, NotebookStatusCookie, User, GROUP, USER},
         mongo::{ObjectID, DB},
         Database,
     },
@@ -215,20 +215,41 @@ async fn notebook_create(
         let notebook_cookie = NotebookCookie {
             subject: guardian_cookie.subject,
         };
-        let json = serde_json::to_string(&notebook_cookie).map_err(|e| {
+        let notebook_status_cookie = NotebookStatusCookie {
+            start_time: current_time.to_string(),
+            status: "Pending".to_string(),
+        };
+        let notebook_json = serde_json::to_string(&notebook_cookie).map_err(|e| {
             GuardianError::GeneralError(format!("Could not serialize notebook cookie: {}", e))
         })?;
+        let notebook_status_json = serde_json::to_string(&notebook_status_cookie).map_err(|e| {
+            GuardianError::GeneralError(format!(
+                "Could not serialize notebook status cookie: {}",
+                e
+            ))
+        })?;
 
-        // Create notebook cookie
-        let notebook_cookie = Cookie::build(NOTEBOOK_COOKIE_NAME, &json)
+        // Create notebook cookies
+        let notebook_cookie = Cookie::build(NOTEBOOK_COOKIE_NAME, &notebook_json)
             .path("/notebook")
             .same_site(SameSite::Strict)
             .secure(true)
             .http_only(true)
             .max_age(time::Duration::days(1))
             .finish();
+        let notebook_status_cookie =
+            Cookie::build(NOTEBOOK_STATUS_COOKIE_NAME, &notebook_status_json)
+                .path("/notebook_health")
+                .same_site(SameSite::Strict)
+                .secure(true)
+                .http_only(true)
+                .max_age(time::Duration::days(1))
+                .finish();
 
-        return Ok(HttpResponse::Ok().cookie(notebook_cookie).finish());
+        return Ok(HttpResponse::Ok()
+            .cookie(notebook_cookie)
+            .cookie(notebook_status_cookie)
+            .finish());
     }
 
     helper::log_with_level!(
@@ -270,7 +291,7 @@ async fn notebook_delete(
             "_id": ObjectID::new(&guardian_cookie.subject).into_inner(),
         },
         doc! {
-            "$unset": doc! {
+            "$set": doc! {
                 "updated_at": bson(time::OffsetDateTime::now_utc())?,
                 "notebook": null,
             },
@@ -280,17 +301,79 @@ async fn notebook_delete(
     )
     .await?;
 
-    // delete the cookie
+    // delete the cookies
     let mut notebook_cookie = Cookie::build(NOTEBOOK_COOKIE_NAME, "")
         .path("/notebook")
         .same_site(SameSite::Strict)
         .secure(true)
         .http_only(true)
         .finish();
-
+    let mut notebook_status_cookie = Cookie::build(NOTEBOOK_STATUS_COOKIE_NAME, "")
+        .path("/notebook_health")
+        .same_site(SameSite::Strict)
+        .secure(true)
+        .http_only(true)
+        .finish();
     notebook_cookie.make_removal();
+    notebook_status_cookie.make_removal();
 
-    Ok(HttpResponse::Ok().cookie(notebook_cookie).finish())
+    Ok(HttpResponse::Ok()
+        .cookie(notebook_cookie)
+        .cookie(notebook_status_cookie)
+        .finish())
+}
+
+#[get("status")]
+async fn notebook_status(
+    subject: Option<ReqData<GuardianCookie>>,
+    notebook_cookie: Option<ReqData<NotebookStatusCookie>>,
+) -> Result<HttpResponse> {
+    let (guardian_cookie, notebook_cookie) = match (subject, notebook_cookie) {
+        (Some(gc), Some(ncs)) => (gc.into_inner(), ncs.into_inner()),
+        _ => {
+            return helper::log_with_level!(
+                Err(GuardianError::NotebookAccessError(
+                    "Guardian cookie and or notebook_status_cookie not found".to_string(),
+                )),
+                error
+            )
+        }
+    };
+
+    // check status on k8s
+    let ready =
+        KubeAPI::<Pod>::check_pod_running(&(notebook_helper::make_notebook_name(&guardian_cookie.subject) + "-0"))
+            .await?;
+
+    if ready {
+        let notebook_status_cookie = NotebookStatusCookie {
+            start_time: notebook_cookie.start_time,
+            status: "Ready".to_string(),
+        };
+        let notebook_status_json = serde_json::to_string(&notebook_status_cookie).map_err(|e| {
+            GuardianError::GeneralError(format!(
+                "Could not serialize notebook status cookie: {}",
+                e
+            ))
+        })?;
+        let notebook_status_cookie =
+            Cookie::build(NOTEBOOK_STATUS_COOKIE_NAME, &notebook_status_json)
+                .path("/notebook_health")
+                .same_site(SameSite::Strict)
+                .secure(true)
+                .http_only(true)
+                .max_age(time::Duration::days(1))
+                .finish();
+
+        // Status code 286 is HTMX specific to stop caller from polling again
+        return Ok(HttpResponse::build(StatusCode::from_u16(286).unwrap())
+            .content_type(ContentType::form_url_encoded())
+            .cookie(notebook_status_cookie)
+            .body("hi"));
+    }
+
+    // This will make the htmx on client side poll
+    Ok(HttpResponse::Ok().finish())
 }
 
 #[instrument(skip(payload))]
@@ -328,7 +411,8 @@ async fn notebook_forward(
     helper::forwarding::forward(req, payload, method, peer_addr, client, new_url).await
 }
 
-mod notebook_helper {
+pub mod notebook_helper {
+    use crate::db::models::{NotebookStatusCookie, User, UserNotebook};
     use crate::kube::NAMESPACE;
     use crate::web::route::notebook::NOTEBOOK_PORT;
 
@@ -365,6 +449,27 @@ mod notebook_helper {
             ),
         }
     }
+
+    pub(super) fn make_path(name: &str, path: Option<&str>) -> String {
+        match path {
+            Some(p) => format!("/notebook/{}/{}/{}", NAMESPACE, name, p),
+            None => format!("/notebook/{}/{}", NAMESPACE, name),
+        }
+    }
+
+    impl From<&User> for UserNotebook {
+        fn from(user: &User) -> Self {
+            UserNotebook {
+                url: make_path(&make_notebook_name(&user._id.to_string()), None),
+                name: user._id.to_string(),
+                start_time: user
+                    .notebook
+                    .map(|x| x.to_string())
+                    .unwrap_or_else(|| "None".to_string()),
+                status: "Pending".to_string(),
+            }
+        }
+    }
 }
 
 pub fn config_notebook(cfg: &mut web::ServiceConfig) {
@@ -380,7 +485,8 @@ pub fn config_notebook(cfg: &mut web::ServiceConfig) {
             .wrap(CookieCheck)
             .wrap(Htmx)
             .service(notebook_create)
-            .service(notebook_delete),
+            .service(notebook_delete)
+            .service(notebook_status),
     );
 }
 

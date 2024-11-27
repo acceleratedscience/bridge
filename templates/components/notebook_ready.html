@@ -1,0 +1,8 @@
+{# Notebook Polling #}
+
+<p>You have a notebook currently running.</p>
+<p>Spun up on: {{ notebook.start_time }}</p>
+<p>Go to her: <a href="{{ notebook.url }}" target="_blank">Let's Go!</a></p>
+<cds-button hx-delete="/notebook_manage/hx/delete" hx-target="#notebook-wrapper" hx-swap="innerhtml">
+	Stop notebook
+</cds-button>

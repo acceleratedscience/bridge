@@ -1,6 +1,6 @@
 use std::{fmt::Debug, sync::OnceLock};
 
-use k8s_openapi::{api::core::v1::Namespace, NamespaceResourceScope};
+use k8s_openapi::{api::core::v1::{Namespace, Pod}, NamespaceResourceScope};
 use kube::{
     api::{DeleteParams, ObjectMeta, PostParams},
     Api, Client, Resource,
@@ -86,5 +86,17 @@ where
 
         ns.create(&PostParams::default(), &new_ns).await?;
         Ok(Some(()))
+    }
+
+    pub async fn check_pod_running(name: &str) -> Result<bool> {
+        let pods = Api::<Pod>::namespaced(
+            Self::get_kube_client()?.clone(),
+            NAMESPACE,
+        );
+        let pod = pods.get(name).await?;
+        Ok(pod.status
+            .as_ref()
+            .map(|status| status.phase == Some("Running".to_string()))
+            .unwrap_or(false))
     }
 }

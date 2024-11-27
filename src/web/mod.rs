@@ -20,6 +20,7 @@ mod helper;
 mod route;
 mod tls;
 
+pub use route::notebook::notebook_helper;
 pub use route::proxy::services;
 
 /// Starts the Guardian server either with or without TLS.
@@ -77,7 +78,6 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
             .wrap(guardian_middleware::custom_code_handle(tera_data))
             .wrap(middleware::NormalizePath::trim())
             .wrap(middleware::Compress::default())
-            .configure(route::notebook::config_notebook)
             .service(actix_files::Files::new("/static", "static"))
             .service(
                 web::scope("")
@@ -86,6 +86,7 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
                     .configure(route::auth::config_auth)
                     .configure(route::health::config_status)
                     .configure(route::proxy::config_proxy)
+                    .configure(route::notebook::config_notebook)
                     .configure(route::config_index)
                     .configure(route::portal::config_portal)
                     .configure(route::foo::config_foo),

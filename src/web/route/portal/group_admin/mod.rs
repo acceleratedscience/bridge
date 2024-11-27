@@ -80,6 +80,11 @@ pub(super) async fn group(
         Err(_) => vec![],
     };
 
+    let notebook = user
+        .notebook
+        .map(|n| n.to_string())
+        .unwrap_or("None".to_string());
+
     let mut ctx = tera::Context::new();
     ctx.insert("name", &user.user_name);
     ctx.insert("group", &user.groups.join(", "));
@@ -94,7 +99,7 @@ pub(super) async fn group(
         .collect::<Vec<&str>>()
         .contains(&NOTEBOOK_SUB_NAME)
     {
-        ctx.insert("notebook", &true);
+        ctx.insert("notebook", &notebook);
     }
 
     let content = helper::log_with_level!(data.render(USER_PAGE, &ctx), error)?;

@@ -54,6 +54,14 @@ pub struct User {
     pub last_updated_by: String,
 }
 
+#[derive(Debug, Deserialize, Serialize)]
+pub struct UserNotebook {
+    pub name: String,
+    pub url: String,
+    pub start_time: String,
+    pub status: String,
+}
+
 /// This is the form verison of the User struct
 #[derive(Debug)]
 pub struct UserForm {
@@ -112,11 +120,18 @@ pub struct GuardianCookie {
     pub subject: String,
     pub user_type: UserType,
 }
- 
+
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct NotebookCookie {
     /// The name of the subject the owns notebook CRD
     pub subject: String,
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct NotebookStatusCookie {
+    /// The name of the subject the owns notebook CRD
+    pub start_time: String,
+    pub status: String,
 }
 
 #[derive(Debug, Deserialize, Clone)]

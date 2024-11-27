@@ -8,7 +8,10 @@ use actix_web::{
 use futures::{future::LocalBoxFuture, FutureExt, TryFutureExt};
 use tracing::warn;
 
-use crate::{auth::COOKIE_NAME, db::models::GuardianCookie};
+use crate::{
+    auth::{COOKIE_NAME, NOTEBOOK_STATUS_COOKIE_NAME},
+    db::models::{GuardianCookie, NotebookStatusCookie},
+};
 
 pub struct CookieCheck;
 
@@ -51,6 +54,14 @@ where
                 let guardian_cookie_result = serde_json::from_str::<GuardianCookie>(&v);
                 match guardian_cookie_result {
                     Ok(gcs) => {
+                        // also insert notebook_status_cookie if available
+                        if let Some(ncs) = req.cookie(NOTEBOOK_STATUS_COOKIE_NAME) {
+                            if let Ok(ncs) =
+                                serde_json::from_str::<NotebookStatusCookie>(ncs.value())
+                            {
+                                req.extensions_mut().insert(ncs);
+                            }
+                        }
                         req.extensions_mut().insert(gcs);
                         self.service
                             .call(req)

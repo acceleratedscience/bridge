@@ -15,25 +15,23 @@ use tera::Tera;
 use tracing::instrument;
 
 use crate::{
-    db::models::{AdminTab, AdminTabs, GroupForm, UserDeleteForm, UserForm},
+    db::{
+        models::{
+            AdminTab, AdminTabs, Group, GroupForm, GuardianCookie, NotebookStatusCookie, User, UserDeleteForm, UserForm, UserNotebook, UserType, GROUP, USER
+        },
+        mongo::DB,
+        Database,
+    },
+    errors::{GuardianError, Result},
     web::{
         guardian_middleware::{Htmx, HTMX_ERROR_RES},
-        helper::{bson, payload_to_struct},
+        helper::{self, bson, payload_to_struct},
         route::{
             notebook::NOTEBOOK_SUB_NAME,
             portal::helper::{check_admin, get_all_groups},
         },
         services::CATALOG,
     },
-};
-use crate::{
-    db::{
-        models::{Group, GuardianCookie, User, UserType, GROUP, USER},
-        mongo::DB,
-        Database,
-    },
-    errors::{GuardianError, Result},
-    web::helper::{self},
 };
 
 use self::htmx::{
@@ -48,6 +46,7 @@ pub(super) async fn system(
     data: Data<Tera>,
     req: HttpRequest,
     subject: Option<ReqData<GuardianCookie>>,
+    nsc: Option<ReqData<NotebookStatusCookie>>,
     db: Data<&DB>,
 ) -> Result<HttpResponse> {
     // get the subject id from middleware
@@ -78,6 +77,12 @@ pub(super) async fn system(
         }
     }
 
+    let mut notebook = Into::<UserNotebook>::into(&user);
+    if let Some(nsc) = nsc {
+        let nsc = nsc.into_inner();
+        notebook.status = nsc.status;
+    }
+
     let group_name = user.groups.first().unwrap_or(&"".to_string()).clone();
 
     let subscriptions: Result<Group> = db.find(doc! {"name": group_name}, GROUP).await;
@@ -94,13 +99,14 @@ pub(super) async fn system(
     if let Some(token) = &user.token {
         helper::add_token_exp_to_tera(&mut ctx, token);
     }
+    // add notebook tab if user has a notebook subscription
     if subs
         .iter()
         .map(Deref::deref)
         .collect::<Vec<&str>>()
         .contains(&NOTEBOOK_SUB_NAME)
     {
-        ctx.insert("notebook", &true);
+        ctx.insert("notebook", &notebook);
     }
 
     let content = helper::log_with_level!(data.render(USER_PAGE, &ctx), error)?;

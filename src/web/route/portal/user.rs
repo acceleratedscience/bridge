@@ -66,7 +66,7 @@ pub(super) async fn user(
             )
             .await;
 
-        let mut profile = Profile::new(user.user_name, user.token);
+        let mut profile = Profile::new(&user);
 
         if let Ok(group) = group {
             user.groups.iter().for_each(|group| {
