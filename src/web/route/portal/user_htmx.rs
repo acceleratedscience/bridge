@@ -1,7 +1,7 @@
 use actix_web::web::Data;
 use tera::{Context, Tera};
 
-use crate::db::models::{User, UserNotebook};
+use crate::db::models::{NotebookStatusCookie, User, UserNotebook};
 use crate::errors::Result;
 
 pub struct Profile<'p> {
@@ -32,6 +32,7 @@ impl<'p> Profile<'p> {
     pub fn render(
         &self,
         tera: Data<Tera>,
+        nsc: Option<NotebookStatusCookie>,
         t_exp: impl FnOnce(&mut Context, &str),
     ) -> Result<String> {
         let mut context = tera::Context::new();
@@ -45,7 +46,11 @@ impl<'p> Profile<'p> {
             t_exp(&mut context, t);
         }
         if self.subscriptions.contains(&"notebook".to_string()) {
-            context.insert("notebook", &Into::<UserNotebook>::into(self.user));
+            let mut notebook = Into::<UserNotebook>::into(self.user);
+            if let Some(nsc) = nsc {
+                notebook.status = nsc.status;
+            }
+            context.insert("notebook", &notebook);
         }
 
         Ok(tera.render(PROFILE, &context)?)
