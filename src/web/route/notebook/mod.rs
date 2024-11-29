@@ -9,7 +9,7 @@ use mongodb::bson::doc;
 use serde::Deserialize;
 
 use actix_web::{
-    cookie::{self, Cookie, SameSite},
+    cookie::{Cookie, SameSite},
     delete,
     dev::PeerAddr,
     get,
@@ -61,6 +61,7 @@ async fn notebook_ws_subscribe(
         }
     };
     let url = notebook_helper::make_forward_url(
+        &notebook_cookie.ip,
         &notebook_helper::make_notebook_name(&notebook_cookie.subject),
         "ws",
         Some("api/events/subscribe"),
@@ -102,6 +103,7 @@ async fn notebook_ws_session(
         kernel_id, session_id
     );
     let url = notebook_helper::make_forward_url(
+        &notebook_cookie.ip,
         &notebook_helper::make_notebook_name(&notebook_cookie.subject),
         "ws",
         Some(&path),
@@ -219,6 +221,7 @@ async fn notebook_create(
 
         let notebook_cookie = NotebookCookie {
             subject: guardian_cookie.subject,
+            ip: String::new(),
         };
         let notebook_status_cookie = NotebookStatusCookie {
             start_time: current_time.to_string(),
@@ -345,9 +348,9 @@ async fn notebook_delete(
 async fn notebook_status(
     data: Data<Tera>,
     subject: Option<ReqData<GuardianCookie>>,
-    notebook_cookie: Option<ReqData<NotebookStatusCookie>>,
+    nsc: Option<ReqData<NotebookStatusCookie>>,
 ) -> Result<HttpResponse> {
-    let (guardian_cookie, notebook_cookie) = match (subject, notebook_cookie) {
+    let (guardian_cookie, nsc) = match (subject, nsc) {
         (Some(gc), Some(ncs)) => (gc.into_inner(), ncs.into_inner()),
         _ => {
             return helper::log_with_level!(
@@ -366,16 +369,32 @@ async fn notebook_status(
     .await?;
 
     if ready {
+        let ip = KubeAPI::<Pod>::get_pod_ip(
+            &(notebook_helper::make_notebook_name(&guardian_cookie.subject) + "-0"),
+        )
+        .await?;
+
         let notebook_status_cookie = NotebookStatusCookie {
-            start_time: notebook_cookie.start_time,
+            start_time: nsc.start_time,
             status: "Ready".to_string(),
         };
-        let notebook_status_json = serde_json::to_string(&notebook_status_cookie).map_err(|e| {
-            GuardianError::GeneralError(format!(
-                "Could not serialize notebook status cookie: {}",
-                e
-            ))
+        let notebook_cookie = NotebookCookie {
+            subject: guardian_cookie.subject.clone(),
+            ip,
+        };
+
+        let notebook_status_json =
+            serde_json::to_string(&notebook_status_cookie).map_err(|er| {
+                GuardianError::GeneralError(format!(
+                    "Could not serialize notebook status cookie: {}",
+                    er
+                ))
+            })?;
+        let notebook_cookie_json = serde_json::to_string(&notebook_cookie).map_err(|er| {
+            GuardianError::GeneralError(format!("Could not serialize notebook cookie: {}", er))
         })?;
+
+        // TODO: We are leveraing cookies to avoid DB calls... but look into not doing this anymore
         let notebook_status_cookie_updated =
             Cookie::build(NOTEBOOK_STATUS_COOKIE_NAME, &notebook_status_json)
                 .path("/")
@@ -384,6 +403,13 @@ async fn notebook_status(
                 .http_only(true)
                 .max_age(time::Duration::days(1))
                 .finish();
+        let notebook_cookie_updated = Cookie::build(NOTEBOOK_COOKIE_NAME, &notebook_cookie_json)
+            .path("/notebook")
+            .same_site(SameSite::Strict)
+            .secure(true)
+            .http_only(true)
+            .max_age(time::Duration::days(1))
+            .finish();
 
         let notebook = Into::<UserNotebook>::into((&guardian_cookie, &notebook_status_cookie));
         let mut ctx = Context::new();
@@ -395,6 +421,7 @@ async fn notebook_status(
         return Ok(HttpResponse::build(StatusCode::from_u16(286).unwrap())
             .content_type(ContentType::form_url_encoded())
             .cookie(notebook_status_cookie_updated)
+            .cookie(notebook_cookie_updated)
             .body(content));
     }
 
@@ -427,6 +454,7 @@ async fn notebook_forward(
 
     // look up service and get url
     let mut new_url = Url::from_str(&notebook_helper::make_forward_url(
+        &notebook_cookie.ip,
         &notebook_helper::make_notebook_name(&notebook_cookie.subject),
         "http",
         None,
@@ -450,7 +478,7 @@ pub mod notebook_helper {
         format!("{}-notebook-volume-pvc", subject)
     }
 
-    pub(super) fn make_forward_url(name: &str, protocol: &str, path: Option<&str>) -> String {
+    pub(super) fn make_forward_url(ip: &str, name: &str, protocol: &str, path: Option<&str>) -> String {
         if cfg!(debug_assertions) {
             return match path {
                 Some(p) => format!(
@@ -466,12 +494,12 @@ pub mod notebook_helper {
         match path {
             // TODO: This is super cumbersome... FIX IT FIX IT!
             Some(p) => format!(
-                "{}://{}-0.{}.pod.cluster.local:{}/notebook/{}/{}/{}",
-                protocol, name, NAMESPACE, NOTEBOOK_PORT, NAMESPACE, name, p
+                "{}://{}:{}/notebook/{}/{}/{}",
+                protocol, ip, NOTEBOOK_PORT, NAMESPACE, name, p
             ),
             None => format!(
-                "{}://{}-0.{}.pod.cluster.local:{}/notebook/{}/{}",
-                protocol, name, NAMESPACE, NOTEBOOK_PORT, NAMESPACE, name
+                "{}://{}:{}/notebook/{}/{}",
+                protocol, ip, NOTEBOOK_PORT, NAMESPACE, name
             ),
         }
     }
@@ -522,7 +550,7 @@ pub fn config_notebook(cfg: &mut web::ServiceConfig) {
     .service(
         web::scope("/notebook_manage/hx")
             .wrap(CookieCheck)
-            // .wrap(Htmx)
+            .wrap(Htmx)
             .service(notebook_create)
             .service(notebook_delete)
             .service(notebook_status),

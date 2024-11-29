@@ -49,8 +49,8 @@ async fn maintenance(data: Data<Tera>) -> Result<HttpResponse> {
 }
 
 #[post("mode")]
-async fn mode(req: HttpRequest, pl: web::Payload) -> Result<HttpResponse> {
-    let payload = payload_to_struct::<MaintenanceMode>(pl).await?;
+async fn mode(_req: HttpRequest, pl: web::Payload) -> Result<HttpResponse> {
+    let _payload = payload_to_struct::<MaintenanceMode>(pl).await?;
     Ok(HttpResponse::Ok().finish())
 }
 

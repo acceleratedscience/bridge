@@ -1,5 +1,5 @@
 # Stage 1 build
-FROM rust:1.81.0 AS builder
+FROM rust:1.82.0 AS builder
 
 WORKDIR /app
 

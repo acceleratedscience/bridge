@@ -100,4 +100,15 @@ where
             .map(|status| status.phase == Some("Running".to_string()))
             .unwrap_or(false))
     }
+
+    pub async  fn get_pod_ip(name: &str) -> Result<String> {
+        let pods = Api::<Pod>::namespaced(Self::get_kube_client()?.clone(), NAMESPACE);
+        let pod = pods.get(name).await?;
+        Ok(pod
+            .status
+            .as_ref()
+            .and_then(|status| status.pod_ip.as_deref())
+            .unwrap_or_default()
+            .to_string())
+    }
 }

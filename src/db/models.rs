@@ -125,11 +125,11 @@ pub struct GuardianCookie {
 pub struct NotebookCookie {
     /// The name of the subject the owns notebook CRD
     pub subject: String,
+    pub ip: String,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct NotebookStatusCookie {
-    /// The name of the subject the owns notebook CRD
     pub start_time: String,
     pub status: String,
 }
