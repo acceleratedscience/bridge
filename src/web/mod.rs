@@ -7,14 +7,14 @@ use actix_web::{
 };
 use tracing::{error, level_filters::LevelFilter};
 
+#[cfg(feature = "notebook")]
+use crate::kube;
 use crate::{
     auth::openid,
     db::mongo::{DB, DBCONN},
     logger::Logger,
     templating,
 };
-#[cfg(feature = "notebook")]
-use crate::kube;
 
 mod guardian_middleware;
 mod helper;
@@ -84,23 +84,20 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
             .wrap(guardian_middleware::custom_code_handle(tera_data))
             .wrap(middleware::NormalizePath::trim())
             .wrap(middleware::Compress::default())
-            .service(actix_files::Files::new("/static", "static"))
-            .service(
-                web::scope("")
-                    .wrap(guardian_middleware::Maintainence)
-                    .wrap(guardian_middleware::SecurityHeader)
-                    .configure(route::auth::config_auth)
-                    .configure(route::health::config_status)
-                    .configure(route::proxy::config_proxy)
-                    .configure(route::config_index)
-                    .configure(route::portal::config_portal)
-                    .configure(route::foo::config_foo),
-            );
-
+            .service(actix_files::Files::new("/static", "static"));
         #[cfg(feature = "notebook")]
-        let app =app
-            .configure(route::notebook::config_notebook);
-        app
+        let app = app.configure(route::notebook::config_notebook);
+        app.service(
+            web::scope("")
+                .wrap(guardian_middleware::Maintainence)
+                .wrap(guardian_middleware::SecurityHeader)
+                .configure(route::auth::config_auth)
+                .configure(route::health::config_status)
+                .configure(route::proxy::config_proxy)
+                .configure(route::config_index)
+                .configure(route::portal::config_portal)
+                .configure(route::foo::config_foo),
+        )
     });
 
     if with_tls {

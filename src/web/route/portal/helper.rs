@@ -161,10 +161,10 @@ where
                         Err(err) => return Err(err),
                     }
                 }
-
-                ctx.insert("notebook", &user_notebook);
             }
         }
+
+        ctx.insert("notebook", &user_notebook);
     }
 
     Ok(None)

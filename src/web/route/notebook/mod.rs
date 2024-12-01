@@ -347,6 +347,7 @@ async fn notebook_delete(
 #[get("status")]
 async fn notebook_status(
     data: Data<Tera>,
+    client: Data<reqwest::Client>,
     subject: Option<ReqData<GuardianCookie>>,
     nsc: Option<ReqData<NotebookStatusCookie>>,
 ) -> Result<HttpResponse> {
@@ -373,6 +374,22 @@ async fn notebook_status(
             &(notebook_helper::make_notebook_name(&guardian_cookie.subject) + "-0"),
         )
         .await?;
+
+        // ping the notebook for 200 status, that way we only serve notebook when it is ready
+        let url = notebook_helper::make_forward_url(
+            &ip,
+            &notebook_helper::make_notebook_name(&guardian_cookie.subject),
+            "http",
+            None,
+        );
+        let resp = client
+            .get(url)
+            .send()
+            .await
+            .map_err(|e| GuardianError::GeneralError(e.to_string()))?;
+        if !resp.status().is_success() {
+            return Ok(HttpResponse::ServiceUnavailable().finish());
+        }
 
         let notebook_status_cookie = NotebookStatusCookie {
             start_time: nsc.start_time,
