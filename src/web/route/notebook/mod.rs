@@ -470,7 +470,7 @@ pub mod notebook_helper {
     use crate::kube::NAMESPACE;
     use crate::web::route::notebook::NOTEBOOK_PORT;
 
-    pub(super) fn make_notebook_name(subject: &str) -> String {
+    pub(crate) fn make_notebook_name(subject: &str) -> String {
         format!("{}-notebook", subject)
     }
 
@@ -478,7 +478,12 @@ pub mod notebook_helper {
         format!("{}-notebook-volume-pvc", subject)
     }
 
-    pub(super) fn make_forward_url(ip: &str, name: &str, protocol: &str, path: Option<&str>) -> String {
+    pub(super) fn make_forward_url(
+        ip: &str,
+        name: &str,
+        protocol: &str,
+        path: Option<&str>,
+    ) -> String {
         if cfg!(debug_assertions) {
             return match path {
                 Some(p) => format!(

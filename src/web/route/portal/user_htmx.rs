@@ -1,8 +1,15 @@
-use actix_web::web::Data;
+use actix_web::{
+    cookie::Cookie,
+    web::{Data, ReqData},
+};
 use tera::{Context, Tera};
 
-use crate::db::models::{NotebookStatusCookie, User, UserNotebook};
-use crate::errors::Result;
+use crate::{
+    db::models::{NotebookStatusCookie, User},
+    errors::Result,
+};
+
+use super::helper::notebook_bookkeeping;
 
 pub struct Profile<'p> {
     pub groups: Vec<String>,
@@ -29,12 +36,12 @@ impl<'p> Profile<'p> {
         self.subscriptions.push(subscription);
     }
 
-    pub fn render(
+    pub async fn render(
         &self,
         tera: Data<Tera>,
-        nsc: Option<NotebookStatusCookie>,
+        nsc: Option<ReqData<NotebookStatusCookie>>,
         t_exp: impl FnOnce(&mut Context, &str),
-    ) -> Result<String> {
+    ) -> Result<(String, Option<[Cookie; 2]>)> {
         let mut context = tera::Context::new();
         context.insert("group", &self.groups.join(", "));
         context.insert("subscriptions", &self.subscriptions);
@@ -45,14 +52,9 @@ impl<'p> Profile<'p> {
         if let Some(t) = &self.user.token {
             t_exp(&mut context, t);
         }
-        if self.subscriptions.contains(&"notebook".to_string()) {
-            let mut notebook = Into::<UserNotebook>::into(self.user);
-            if let Some(nsc) = nsc {
-                notebook.status = nsc.status;
-            }
-            context.insert("notebook", &notebook);
-        }
+        let nb_cookies =
+            notebook_bookkeeping(self.user, nsc, &mut context, self.subscriptions.clone()).await?;
 
-        Ok(tera.render(PROFILE, &context)?)
+        Ok((tera.render(PROFILE, &context)?, nb_cookies))
     }
 }

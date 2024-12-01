@@ -1,4 +1,4 @@
-use std::{marker::PhantomData, ops::Deref, str::FromStr};
+use std::{marker::PhantomData, str::FromStr};
 
 use actix_web::{
     get,
@@ -16,7 +16,7 @@ use crate::{
     db::{
         models::{
             AdminTab, AdminTabs, Group, GuardianCookie, ModifyUser, NotebookStatusCookie, User,
-            UserGroupMod, UserNotebook, UserType, GROUP, USER,
+            UserGroupMod, UserType, GROUP, USER,
         },
         mongo::DB,
         Database,
@@ -25,7 +25,7 @@ use crate::{
     web::{
         guardian_middleware::{Htmx, HTMX_ERROR_RES},
         helper::{self, bson},
-        route::{notebook::NOTEBOOK_SUB_NAME, portal::helper::check_admin},
+        route::portal::helper::{check_admin, notebook_bookkeeping},
     },
 };
 
@@ -81,12 +81,6 @@ pub(super) async fn group(
         Err(_) => vec![],
     };
 
-    let mut notebook = Into::<UserNotebook>::into(&user);
-    if let Some(nsc) = nsc {
-        let nsc = nsc.into_inner();
-        notebook.status = nsc.status;
-    }
-
     let mut ctx = tera::Context::new();
     ctx.insert("name", &user.user_name);
     ctx.insert("group", &user.groups.join(", "));
@@ -95,16 +89,15 @@ pub(super) async fn group(
     if let Some(token) = &user.token {
         helper::add_token_exp_to_tera(&mut ctx, token);
     }
-    if subs
-        .iter()
-        .map(Deref::deref)
-        .collect::<Vec<&str>>()
-        .contains(&NOTEBOOK_SUB_NAME)
-    {
-        ctx.insert("notebook", &notebook);
-    }
 
+    // add notebook tab if user has a notebook subscription
+    let nb_cookies = notebook_bookkeeping(&user, nsc, &mut ctx, subs).await?;
     let content = helper::log_with_level!(data.render(USER_PAGE, &ctx), error)?;
+
+    // no bound checks here
+    if let Some([nc, nsc]) = nb_cookies {
+        return Ok(HttpResponse::Ok().cookie(nc).cookie(nsc).body(content));
+    }
 
     return Ok(HttpResponse::Ok().body(content));
 }

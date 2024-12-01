@@ -101,7 +101,7 @@ where
             .unwrap_or(false))
     }
 
-    pub async  fn get_pod_ip(name: &str) -> Result<String> {
+    pub async fn get_pod_ip(name: &str) -> Result<String> {
         let pods = Api::<Pod>::namespaced(Self::get_kube_client()?.clone(), NAMESPACE);
         let pod = pods.get(name).await?;
         Ok(pod

@@ -1,4 +1,4 @@
-use std::{marker::PhantomData, ops::Deref, str::FromStr};
+use std::{marker::PhantomData, str::FromStr};
 
 mod htmx;
 
@@ -18,7 +18,7 @@ use crate::{
     db::{
         models::{
             AdminTab, AdminTabs, Group, GroupForm, GuardianCookie, NotebookStatusCookie, User,
-            UserDeleteForm, UserForm, UserNotebook, UserType, GROUP, USER,
+            UserDeleteForm, UserForm, UserType, GROUP, USER,
         },
         mongo::DB,
         Database,
@@ -27,10 +27,7 @@ use crate::{
     web::{
         guardian_middleware::{Htmx, HTMX_ERROR_RES},
         helper::{self, bson, payload_to_struct},
-        route::{
-            notebook::NOTEBOOK_SUB_NAME,
-            portal::helper::{check_admin, get_all_groups},
-        },
+        route::portal::helper::{check_admin, get_all_groups, notebook_bookkeeping},
         services::CATALOG,
     },
 };
@@ -78,12 +75,6 @@ pub(super) async fn system(
         }
     }
 
-    let mut notebook = Into::<UserNotebook>::into(&user);
-    if let Some(nsc) = nsc {
-        let nsc = nsc.into_inner();
-        notebook.status = nsc.status;
-    }
-
     let group_name = user.groups.first().unwrap_or(&"".to_string()).clone();
 
     let subscriptions: Result<Group> = db.find(doc! {"name": group_name}, GROUP).await;
@@ -100,17 +91,15 @@ pub(super) async fn system(
     if let Some(token) = &user.token {
         helper::add_token_exp_to_tera(&mut ctx, token);
     }
-    // add notebook tab if user has a notebook subscription
-    if subs
-        .iter()
-        .map(Deref::deref)
-        .collect::<Vec<&str>>()
-        .contains(&NOTEBOOK_SUB_NAME)
-    {
-        ctx.insert("notebook", &notebook);
-    }
 
+    // add notebook tab if user has a notebook subscription
+    let nb_cookies = notebook_bookkeeping(&user, nsc, &mut ctx, subs).await?;
     let content = helper::log_with_level!(data.render(USER_PAGE, &ctx), error)?;
+
+    // no bound checks here
+    if let Some([nc, nsc]) = nb_cookies {
+        return Ok(HttpResponse::Ok().cookie(nc).cookie(nsc).body(content));
+    }
 
     return Ok(HttpResponse::Ok().body(content));
 }

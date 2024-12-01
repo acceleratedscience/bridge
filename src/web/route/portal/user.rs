@@ -77,11 +77,19 @@ pub(super) async fn user(
                 profile.add_subscription(subscription.to_string());
             });
         }
-        let nsc = nsc.map(|nsc| nsc.into_inner());
-        let content =
-            helper::log_with_level!(profile.render(data, nsc, helper::add_token_exp_to_tera), error)?;
+        let content = helper::log_with_level!(
+            profile.render(data, nsc, helper::add_token_exp_to_tera).await,
+            error
+        )?;
 
-        return Ok(HttpResponse::Ok().body(content));
+        if let Some([nc, nsc]) = content.1 {
+            return Ok(HttpResponse::Ok()
+                .cookie(nc)
+                .cookie(nsc)
+                .body(content.0));
+        }
+
+        return Ok(HttpResponse::Ok().body(content.0));
     }
 
     helper::log_with_level!(
