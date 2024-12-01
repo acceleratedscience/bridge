@@ -27,10 +27,13 @@ use crate::{
     web::{
         guardian_middleware::{Htmx, HTMX_ERROR_RES},
         helper::{self, bson, payload_to_struct},
-        route::portal::helper::{check_admin, get_all_groups, notebook_bookkeeping},
+        route::portal::helper::{check_admin, get_all_groups},
         services::CATALOG,
     },
 };
+
+#[cfg(feature = "notebook")]
+use crate::web::route::portal::helper::notebook_bookkeeping;
 
 use self::htmx::{
     GroupContent, UserContent, CREATE_MODIFY_GROUP, MODIFY_USER, VIEW_GROUP, VIEW_USER,
@@ -93,9 +96,12 @@ pub(super) async fn system(
     }
 
     // add notebook tab if user has a notebook subscription
+    #[cfg(feature = "notebook")]
     let nb_cookies = notebook_bookkeeping(&user, nsc, &mut ctx, subs).await?;
+
     let content = helper::log_with_level!(data.render(USER_PAGE, &ctx), error)?;
 
+    #[cfg(feature = "notebook")]
     // no bound checks here
     if let Some([nc, nsc]) = nb_cookies {
         return Ok(HttpResponse::Ok().cookie(nc).cookie(nsc).body(content));

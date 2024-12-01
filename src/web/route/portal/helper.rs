@@ -1,27 +1,33 @@
-use std::{any::Any, ops::Deref};
+use std::any::Any;
+#[cfg(feature = "notebook")]
+use std::ops::Deref;
 
-use actix_web::{
-    cookie::{Cookie, SameSite},
-    web::ReqData,
-};
-use k8s_openapi::api::core::v1::Pod;
+#[cfg(feature = "notebook")]
+use actix_web::cookie::{Cookie, SameSite};
+use actix_web::web::ReqData;
 use mongodb::bson::doc;
+#[cfg(feature = "notebook")]
 use tera::Context;
 
 use crate::{
-    auth::{NOTEBOOK_COOKIE_NAME, NOTEBOOK_STATUS_COOKIE_NAME},
     db::{
-        models::{
-            Group, GuardianCookie, NotebookCookie, NotebookStatusCookie, User, UserNotebook,
-            UserType, GROUP,
-        },
+        models::{Group, GuardianCookie, User, UserType, GROUP},
         mongo::DB,
         Database,
     },
     errors::{GuardianError, Result},
-    kube::KubeAPI,
-    web::{helper, notebook_helper, route::notebook::NOTEBOOK_SUB_NAME},
+    web::helper,
 };
+
+#[cfg(feature = "notebook")]
+use crate::{
+    auth::{NOTEBOOK_COOKIE_NAME, NOTEBOOK_STATUS_COOKIE_NAME},
+    db::models::{NotebookCookie, NotebookStatusCookie, UserNotebook},
+    kube::KubeAPI,
+    web::{notebook_helper, route::notebook::NOTEBOOK_SUB_NAME},
+};
+#[cfg(feature = "notebook")]
+use k8s_openapi::api::core::v1::Pod;
 
 #[allow(dead_code)]
 #[allow(unused_variables)]
@@ -80,6 +86,7 @@ pub(super) async fn get_all_groups(db: &DB) -> Result<Vec<Group>> {
     })
 }
 
+#[cfg(feature = "notebook")]
 /// This is a helper function that takes care of the notebook setup for all users
 /// Is the user does not have access to notebooks, None is returned
 pub(super) async fn notebook_bookkeeping<'c, C>(

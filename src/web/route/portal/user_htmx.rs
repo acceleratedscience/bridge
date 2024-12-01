@@ -9,6 +9,7 @@ use crate::{
     errors::Result,
 };
 
+#[cfg(feature = "notebook")]
 use super::helper::notebook_bookkeeping;
 
 pub struct Profile<'p> {
@@ -36,6 +37,7 @@ impl<'p> Profile<'p> {
         self.subscriptions.push(subscription);
     }
 
+    #[allow(unused_variables)]
     pub async fn render(
         &self,
         tera: Data<Tera>,
@@ -52,9 +54,15 @@ impl<'p> Profile<'p> {
         if let Some(t) = &self.user.token {
             t_exp(&mut context, t);
         }
+
+        #[cfg(feature = "notebook")]
         let nb_cookies =
             notebook_bookkeeping(self.user, nsc, &mut context, self.subscriptions.clone()).await?;
 
-        Ok((tera.render(PROFILE, &context)?, nb_cookies))
+        #[cfg(feature = "notebook")]
+        return Ok((tera.render(PROFILE, &context)?, nb_cookies));
+
+        #[cfg(not(feature = "notebook"))]
+        Ok((tera.render(PROFILE, &context)?, None))
     }
 }

@@ -235,6 +235,7 @@ pub mod forwarding {
     }
 }
 
+#[cfg(feature = "notebook")]
 /// Websocket proxying utilities
 pub mod ws {
     use actix_web::{

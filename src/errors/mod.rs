@@ -61,6 +61,7 @@ pub enum GuardianError {
     RecordSearchError(String),
     #[error("{0}")]
     WSError(#[from] actix_web::error::Error),
+    #[cfg(feature = "notebook")]
     #[error("{0}")]
     KubeError(#[from] kube::Error),
     #[error("{0}")]
@@ -135,6 +136,7 @@ impl ResponseError for GuardianError {
             GuardianError::MongoError(_) => StatusCode::INTERNAL_SERVER_ERROR,
             GuardianError::SerdeJsonError(_) => StatusCode::INTERNAL_SERVER_ERROR,
             GuardianError::WSError(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            #[cfg(feature = "notebook")]
             GuardianError::KubeError(_) => StatusCode::INTERNAL_SERVER_ERROR,
             GuardianError::KubeClientError(_) => StatusCode::INTERNAL_SERVER_ERROR,
 

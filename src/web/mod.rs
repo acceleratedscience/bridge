@@ -10,16 +10,18 @@ use tracing::{error, level_filters::LevelFilter};
 use crate::{
     auth::openid,
     db::mongo::{DB, DBCONN},
-    kube,
     logger::Logger,
     templating,
 };
+#[cfg(feature = "notebook")]
+use crate::kube;
 
 mod guardian_middleware;
 mod helper;
 mod route;
 mod tls;
 
+#[cfg(feature = "notebook")]
 pub use route::notebook::notebook_helper;
 pub use route::proxy::services;
 
@@ -45,13 +47,16 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
         Logger::start(LevelFilter::WARN);
     }
 
+    #[cfg(feature = "notebook")]
     rustls::crypto::ring::default_provider()
         .install_default()
         .expect("Cannot install default provider");
 
     // Singletons
     openid::init_once().await;
+    #[cfg(feature = "notebook")]
     kube::init_once().await;
+
     if let Err(e) = DB::init_once("guardian").await {
         error!("{e}");
         exit(1);
@@ -71,7 +76,7 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
             }
         });
 
-        App::new()
+        let app = App::new()
             // .wrap(guardian_middleware::HttpRedirect)
             .app_data(tera_data.clone())
             .app_data(client_data)
@@ -80,7 +85,6 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
             .wrap(middleware::NormalizePath::trim())
             .wrap(middleware::Compress::default())
             .service(actix_files::Files::new("/static", "static"))
-            .configure(route::notebook::config_notebook)
             .service(
                 web::scope("")
                     .wrap(guardian_middleware::Maintainence)
@@ -91,7 +95,12 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
                     .configure(route::config_index)
                     .configure(route::portal::config_portal)
                     .configure(route::foo::config_foo),
-            )
+            );
+
+        #[cfg(feature = "notebook")]
+        let app =app
+            .configure(route::notebook::config_notebook);
+        app
     });
 
     if with_tls {

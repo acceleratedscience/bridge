@@ -11,8 +11,7 @@ path = "./src/main.rs"
 members = ["utils"]
 
 [features]
-notebook = ["kube"]
-kube = []
+notebook = ["dep:kube", "dep:k8s-openapi", "dep:schemars", "dep:either"]
 
 [dependencies]
 # Async dep
@@ -58,10 +57,10 @@ mongodb = "~3.0"
 #macro
 utils = { path = "utils" }
 # Kubernetes
-kube = { version = "0.97", features = ["runtime", "derive"] }
-k8s-openapi = { version = "0.23", features = ["latest"] }
-schemars = "0.8.21"
-either = "1.13.0"
+kube = { version = "0.97", features = ["runtime", "derive"], optional = true }
+k8s-openapi = { version = "0.23", features = ["latest"], optional = true }
+schemars = { version = "0.8.21", optional = true }
+either = { version= "1.13.0", optional = true }
 
 [workspace.dependencies]
 quote = "1.0"
