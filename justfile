@@ -4,6 +4,9 @@ down-local-mongo:
 build:
 	podman build -t guardian .
 
+build-notebook:
+	podman build -f Dockerfile_notebook -t guardian .
+
 local-mongo:
 	podman run -d --rm --name mongodb \
 	-e MONGODB_ROOT_PASSWORD="admin123456789" \
