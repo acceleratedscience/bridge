@@ -16,7 +16,8 @@ pub static CATALOG: LazyLock<Catalog> = LazyLock::new(|| {
         .unwrap(),
     )
 });
-pub static CATALOG_URLS: LazyLock<Vec<(Url, String)>> = LazyLock::new(|| LazyLock::force(&CATALOG).into());
+pub static CATALOG_URLS: LazyLock<Vec<(Url, String)>> =
+    LazyLock::new(|| LazyLock::force(&CATALOG).into());
 
 impl Catalog {
     pub fn get(&self, service_name: &str) -> Result<Url> {
@@ -44,6 +45,16 @@ impl From<&Catalog> for Vec<(Url, String)> {
             return map
                 .iter()
                 .filter_map(|(name, service)| {
+                    // In the service.toml, there are entries that are not services with health
+                    // endpoints, such as notebooks. We need to filter them out.
+                    if !service
+                        .get("check")
+                        .and_then(Value::as_bool)
+                        .unwrap_or(false)
+                    {
+                        return None;
+                    }
+
                     let health_endpoint = service
                         .get("readiness")
                         .and_then(Value::as_str)
@@ -71,13 +82,16 @@ mod test {
         let catalog = &CATALOG;
         let service = catalog.get("postman").unwrap();
         assert_eq!(service.as_str(), "https://postman-echo.com/");
+
+        let service = catalog.get("notebook");
+        assert!(service.is_err());
     }
 
     #[test]
     fn test_catalog_into() {
         let catalog = &CATALOG;
         let services: Vec<(Url, String)> = LazyLock::force(catalog).into();
-        assert_eq!(services.len(), 6);
+        assert_eq!(services.len(), 7);
 
         let postman = services.iter().find(|(_, name)| name == "postman");
         assert!(postman.is_some());

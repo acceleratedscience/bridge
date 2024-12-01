@@ -13,7 +13,7 @@ use tracing::instrument;
 
 use crate::{
     auth::{
-        openid::{self, get_openid_provider, OpenID},
+        openid::{get_openid_provider, OpenID, OpenIDProvider},
         COOKIE_NAME,
     },
     db::{
@@ -29,6 +29,8 @@ use self::deserialize::CallBackResponse;
 
 mod deserialize;
 
+const NONCE_COOKIE: &str = "nonce";
+
 #[get("/login")]
 #[instrument]
 async fn login(req: HttpRequest) -> Result<HttpResponse> {
@@ -42,7 +44,7 @@ async fn login(req: HttpRequest) -> Result<HttpResponse> {
 
     // store nonce with the client that expires in 5 minutes, if the user does not complete the
     // authentication process in 5 minutes, they will be required to start over
-    let cookie = Cookie::build("nonce", url.2.secret())
+    let cookie = Cookie::build(NONCE_COOKIE, url.2.secret())
         .expires(time::OffsetDateTime::now_utc() + time::Duration::minutes(5))
         .same_site(SameSite::Lax)
         .http_only(true)
@@ -56,30 +58,30 @@ async fn login(req: HttpRequest) -> Result<HttpResponse> {
         .finish())
 }
 
-#[get("/redirect")]
+#[get("/callback/{provider}")]
 #[instrument(skip(data, db))]
-async fn redirect(req: HttpRequest, data: Data<Tera>, db: Data<&DB>) -> Result<HttpResponse> {
+async fn callback(
+    req: HttpRequest,
+    data: Data<Tera>,
+    db: Data<&DB>,
+    path: web::Path<String>,
+) -> Result<HttpResponse> {
     let query = req.query_string();
     let deserializer = serde::de::value::StrDeserializer::<serde::de::value::Error>::new(query);
     let callback_response =
         helper::log_with_level!(CallBackResponse::deserialize(deserializer), error)?;
 
-    let openid = helper::log_with_level!(get_openid_provider(openid::OpenIDProvider::W3), error)?;
+    let openid_kind = Into::<OpenIDProvider>::into(path.into_inner().as_str());
+    if let OpenIDProvider::None = openid_kind {
+        return helper::log_with_level!(
+            Err(GuardianError::GeneralError(
+                "Invalid Open id connect provider".to_string()
+            )),
+            error
+        );
+    }
 
-    // get token from auth server
-    code_to_response(callback_response.code, req, openid, data, db).await
-}
-
-#[get("/callback")]
-#[instrument(skip(data, db))]
-async fn callback(req: HttpRequest, data: Data<Tera>, db: Data<&DB>) -> Result<HttpResponse> {
-    let query = req.query_string();
-    let deserializer = serde::de::value::StrDeserializer::<serde::de::value::Error>::new(query);
-    let callback_response =
-        helper::log_with_level!(CallBackResponse::deserialize(deserializer), error)?;
-
-    let openid =
-        helper::log_with_level!(get_openid_provider(openid::OpenIDProvider::IbmId), error)?;
+    let openid = helper::log_with_level!(get_openid_provider(openid_kind), error)?;
 
     // get token from auth server
     code_to_response(callback_response.code, req, openid, data, db).await
@@ -96,7 +98,7 @@ async fn code_to_response(
 
     // get nonce cookie from client
     let nonce = helper::log_with_level!(
-        req.cookie("nonce")
+        req.cookie(NONCE_COOKIE)
             .ok_or_else(|| GuardianError::NonceCookieNotFound),
         error
     )?;
@@ -160,6 +162,7 @@ async fn code_to_response(
                         groups: vec![],
                         user_type: UserType::User,
                         token: None,
+                        notebook: None,
                         created_at: time,
                         updated_at: time,
                         last_updated_by: email,
@@ -202,7 +205,7 @@ async fn code_to_response(
     ctx.insert("name", &name);
     let rendered = helper::log_with_level!(data.render("pages/login_success.html", &ctx), error)?;
 
-    let mut cookie_remove = Cookie::build("nonce", "")
+    let mut cookie_remove = Cookie::build(NONCE_COOKIE, "")
         .same_site(SameSite::Lax)
         .http_only(true)
         .secure(true)
@@ -217,10 +220,5 @@ async fn code_to_response(
 }
 
 pub fn config_auth(cfg: &mut web::ServiceConfig) {
-    cfg.service(
-        web::scope("/auth")
-            .service(login)
-            .service(redirect)
-            .service(callback),
-    );
+    cfg.service(web::scope("/auth").service(login).service(callback));
 }

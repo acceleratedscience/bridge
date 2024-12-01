@@ -48,9 +48,18 @@ pub struct User {
     pub groups: Vec<String>,
     pub user_type: UserType,
     pub token: Option<String>,
+    pub notebook: Option<time::OffsetDateTime>,
     pub created_at: time::OffsetDateTime,
     pub updated_at: time::OffsetDateTime,
     pub last_updated_by: String,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct UserNotebook {
+    pub name: String,
+    pub url: String,
+    pub start_time: String,
+    pub status: String,
 }
 
 /// This is the form verison of the User struct
@@ -112,6 +121,19 @@ pub struct GuardianCookie {
     pub user_type: UserType,
 }
 
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct NotebookCookie {
+    /// The name of the subject the owns notebook CRD
+    pub subject: String,
+    pub ip: String,
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct NotebookStatusCookie {
+    pub start_time: String,
+    pub status: String,
+}
+
 #[derive(Debug, Deserialize, Clone)]
 pub enum AdminTab {
     Profile,
@@ -128,6 +150,12 @@ pub struct AdminTabs {
     pub tab: AdminTab,
     pub user: Option<String>,
     pub group: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct MaintenanceMode {
+    pub enabled: bool,
+    pub message: String,
 }
 
 #[cfg(test)]

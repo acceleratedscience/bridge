@@ -15,8 +15,8 @@ use tracing::instrument;
 use crate::{
     db::{
         models::{
-            AdminTab, AdminTabs, Group, GuardianCookie, ModifyUser, User, UserGroupMod, UserType,
-            GROUP, USER,
+            AdminTab, AdminTabs, Group, GuardianCookie, ModifyUser, NotebookStatusCookie, User,
+            UserGroupMod, UserType, GROUP, USER,
         },
         mongo::DB,
         Database,
@@ -29,6 +29,9 @@ use crate::{
     },
 };
 
+#[cfg(feature = "notebook")]
+use crate::web::route::portal::helper::notebook_bookkeeping;
+
 use self::htmx::ModifyUserGroup;
 
 mod htmx;
@@ -40,6 +43,7 @@ const USER_PAGE: &str = "pages/portal_group.html";
 pub(super) async fn group(
     data: Data<Tera>,
     req: HttpRequest,
+    nsc: Option<ReqData<NotebookStatusCookie>>,
     db: Data<&DB>,
     subject: Option<ReqData<GuardianCookie>>,
 ) -> Result<HttpResponse> {
@@ -89,7 +93,17 @@ pub(super) async fn group(
         helper::add_token_exp_to_tera(&mut ctx, token);
     }
 
+    // add notebook tab if user has a notebook subscription
+    #[cfg(feature = "notebook")]
+    let nb_cookies = notebook_bookkeeping(&user, nsc, &mut ctx, subs).await?;
+
     let content = helper::log_with_level!(data.render(USER_PAGE, &ctx), error)?;
+
+    #[cfg(feature = "notebook")]
+    // no bound checks here
+    if let Some([nc, nsc]) = nb_cookies {
+        return Ok(HttpResponse::Ok().cookie(nc).cookie(nsc).body(content));
+    }
 
     return Ok(HttpResponse::Ok().body(content));
 }

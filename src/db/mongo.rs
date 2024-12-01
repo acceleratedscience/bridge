@@ -1,8 +1,8 @@
-use std::{marker::PhantomData, sync::OnceLock};
+use std::{marker::PhantomData, str::FromStr, sync::OnceLock};
 
 use futures::{StreamExt, TryStreamExt};
 use mongodb::{
-    bson::{doc, Bson, Document, Regex},
+    bson::{doc, oid::ObjectId, Bson, Document, Regex},
     options::IndexOptions,
     Client, Collection, Database as MongoDatabase, IndexModel,
 };
@@ -21,6 +21,20 @@ use super::{
 #[derive(Clone)]
 pub struct DB {
     mongo_database: MongoDatabase,
+}
+
+#[derive(Clone)]
+pub struct ObjectID(ObjectId);
+
+impl ObjectID {
+    pub fn new(s: &str) -> Self {
+        ObjectID(ObjectId::from_str(s).unwrap_or_default())
+    }
+
+    #[inline]
+    pub fn into_inner(self) -> ObjectId {
+        self.0
+    }
 }
 
 pub static DBCONN: OnceLock<DB> = OnceLock::new();
@@ -58,6 +72,7 @@ impl DB {
         let col = Self::get_collection::<Z>(db, collection);
         let mut indexes = col.list_indexes().await?;
         while let Some(Ok(index)) = indexes.next().await {
+            // If the index already exists, return
             if collection == index.keys.to_string() {
                 return Ok(());
             }
@@ -86,7 +101,7 @@ impl DB {
     }
 }
 
-impl<'c, R1> Database<Document, &'c str, &'c str, R1, Bson, u64> for DB
+impl<'c, R1> Database<'c, R1> for DB
 where
     R1: Send + Sync + Serialize + DeserializeOwned,
 {
@@ -239,6 +254,7 @@ mod tests {
                     groups: vec!["ibm".to_string()],
                     user_type: UserType::SystemAdmin,
                     token: None,
+                    notebook: None,
                     created_at: time,
                     updated_at: time,
                     last_updated_by: "choi.mina@gmail.com".to_string(),

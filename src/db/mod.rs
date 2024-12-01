@@ -1,7 +1,11 @@
 use std::future::Future;
 use std::marker::PhantomData;
 
+use mongodb::bson::{Bson, Document};
+
 use crate::errors::Result;
+
+use self::models::User;
 
 pub mod deserialize;
 pub mod models;
@@ -14,7 +18,7 @@ pub mod mongo;
 // R1 is a generic type that represents a model, such as User and Group
 // R2 is a generic type that represents some ID that is linked to some record in the DB
 // R3 is a generic type that represents the number of records affected
-pub trait Database<Q, N, C, R1, R2, R3> {
+pub trait Database<'c, R1 = User, Q = Document, N = &'c str, C = &'c str, R2 = Bson, R3 = u64> {
     fn find(&self, query: Q, collection: C) -> impl Future<Output = Result<R1>>;
     fn find_many(&self, query: Q, collection: C) -> impl Future<Output = Result<Vec<R1>>>;
 

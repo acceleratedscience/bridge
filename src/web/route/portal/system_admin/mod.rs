@@ -15,23 +15,25 @@ use tera::Tera;
 use tracing::instrument;
 
 use crate::{
-    db::models::{AdminTab, AdminTabs, GroupForm, UserDeleteForm, UserForm},
-    web::{
-        guardian_middleware::{Htmx, HTMX_ERROR_RES},
-        helper::bson,
-        route::portal::helper::{check_admin, get_all_groups, payload_to_struct},
-        services::CATALOG_URLS,
-    },
-};
-use crate::{
     db::{
-        models::{Group, GuardianCookie, User, UserType, GROUP, USER},
+        models::{
+            AdminTab, AdminTabs, Group, GroupForm, GuardianCookie, NotebookStatusCookie, User,
+            UserDeleteForm, UserForm, UserType, GROUP, USER,
+        },
         mongo::DB,
         Database,
     },
     errors::{GuardianError, Result},
-    web::helper::{self},
+    web::{
+        guardian_middleware::{Htmx, HTMX_ERROR_RES},
+        helper::{self, bson, payload_to_struct},
+        route::portal::helper::{check_admin, get_all_groups},
+        services::CATALOG,
+    },
 };
+
+#[cfg(feature = "notebook")]
+use crate::web::route::portal::helper::notebook_bookkeeping;
 
 use self::htmx::{
     GroupContent, UserContent, CREATE_MODIFY_GROUP, MODIFY_USER, VIEW_GROUP, VIEW_USER,
@@ -45,6 +47,7 @@ pub(super) async fn system(
     data: Data<Tera>,
     req: HttpRequest,
     subject: Option<ReqData<GuardianCookie>>,
+    nsc: Option<ReqData<NotebookStatusCookie>>,
     db: Data<&DB>,
 ) -> Result<HttpResponse> {
     // get the subject id from middleware
@@ -92,7 +95,17 @@ pub(super) async fn system(
         helper::add_token_exp_to_tera(&mut ctx, token);
     }
 
+    // add notebook tab if user has a notebook subscription
+    #[cfg(feature = "notebook")]
+    let nb_cookies = notebook_bookkeeping(&user, nsc, &mut ctx, subs).await?;
+
     let content = helper::log_with_level!(data.render(USER_PAGE, &ctx), error)?;
+
+    #[cfg(feature = "notebook")]
+    // no bound checks here
+    if let Some([nc, nsc]) = nb_cookies {
+        return Ok(HttpResponse::Ok().cookie(nc).cookie(nsc).body(content));
+    }
 
     return Ok(HttpResponse::Ok().body(content));
 }
@@ -303,9 +316,16 @@ async fn system_tab_htmx(
         AdminTab::GroupModify | AdminTab::GroupView | AdminTab::GroupCreate => {
             let mut group_form = GroupContent::new();
 
-            CATALOG_URLS
+            CATALOG
+                .0
+                .get("services")
+                .and_then(|v| v.as_table())
+                .ok_or(GuardianError::GeneralError("No services found".to_string()))?
                 .iter()
-                .for_each(|(_, service_name)| group_form.add(service_name.to_owned()));
+                .for_each(|(k, _)| {
+                    // TODO: remove this clone and use &'static str
+                    group_form.add(k.clone());
+                });
 
             match tab.tab {
                 AdminTab::GroupView => {
@@ -337,7 +357,9 @@ async fn system_tab_htmx(
                             ctx.insert("group_name", &name);
                         }),
                     )?,
-                    None => return Err(GuardianError::GeneralError("No group provided".to_string())),
+                    None => {
+                        return Err(GuardianError::GeneralError("No group provided".to_string()))
+                    }
                 },
                 _ => unreachable!(),
             }

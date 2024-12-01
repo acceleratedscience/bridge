@@ -8,14 +8,11 @@ use actix_web::{
 use futures::{future::LocalBoxFuture, FutureExt, TryFutureExt};
 use tracing::warn;
 
-use crate::{
-    auth::{COOKIE_NAME, NOTEBOOK_STATUS_COOKIE_NAME},
-    db::models::{GuardianCookie, NotebookStatusCookie},
-};
+use crate::{auth::NOTEBOOK_COOKIE_NAME, db::models::NotebookCookie};
 
-pub struct CookieCheck;
+pub struct NotebookCookieCheck;
 
-impl<S, B> Transform<S, ServiceRequest> for CookieCheck
+impl<S, B> Transform<S, ServiceRequest> for NotebookCookieCheck
 where
     S: Service<ServiceRequest, Response = ServiceResponse<B>, Error = Error>,
     S::Future: 'static,
@@ -24,19 +21,19 @@ where
     type Response = ServiceResponse<EitherBody<B>>;
     type Error = Error;
     type InitError = ();
-    type Transform = CookieCheckMW<S>;
+    type Transform = NotebookCookieCheckMW<S>;
     type Future = Ready<Result<Self::Transform, Self::InitError>>;
 
     fn new_transform(&self, service: S) -> Self::Future {
-        ready(Ok(CookieCheckMW { service }))
+        ready(Ok(NotebookCookieCheckMW { service }))
     }
 }
 
-pub struct CookieCheckMW<S> {
+pub struct NotebookCookieCheckMW<S> {
     service: S,
 }
 
-impl<S, B> Service<ServiceRequest> for CookieCheckMW<S>
+impl<S, B> Service<ServiceRequest> for NotebookCookieCheckMW<S>
 where
     S: Service<ServiceRequest, Response = ServiceResponse<B>, Error = Error>,
     S::Future: 'static,
@@ -49,19 +46,14 @@ where
     forward_ready!(service);
 
     fn call(&self, req: ServiceRequest) -> Self::Future {
-        match req.cookie(COOKIE_NAME).map(|c| c.value().to_string()) {
+        match req
+            .cookie(NOTEBOOK_COOKIE_NAME)
+            .map(|c| c.value().to_string())
+        {
             Some(v) => {
-                let guardian_cookie_result = serde_json::from_str::<GuardianCookie>(&v);
+                let guardian_cookie_result = serde_json::from_str::<NotebookCookie>(&v);
                 match guardian_cookie_result {
                     Ok(gcs) => {
-                        // also insert notebook_status_cookie if available
-                        if let Some(ncs) = req.cookie(NOTEBOOK_STATUS_COOKIE_NAME) {
-                            if let Ok(ncs) =
-                                serde_json::from_str::<NotebookStatusCookie>(ncs.value())
-                            {
-                                req.extensions_mut().insert(ncs);
-                            }
-                        }
                         req.extensions_mut().insert(gcs);
                         self.service
                             .call(req)

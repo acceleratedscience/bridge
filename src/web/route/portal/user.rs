@@ -11,7 +11,7 @@ use tracing::instrument;
 
 use crate::{
     db::{
-        models::{Group, GuardianCookie, User, UserType, GROUP, USER},
+        models::{Group, GuardianCookie, NotebookStatusCookie, User, UserType, GROUP, USER},
         mongo::DB,
         Database,
     },
@@ -27,6 +27,7 @@ pub(super) async fn user(
     data: Data<Tera>,
     req: HttpRequest,
     subject: Option<ReqData<GuardianCookie>>,
+    nsc: Option<ReqData<NotebookStatusCookie>>,
     db: Data<&DB>,
 ) -> Result<HttpResponse> {
     // get the subject id from middleware
@@ -66,25 +67,29 @@ pub(super) async fn user(
             )
             .await;
 
-        let mut profile = Profile::new(user.user_name, user.token);
+        let mut profile = Profile::new(&user);
 
-        let content = match group {
-            Ok(group) => {
-                user.groups.iter().for_each(|group| {
-                    profile.add_group(group.to_string());
-                });
-                group.subscriptions.iter().for_each(|subscription| {
-                    profile.add_subscription(subscription.to_string());
-                });
+        if let Ok(group) = group {
+            user.groups.iter().for_each(|group| {
+                profile.add_group(group.to_string());
+            });
+            group.subscriptions.iter().for_each(|subscription| {
+                profile.add_subscription(subscription.to_string());
+            });
+        }
+        let content = helper::log_with_level!(
+            profile.render(data, nsc, helper::add_token_exp_to_tera).await,
+            error
+        )?;
 
-                helper::log_with_level!(profile.render(data, helper::add_token_exp_to_tera), error)?
-            }
-            Err(_) => {
-                helper::log_with_level!(profile.render(data, helper::add_token_exp_to_tera), error)?
-            }
-        };
+        if let Some([nc, nsc]) = content.1 {
+            return Ok(HttpResponse::Ok()
+                .cookie(nc)
+                .cookie(nsc)
+                .body(content.0));
+        }
 
-        return Ok(HttpResponse::Ok().body(content));
+        return Ok(HttpResponse::Ok().body(content.0));
     }
 
     helper::log_with_level!(

@@ -1,24 +1,31 @@
-use actix_web::web::Data;
+use actix_web::{
+    cookie::Cookie,
+    web::{Data, ReqData},
+};
 use tera::{Context, Tera};
 
-use crate::errors::Result;
+use crate::{
+    db::models::{NotebookStatusCookie, User},
+    errors::Result,
+};
 
-pub struct Profile {
+#[cfg(feature = "notebook")]
+use super::helper::notebook_bookkeeping;
+
+pub struct Profile<'p> {
     pub groups: Vec<String>,
     pub subscriptions: Vec<String>,
-    pub name: String,
-    pub token: Option<String>,
+    user: &'p User,
 }
 
 pub(super) static PROFILE: &str = "pages/portal_user.html";
 
-impl Profile {
-    pub fn new(name: String, token: Option<String>) -> Self {
+impl<'p> Profile<'p> {
+    pub fn new(user: &'p User) -> Self {
         Self {
             groups: Vec::new(),
             subscriptions: Vec::new(),
-            name,
-            token,
+            user,
         }
     }
 
@@ -30,22 +37,32 @@ impl Profile {
         self.subscriptions.push(subscription);
     }
 
-    pub fn render(
+    #[allow(unused_variables)]
+    pub async fn render(
         &self,
         tera: Data<Tera>,
+        nsc: Option<ReqData<NotebookStatusCookie>>,
         t_exp: impl FnOnce(&mut Context, &str),
-    ) -> Result<String> {
+    ) -> Result<(String, Option<[Cookie; 2]>)> {
         let mut context = tera::Context::new();
         context.insert("group", &self.groups.join(", "));
         context.insert("subscriptions", &self.subscriptions);
-        context.insert("name", &self.name);
-        context.insert("token", &self.token);
+        context.insert("name", &self.user.user_name);
+        context.insert("token", &self.user.token);
 
         // add in the expiration time if token is present
-        if let Some(t) = &self.token {
+        if let Some(t) = &self.user.token {
             t_exp(&mut context, t);
         }
 
-        Ok(tera.render(PROFILE, &context)?)
+        #[cfg(feature = "notebook")]
+        let nb_cookies =
+            notebook_bookkeeping(self.user, nsc, &mut context, self.subscriptions.clone()).await?;
+
+        #[cfg(feature = "notebook")]
+        return Ok((tera.render(PROFILE, &context)?, nb_cookies));
+
+        #[cfg(not(feature = "notebook"))]
+        Ok((tera.render(PROFILE, &context)?, None))
     }
 }

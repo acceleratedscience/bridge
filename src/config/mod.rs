@@ -12,6 +12,8 @@ pub struct Configuration {
     pub decoder: DecodingKey,
     pub validation: Validation,
     pub db: Database,
+    pub notebook_image: String,
+    pub notebook_image_pull_policy: String,
 }
 
 pub struct Database {
@@ -37,12 +39,12 @@ pub fn init_once() -> Configuration {
     validation.set_audience(&AUD);
     validation.leeway = 0;
 
-    let table: toml::Table = toml::from_str(
+    let db_table: toml::Table = toml::from_str(
         &read_to_string(PathBuf::from_str("config/database.toml").unwrap()).unwrap(),
     )
     .unwrap();
 
-    let db_table = table["database"].as_table().unwrap();
+    let db_table = db_table["database"].as_table().unwrap();
 
     let db = Database {
         url: if cfg!(debug_assertions) {
@@ -52,10 +54,26 @@ pub fn init_once() -> Configuration {
         },
     };
 
+    let notebook_table: toml::Table = toml::from_str(
+        &read_to_string(PathBuf::from_str("config/notebook.toml").unwrap()).unwrap(),
+    )
+    .unwrap();
+
+    let notebook_image = notebook_table["notebook"]["jupyter"]["image"]
+        .as_str()
+        .unwrap()
+        .to_string();
+    let notebook_image_pull_policy = notebook_table["notebook"]["jupyter"]["image_pull_policy"]
+        .as_str()
+        .unwrap()
+        .to_string();
+
     Configuration {
         encoder,
         decoder,
         validation,
         db,
+        notebook_image,
+        notebook_image_pull_policy,
     }
 }

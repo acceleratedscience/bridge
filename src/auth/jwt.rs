@@ -23,9 +23,7 @@ where
 {
     pub fn token_exp_as_string(&self) -> String {
         match time::OffsetDateTime::from_unix_timestamp(self.exp as i64) {
-            Ok(d) => {
-                d.to_string()
-            }
+            Ok(d) => d.to_string(),
             Err(_) => "Not a valid timestamp".to_string(),
         }
     }

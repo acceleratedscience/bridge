@@ -61,6 +61,15 @@ pub enum GuardianError {
     RecordSearchError(String),
     #[error("{0}")]
     WSError(#[from] actix_web::error::Error),
+    #[cfg(feature = "notebook")]
+    #[error("{0}")]
+    KubeError(#[from] kube::Error),
+    #[error("{0}")]
+    NotebookExistsError(String),
+    #[error("{0}")]
+    NotebookAccessError(String),
+    #[error("{0}")]
+    KubeClientError(String),
 }
 
 // Workaround for Infallible, which may get solved by rust-lang: https://github.com/rust-lang/rust/issues/64715
@@ -127,6 +136,9 @@ impl ResponseError for GuardianError {
             GuardianError::MongoError(_) => StatusCode::INTERNAL_SERVER_ERROR,
             GuardianError::SerdeJsonError(_) => StatusCode::INTERNAL_SERVER_ERROR,
             GuardianError::WSError(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            #[cfg(feature = "notebook")]
+            GuardianError::KubeError(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            GuardianError::KubeClientError(_) => StatusCode::INTERNAL_SERVER_ERROR,
 
             GuardianError::NotAdmin => StatusCode::UNAUTHORIZED,
             GuardianError::Unauthorized(_) => StatusCode::UNAUTHORIZED,
@@ -136,6 +148,9 @@ impl ResponseError for GuardianError {
 
             GuardianError::UserNotFound(_) => StatusCode::FORBIDDEN,
             GuardianError::UserNotAllowedOnPage(_) => StatusCode::FORBIDDEN,
+            GuardianError::NotebookAccessError(_) => StatusCode::FORBIDDEN,
+
+            GuardianError::NotebookExistsError(_) => StatusCode::CONFLICT,
         }
     }
 }

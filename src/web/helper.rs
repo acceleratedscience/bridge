@@ -1,10 +1,14 @@
+use actix_web::web;
 use mongodb::bson::{to_bson, Bson};
+use serde::Deserialize;
 use tera::Context;
+use tokio_stream::StreamExt;
 
-use crate::auth::jwt::validate_token;
-use crate::config::CONFIG;
-use crate::errors::GuardianError;
+use crate::{auth::jwt::validate_token, config::CONFIG, errors::GuardianError, errors::Result};
 
+/// This macro logs the error, warn, info, or debug level of the error message.
+/// Macro is used instead of a helper function to leverage debug symbols and print out line
+/// numbers.
 macro_rules! log_with_level {
     ($res:expr, error) => {{
         let result = $res;
@@ -53,7 +57,7 @@ macro_rules! log_with_level {
 
 pub(crate) use log_with_level;
 
-pub fn bson<T>(t: T) -> Result<Bson, GuardianError>
+pub fn bson<T>(t: T) -> Result<Bson>
 where
     T: serde::Serialize,
 {
@@ -85,6 +89,20 @@ pub fn add_token_exp_to_tera(tera: &mut Context, token: &str) {
     }
 }
 
+pub(super) async fn payload_to_struct<T>(mut payload: web::Payload) -> Result<T>
+where
+    T: Deserialize<'static>,
+{
+    let mut body = web::BytesMut::new();
+    while let Some(chunk) = payload.next().await {
+        let chunk = chunk.unwrap();
+        body.extend_from_slice(&chunk);
+    }
+    let body = String::from_utf8_lossy(&body);
+    let deserializer = serde::de::value::StrDeserializer::<serde::de::value::Error>::new(&body);
+    Ok(log_with_level!(T::deserialize(deserializer), error)?)
+}
+
 /// http proxying utilities
 pub mod forwarding {
     use std::str::FromStr;
@@ -102,7 +120,8 @@ pub mod forwarding {
         HeaderMap, HeaderName as ReqwestHeaderName, HeaderValue as ReqwestHeaderValue,
     };
     use tokio::sync::mpsc;
-    use tokio_stream::wrappers::UnboundedReceiverStream;
+    // use tokio_stream::wrappers::UnboundedReceiverStream;
+    use tokio_stream::wrappers::ReceiverStream;
     use tracing::error;
 
     use actix_web::http::StatusCode;
@@ -121,11 +140,11 @@ pub mod forwarding {
     where
         T: AsRef<str> + Send + Sync,
     {
-        let (tx, rx) = mpsc::unbounded_channel();
+        let (tx, rx) = mpsc::channel(128);
 
         actix_web::rt::spawn(async move {
             while let Some(chunk) = payload.next().await {
-                if let Err(e) = tx.send(chunk) {
+                if let Err(e) = tx.send(chunk).await {
                     error!("{:?}", e);
                     return;
                 }
@@ -155,7 +174,7 @@ pub mod forwarding {
 
         let forwarded_req = client
             .request(method, new_url.as_ref())
-            .body(reqwest::Body::wrap_stream(UnboundedReceiverStream::new(rx)));
+            .body(reqwest::Body::wrap_stream(ReceiverStream::new(rx)));
 
         // TODO: This forwarded implementation is incomplete as it only handles the unofficial
         // X-Forwarded-For header but not the official Forwarded one.
@@ -216,6 +235,8 @@ pub mod forwarding {
     }
 }
 
+#[cfg(feature = "notebook")]
+/// Websocket proxying utilities
 pub mod ws {
     use actix_web::{
         rt,
@@ -293,13 +314,23 @@ pub mod ws {
                                         }
                                         actix_ws::Message::Close(_) => {
                                             let _ = log_with_level!(w.send(tungstenite::Message::Close(None)).await, error);
+                                            let _ = log_with_level!(w.close().await, error);
+                                            let _ = log_with_level!(s.close(None).await, error);
                                             break;
                                         }
-                                        _ => break,
+                                        _ => {
+                                            let _ = log_with_level!(w.close().await, error);
+                                            let _ = log_with_level!(s.close(None).await, error);
+                                            break;
+                                        }
                                     }
                                 }
                             },
-                            None => return,
+                            None => {
+                                let _ = log_with_level!(w.close().await, error);
+                                let _ = log_with_level!(s.close(None).await, error);
+                                break;
+                            }
                         }
                     }
                     // data to be sent to the client
@@ -322,13 +353,22 @@ pub mod ws {
                                         }
                                         tungstenite::Message::Close(_) => {
                                             let _ = log_with_level!(s.close(None).await, error);
+                                            let _ = log_with_level!(w.close().await, error);
                                             break;
                                         }
-                                        _ => break,
+                                        _ => {
+                                            let _ = log_with_level!(s.close(None).await, error);
+                                            let _ = log_with_level!(w.close().await, error);
+                                            break;
+                                        }
                                     }
                                 }
                             },
-                            None => return,
+                            None => {
+                                let _ = log_with_level!(s.close(None).await, error);
+                                let _ = log_with_level!(w.close().await, error);
+                                break;
+                            }
                         }
                     }
                 }
@@ -337,5 +377,28 @@ pub mod ws {
 
         // websocket handshake with the client
         Ok(res)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_delimited_string_to_vec() {
+        let s = vec!["a,b,c".to_string(), "d,e,f".to_string()];
+        let delimiter = ",";
+        let res = delimited_string_to_vec(s, delimiter);
+        assert_eq!(
+            res,
+            vec![
+                "a".to_string(),
+                "b".to_string(),
+                "c".to_string(),
+                "d".to_string(),
+                "e".to_string(),
+                "f".to_string()
+            ]
+        );
     }
 }
