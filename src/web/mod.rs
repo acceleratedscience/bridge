@@ -1,4 +1,4 @@
-use std::{io::Result, process::exit};
+use std::{io::Result, process::exit, time::Duration};
 
 use actix_web::{
     middleware::{self},
@@ -24,6 +24,8 @@ mod tls;
 #[cfg(feature = "notebook")]
 pub use route::notebook::notebook_helper;
 pub use route::proxy::services;
+
+const TIMEOUT: u64 = 60 * 60;
 
 /// Starts the Guardian server either with or without TLS.
 ///
@@ -65,7 +67,12 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
     let server = HttpServer::new(move || {
         let tera = templating::start_template_eng();
         let tera_data = Data::new(tera);
-        let client_data = Data::new(reqwest::Client::new());
+        let client_data = Data::new(
+            reqwest::Client::builder()
+                .timeout(Duration::from_secs(TIMEOUT))
+                .build()
+                .unwrap(),
+        );
         let db = Data::new({
             match DBCONN.get() {
                 Some(db) => db,
@@ -83,7 +90,7 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
             .app_data(db)
             .wrap(guardian_middleware::custom_code_handle(tera_data))
             .wrap(middleware::NormalizePath::trim())
-            .wrap(middleware::Compress::default())
+            // .wrap(middleware::Compress::default())
             .service(actix_files::Files::new("/static", "static"));
         #[cfg(feature = "notebook")]
         let app = app.configure(route::notebook::config_notebook);
