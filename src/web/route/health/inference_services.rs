@@ -47,7 +47,7 @@ impl<'a> InferenceServicesHealth<'a> {
     }
 }
 
-impl<'a> ListBuilder<'a> {
+impl ListBuilder<'_> {
     pub fn add_inner_body(&mut self, up: bool, name: &str, elapsed: u128) {
         let status = if up { "up" } else { "down" };
         let state = if elapsed.gt(&500) {
