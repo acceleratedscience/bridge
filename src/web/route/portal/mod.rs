@@ -13,15 +13,17 @@ use tera::{Context, Tera};
 use tracing::warn;
 
 use crate::{
-    auth::COOKIE_NAME,
+    auth::{COOKIE_NAME, NOTEBOOK_COOKIE_NAME, NOTEBOOK_STATUS_COOKIE_NAME},
     db::{
         models::{GuardianCookie, User, UserType, USER},
         mongo::DB,
         Database,
     },
     errors::{GuardianError, Result},
-    web::guardian_middleware::{CookieCheck, Htmx, HTMX_ERROR_RES},
-    web::helper::log_with_level,
+    web::{
+        guardian_middleware::{CookieCheck, Htmx, HTMX_ERROR_RES},
+        helper::log_with_level,
+    },
 };
 
 mod group_admin;
@@ -151,7 +153,7 @@ async fn search_by_email(
 
 #[post("logout")]
 async fn logout() -> HttpResponse {
-    // clear the cookie
+    // clear all the cookie
     let mut cookie_remove = Cookie::build(COOKIE_NAME, "")
         .same_site(SameSite::Strict)
         .path("/")
@@ -160,9 +162,27 @@ async fn logout() -> HttpResponse {
         .finish();
     cookie_remove.make_removal();
 
+    let mut notebook_cookie = Cookie::build(NOTEBOOK_COOKIE_NAME, "")
+        .same_site(SameSite::Strict)
+        .path("/notebook")
+        .http_only(true)
+        .secure(true)
+        .finish();
+    notebook_cookie.make_removal();
+
+    let mut notebook_status_cookie = Cookie::build(NOTEBOOK_STATUS_COOKIE_NAME, "")
+        .same_site(SameSite::Strict)
+        .path("/")
+        .http_only(true)
+        .secure(true)
+        .finish();
+    notebook_status_cookie.make_removal();
+
     HttpResponse::Ok()
         .append_header(("HX-Redirect", "/"))
         .cookie(cookie_remove)
+        .cookie(notebook_cookie)
+        .cookie(notebook_status_cookie)
         .finish()
 }
 

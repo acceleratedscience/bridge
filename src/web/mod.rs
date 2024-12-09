@@ -25,9 +25,11 @@ mod tls;
 pub use route::notebook::notebook_helper;
 pub use route::proxy::services;
 
+// One hour timeout
 const TIMEOUT: u64 = 60 * 60;
 
-/// Starts the Guardian server either with or without TLS.
+/// Starts the Guardian server either with or without TLS. If with TLS, please ensure you have the
+/// appropriate certs in the `certs` directory.
 ///
 /// # Example
 /// ```ignore
@@ -36,7 +38,7 @@ const TIMEOUT: u64 = 60 * 60;
 /// let result = start_server(tls).await;
 ///
 /// match result {
-///    Ok(_) => println!("Server started successfully"),
+///    Ok(_) => println!("Server ran..."),
 ///    Err(e) => eprintln!("Error starting server: {e}"),
 /// }
 /// ```
@@ -56,13 +58,12 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
 
     // Singletons
     openid::init_once().await;
-    #[cfg(feature = "notebook")]
-    kube::init_once().await;
-
     if let Err(e) = DB::init_once("guardian").await {
         error!("{e}");
         exit(1);
     }
+    #[cfg(feature = "notebook")]
+    kube::init_once().await;
 
     let server = HttpServer::new(move || {
         let tera = templating::start_template_eng();
@@ -71,13 +72,13 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
             reqwest::Client::builder()
                 .timeout(Duration::from_secs(TIMEOUT))
                 .build()
-                .unwrap(),
+                .expect("Cannot create reqwest client"),
         );
         let db = Data::new({
             match DBCONN.get() {
                 Some(db) => db,
                 None => {
-                    error!("DB Connection not found... this should not have happened");
+                    error!("DB Connection not found... Is the DB running?");
                     exit(1);
                 }
             }
@@ -90,7 +91,7 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
             .app_data(db)
             .wrap(guardian_middleware::custom_code_handle(tera_data))
             .wrap(middleware::NormalizePath::trim())
-            // .wrap(middleware::Compress::default())
+            .wrap(middleware::Compress::default())
             .service(actix_files::Files::new("/static", "static"));
         #[cfg(feature = "notebook")]
         let app = app.configure(route::notebook::config_notebook);
@@ -118,4 +119,10 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
     } else {
         server.bind(("0.0.0.0", 8080))?.run().await
     }
+}
+
+#[cfg(test)]
+mod tests {
+    #[tokio::test]
+    async fn test_start_server() {}
 }

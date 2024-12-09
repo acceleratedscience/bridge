@@ -1,4 +1,20 @@
-[notebook]
-	[notebook.jupyter]
-	image = "quay.io/ibmdpdev/openad_workbench:latest"
-	image_pull_policy = "IfNotPresent"
+[open_ad_workbench]
+name = "OpenAD Workbench"
+url = "quay.io/ibmdpdev/openad_workbench:latest"
+pull_policy = "IfNotPresent"
+working_dir = "/opt/app-root/src"
+volume_mnt_path = "/opt/app-root/src"
+env = [
+	"--ServerApp.token=''",
+	"--ServerApp.password=''",
+	"--ServerApp.notebook_dir='/opt/app-root/src'",
+	"--ServerApp.quit_button=False"
+	# base-url is taken care by guardian
+]
+secret = ""
+
+[datascience_notebook]
+name = "Data Science Notebook"
+url = "docker.io/jupyter/datascience_notebook:latest"
+pull_policy = "IfNotPresent"
+env = []

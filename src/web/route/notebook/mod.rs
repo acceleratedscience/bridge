@@ -184,22 +184,7 @@ async fn notebook_create(
         let name = notebook_helper::make_notebook_name(&guardian_cookie.subject);
         let notebook = Notebook::new(
             &name,
-            NotebookSpec::new(
-                name.clone(),
-                "quay-notebook-secret".to_string(),
-                None,
-                None,
-                // TODO: Move this somewhere else
-                Some(vec![
-                    "--ServerApp.token=''".to_string(),
-                    "--ServerApp.password=''".to_string(),
-                    format!("--ServerApp.base_url='notebook/{}/{}'", NAMESPACE, name),
-                    "--ServerApp.notebook_dir='/opt/app-root/src'".to_string(),
-                    "--ServerApp.quit_button=False".to_string(),
-                ]),
-                pvc_name,
-                "/opt/app-root/src".to_string(),
-            ),
+            NotebookSpec::new(name.clone(), "open_ad_workbench", pvc_name),
         );
         helper::log_with_level!(KubeAPI::new(notebook).create().await, error)?;
 

@@ -2,8 +2,8 @@ pub mod auth;
 pub mod config;
 pub mod db;
 pub mod errors;
+#[cfg(feature = "notebook")]
+pub mod kube;
 pub mod logger;
 pub mod templating;
 pub mod web;
-#[cfg(feature = "notebook")]
-pub mod kube;
