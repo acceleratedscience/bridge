@@ -1,6 +1,6 @@
 [open_ad_workbench]
 name = "OpenAD Workbench"
-url = "quay.io/ibmdpdev/openad_workbench:latest"
+url = "quay.io/ibmdpdev/openad_workbench:test"
 pull_policy = "IfNotPresent"
 working_dir = "/opt/app-root/src"
 volume_mnt_path = "/opt/app-root/src"
@@ -8,13 +8,27 @@ env = [
 	"--ServerApp.token=''",
 	"--ServerApp.password=''",
 	"--ServerApp.notebook_dir='/opt/app-root/src'",
-	"--ServerApp.quit_button=False"
+	"--ServerApp.quit_button=False",
+	"--LabApp.default_url='/lab/tree/start_menu.ipynb'",
+	"--ServerApp.default_url='/lab/tree/start_menu.ipynb'",
+	"--ServerApp.trust_xheaders=True",
 	# base-url is taken care by guardian
 ]
-secret = ""
+secret = "quay-notebook-secret"
+start_up_url = "lab/tree/start_menu.ipynb"
 
 [datascience_notebook]
 name = "Data Science Notebook"
-url = "docker.io/jupyter/datascience_notebook:latest"
+url = "jupyter/base-notebook:latest"
 pull_policy = "IfNotPresent"
-env = []
+working_dir = "/home/jovyan"
+volume_mnt_path = "/home/jovyan/"
+env = [
+	"--ServerApp.token=''",
+	"--ServerApp.password=''",
+	"--ServerApp.notebook_dir='/home/jovyan'",
+	"--ServerApp.quit_button=False",
+	"--ServerApp.disable_check_xsrf=True",
+	"--ServerApp.allow_origin='*'",
+	# base-url is taken care by guardian
+]

@@ -49,6 +49,7 @@ pub struct User {
     pub user_type: UserType,
     pub token: Option<String>,
     pub notebook: Option<time::OffsetDateTime>,
+    pub notebook_start_url: Option<String>,
     pub created_at: time::OffsetDateTime,
     pub updated_at: time::OffsetDateTime,
     pub last_updated_by: String,
@@ -60,6 +61,7 @@ pub struct UserNotebook {
     pub url: String,
     pub start_time: String,
     pub status: String,
+    pub start_up_url: Option<String>,
 }
 
 /// This is the form verison of the User struct
@@ -132,6 +134,7 @@ pub struct NotebookCookie {
 pub struct NotebookStatusCookie {
     pub start_time: String,
     pub status: String,
+    pub start_url: Option<String>,
 }
 
 #[derive(Debug, Deserialize, Clone)]

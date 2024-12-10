@@ -7,6 +7,7 @@ use k8s_openapi::{
 use kube::{api::ObjectMeta, CustomResource};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+use tracing::info;
 
 use crate::config::CONFIG;
 
@@ -20,13 +21,20 @@ pub struct NotebookSpec {
 }
 
 impl NotebookSpec {
-    pub fn new(name: String, notebook_image_name: &str, volume_name: String) -> Self {
+    pub fn new(
+        name: String,
+        notebook_image_name: &str,
+        volume_name: String,
+        notebook_start_url: &mut Option<String>,
+    ) -> Self {
         let notebook_image = CONFIG.notebooks.get(notebook_image_name).unwrap();
+        info!("notebook_image: {:?}", notebook_image);
         let mut env = notebook_image.env.clone().unwrap_or_default();
         env.push(format!(
             "--ServerApp.base_url='notebook/{}/{}'",
             NAMESPACE, name
         ));
+        *notebook_start_url = notebook_image.start_up_url.clone();
 
         NotebookSpec {
             template: NotebookTemplateSpec {
@@ -57,9 +65,10 @@ impl NotebookSpec {
                             value: env.join(" "),
                         }]),
                     }],
-                    image_pull_secrets: Some(vec![ImagePullSecret {
-                        name: notebook_image.secret.clone().unwrap_or_default(),
-                    }]),
+                    image_pull_secrets: notebook_image
+                        .secret
+                        .clone()
+                        .map(|secret| vec![ImagePullSecret { name: secret }]),
                     volumes: Some(vec![VolumeSpec {
                         name: volume_name.clone(),
                         persistent_volume_claim: Some(PersistentVolumeClaimSpec {
@@ -191,8 +200,9 @@ mod test {
     fn test_notebook_spec() {
         let name = "notebook".to_string();
         let volume_name = "notebook-volume".to_string();
+        let mut start_url = None;
 
-        let spec = NotebookSpec::new(name, "open_ad_workbench", volume_name);
+        let spec = NotebookSpec::new(name, "open_ad_workbench", volume_name, &mut start_url);
 
         let expected = json!({
             "template": {
@@ -220,13 +230,19 @@ mod test {
                             ],
                             "command": null,
                             "args": null,
-                            "env": [{
-                                "name": "NOTEBOOK_ARGS",
-                                "value": "--ServerApp.token='' --ServerApp.password='' --ServerApp.notebook_dir='/opt/app-root/src' --ServerApp.quit_button=False --ServerApp.base_url='notebook/notebook/notebook'"
-                            }]
+                            "env": [
+                                {
+                                    "name": "NOTEBOOK_ARGS",
+                                    "value": "--ServerApp.token='' --ServerApp.password='' --ServerApp.notebook_dir='/opt/app-root/src' --ServerApp.quit_button=False"
+                                },
+                                {
+                                    "name": "NOTEBOOK_BASE_URL",
+                                    "value": "notebook/notebook/notebook"
+                                }
+                            ]
                     }],
                     "imagePullSecrets": [{
-                        "name": ""
+                        "name": "quay-notebook-secret"
                     }],
                     "volumes": [{
                         "name": "notebook-volume",
@@ -240,6 +256,7 @@ mod test {
 
         let actual = serde_json::to_value(&spec).unwrap();
         assert_eq!(actual, expected);
+        assert_eq!(start_url, Some("/lab/tree/start_menu.ipynb".to_string()));
     }
 
     #[test]

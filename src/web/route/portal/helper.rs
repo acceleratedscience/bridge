@@ -144,6 +144,7 @@ where
                                 let notebook_status_cookie = NotebookStatusCookie {
                                     status: "Ready".to_string(),
                                     start_time: nb_start.to_string(),
+                                    start_url: user.notebook_start_url.clone(),
                                 };
                                 let nsc_json = serde_json::to_string(&notebook_status_cookie)?;
                                 let nsc_cookie =

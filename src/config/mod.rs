@@ -21,7 +21,7 @@ pub struct Database {
     pub url: String,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct Notebook {
     pub url: String,
     pub pull_policy: String,
@@ -31,6 +31,7 @@ pub struct Notebook {
     pub secret: Option<String>,
     pub command: Option<Vec<String>>,
     pub args: Option<Vec<String>>,
+    pub start_up_url: Option<String>,
 }
 
 pub static CONFIG: LazyLock<Configuration> = LazyLock::new(init_once);
@@ -91,5 +92,6 @@ mod tests {
         let workbench = config.notebooks.get("open_ad_workbench").unwrap();
         assert_eq!(workbench.pull_policy, "IfNotPresent");
         assert_eq!(workbench.working_dir, Some("/opt/app-root/src".to_string()));
+        assert_eq!(workbench.start_up_url, Some("/lab/tree/start_menu.ipynb".to_string()));
     }
 }

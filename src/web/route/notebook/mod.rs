@@ -182,9 +182,15 @@ async fn notebook_create(
         helper::log_with_level!(KubeAPI::new(pvc.spec).create().await, error)?;
         // Create a notebook
         let name = notebook_helper::make_notebook_name(&guardian_cookie.subject);
+        let mut starp_up_url = None;
         let notebook = Notebook::new(
             &name,
-            NotebookSpec::new(name.clone(), "open_ad_workbench", pvc_name),
+            NotebookSpec::new(
+                name.clone(),
+                "open_ad_workbench",
+                pvc_name,
+                &mut starp_up_url,
+            ),
         );
         helper::log_with_level!(KubeAPI::new(notebook).create().await, error)?;
 
@@ -197,6 +203,7 @@ async fn notebook_create(
                 "$set": doc! {
                     "updated_at": bson(time::OffsetDateTime::now_utc())?,
                     "notebook": bson(current_time)?,
+                    "notebook_start_url": &starp_up_url,
                 },
             },
             USER,
@@ -211,6 +218,7 @@ async fn notebook_create(
         let notebook_status_cookie = NotebookStatusCookie {
             start_time: current_time.to_string(),
             status: "Pending".to_string(),
+            start_url: starp_up_url,
         };
         let notebook_json = serde_json::to_string(&notebook_cookie).map_err(|e| {
             GuardianError::GeneralError(format!("Could not serialize notebook cookie: {}", e))
@@ -294,6 +302,7 @@ async fn notebook_delete(
             "$set": doc! {
                 "updated_at": bson(time::OffsetDateTime::now_utc())?,
                 "notebook": null,
+                "notebook_start_url": null,
             },
         },
         USER,
@@ -376,9 +385,11 @@ async fn notebook_status(
             return Ok(HttpResponse::ServiceUnavailable().finish());
         }
 
+        // essentially updating the cookies
         let notebook_status_cookie = NotebookStatusCookie {
             start_time: nsc.start_time,
             status: "Ready".to_string(),
+            start_url: nsc.start_url,
         };
         let notebook_cookie = NotebookCookie {
             subject: guardian_cookie.subject.clone(),
@@ -468,9 +479,11 @@ async fn notebook_forward(
 }
 
 pub mod notebook_helper {
-    use crate::db::models::{GuardianCookie, NotebookStatusCookie, User, UserNotebook};
-    use crate::kube::NAMESPACE;
-    use crate::web::route::notebook::NOTEBOOK_PORT;
+    use crate::{
+        db::models::{GuardianCookie, NotebookStatusCookie, User, UserNotebook},
+        kube::NAMESPACE,
+        web::route::notebook::NOTEBOOK_PORT,
+    };
 
     pub(crate) fn make_notebook_name(subject: &str) -> String {
         format!("{}-notebook", subject)
@@ -528,6 +541,7 @@ pub mod notebook_helper {
                     .map(|x| x.to_string())
                     .unwrap_or_else(|| "None".to_string()),
                 status: "Pending".to_string(),
+                start_up_url: user.notebook_start_url.clone(),
             }
         }
     }
@@ -541,6 +555,7 @@ pub mod notebook_helper {
                 name: guardian_cookie.subject.clone(),
                 start_time: notebook_status_cookie.start_time.clone(),
                 status: notebook_status_cookie.status.clone(),
+                start_up_url: notebook_status_cookie.start_url.clone(),
             }
         }
     }
