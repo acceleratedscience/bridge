@@ -31,7 +31,12 @@
 	check = true
 
 	[services.bmfm-small-molecules]
-	url = "http://bmfm-sm-inference-service.openad-models.svc.cluster.local"
+	url = "http://sm-bmfm-sm-inference.openad-models.svc.cluster.local"
+	readiness = "/health"
+	check = true
+
+	[services.bmfm-mammal]
+	url = "http://mammal-bmfm-mammal-inference.openad-models.svc.cluster.local"
 	readiness = "/health"
 	check = true
 
