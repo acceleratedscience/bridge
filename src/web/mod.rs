@@ -97,7 +97,7 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
         let app = app.configure(route::notebook::config_notebook);
         app.service(
             web::scope("")
-                .wrap(guardian_middleware::Maintainence)
+                // .wrap(guardian_middleware::Maintainence)
                 .wrap(guardian_middleware::SecurityHeader)
                 .configure(route::auth::config_auth)
                 .configure(route::health::config_status)
