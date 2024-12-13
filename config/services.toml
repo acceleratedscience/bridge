@@ -35,6 +35,11 @@
 	readiness = "/health"
 	check = true
 
+	[services.pfas]
+	url = "http://pfas-pfas-service.openad-models.svc.cluster.local"
+	readiness = "/health"
+	check = true
+
 	# Not a service with a readiness check, see services.rs for more details
 	[services.notebook]
 	url = ""
