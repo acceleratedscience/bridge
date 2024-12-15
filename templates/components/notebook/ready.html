@@ -2,11 +2,7 @@
 
 <p>You have a notebook currently running.</p>
 <p>Spun up on: {{ notebook.start_time }}</p>
-{% if notebook.start_up_url %}
-<cds-button href="{{ notebook.url }}/{{ notebook.start_up_url }}" target="_blank">
-{% else %}
-<cds-button href="{{ notebook.url }}" target="_blank">
-{% endif %}
+<cds-button href="{{ notebook.url }}{% if notebook.start_up_url %}/{{ notebook.start_up_url }}{% endif %}" target="_blank">
 	Open notebook
 </cds-button>
 <cds-button hx-delete="/notebook_manage/hx/delete" hx-target="#notebook-wrapper" hx-swap="innerhtml" hx-confirm="Are you sure you want to terminate: {{ notebook.name }}?">

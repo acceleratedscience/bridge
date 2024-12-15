@@ -7,7 +7,6 @@ use k8s_openapi::{
 use kube::{api::ObjectMeta, CustomResource};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use tracing::info;
 
 use crate::config::CONFIG;
 
@@ -28,7 +27,6 @@ impl NotebookSpec {
         notebook_start_url: &mut Option<String>,
     ) -> Self {
         let notebook_image = CONFIG.notebooks.get(notebook_image_name).unwrap();
-        info!("notebook_image: {:?}", notebook_image);
         let mut env = notebook_image.env.clone().unwrap_or_default();
         env.push(format!(
             "--ServerApp.base_url='notebook/{}/{}'",

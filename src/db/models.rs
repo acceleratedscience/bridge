@@ -48,11 +48,17 @@ pub struct User {
     pub groups: Vec<String>,
     pub user_type: UserType,
     pub token: Option<String>,
-    pub notebook: Option<time::OffsetDateTime>,
-    pub notebook_start_url: Option<String>,
+    pub notebook: Option<NotebookInfo>,
     pub created_at: time::OffsetDateTime,
     pub updated_at: time::OffsetDateTime,
     pub last_updated_by: String,
+}
+
+#[derive(Debug, Default, Deserialize, Serialize)]
+pub struct NotebookInfo {
+    pub start_time: Option<time::OffsetDateTime>,
+    pub last_visited: Option<time::OffsetDateTime>,
+    pub start_up_url: Option<String>,
 }
 
 #[derive(Debug, Deserialize, Serialize)]

@@ -26,8 +26,8 @@ use crate::{
     auth::{NOTEBOOK_COOKIE_NAME, NOTEBOOK_STATUS_COOKIE_NAME},
     db::{
         models::{
-            Group, GuardianCookie, NotebookCookie, NotebookStatusCookie, User, UserNotebook, GROUP,
-            USER,
+            Group, GuardianCookie, NotebookCookie, NotebookInfo, NotebookStatusCookie, User,
+            UserNotebook, GROUP, USER,
         },
         mongo::{ObjectID, DB},
         Database,
@@ -201,9 +201,11 @@ async fn notebook_create(
             },
             doc! {
                 "$set": doc! {
-                    "updated_at": bson(time::OffsetDateTime::now_utc())?,
-                    "notebook": bson(current_time)?,
-                    "notebook_start_url": &starp_up_url,
+                    "updated_at": bson(current_time)?,
+                    "notebook": bson(NotebookInfo{
+                        start_time: Some(current_time),
+                        last_visited: None,
+                        start_up_url: starp_up_url.clone()})?,
                 },
             },
             USER,
@@ -465,7 +467,6 @@ async fn notebook_forward(
         }
     };
 
-    // look up service and get url
     let mut new_url = Url::from_str(&notebook_helper::make_forward_url(
         &notebook_cookie.ip,
         &notebook_helper::make_notebook_name(&notebook_cookie.subject),
@@ -480,7 +481,7 @@ async fn notebook_forward(
 
 pub mod notebook_helper {
     use crate::{
-        db::models::{GuardianCookie, NotebookStatusCookie, User, UserNotebook},
+        db::models::{GuardianCookie, NotebookInfo, NotebookStatusCookie, User, UserNotebook},
         kube::NAMESPACE,
         web::route::notebook::NOTEBOOK_PORT,
     };
@@ -533,15 +534,22 @@ pub mod notebook_helper {
 
     impl From<&User> for UserNotebook {
         fn from(user: &User) -> Self {
+            let notebook_info = match &user.notebook {
+                Some(notebook) => notebook,
+                None => &NotebookInfo {
+                    ..Default::default()
+                },
+            };
+
             UserNotebook {
                 url: make_path(&make_notebook_name(&user._id.to_string()), None),
                 name: user._id.to_string(),
-                start_time: user
-                    .notebook
+                start_time: notebook_info
+                    .start_time
                     .map(|x| x.to_string())
                     .unwrap_or_else(|| "None".to_string()),
                 status: "Pending".to_string(),
-                start_up_url: user.notebook_start_url.clone(),
+                start_up_url: notebook_info.start_up_url.clone(),
             }
         }
     }

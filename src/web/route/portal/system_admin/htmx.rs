@@ -4,7 +4,7 @@ use tera::Tera;
 use crate::errors::Result;
 
 pub struct GroupContent {
-    items: Vec<String>,
+    pub items: Vec<String>,
 }
 
 pub(super) static VIEW_GROUP: &str = "components/group_view.html";

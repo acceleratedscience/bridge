@@ -119,7 +119,7 @@ where
                 // cleared the browser history while the notebook was still running. If the
                 // notebook_status_cookie is not present, there is a pretty high chance the
                 // notebook_cookie isn't there either...
-                if let Some(nb_start) = user.notebook {
+                if let Some(nb_start) = &user.notebook {
                     let sub = notebook_helper::make_notebook_name(&user._id.to_string());
                     match KubeAPI::<Pod>::check_pod_running(&(sub.clone() + "-0")).await {
                         Ok(running) => {
@@ -143,8 +143,11 @@ where
 
                                 let notebook_status_cookie = NotebookStatusCookie {
                                     status: "Ready".to_string(),
-                                    start_time: nb_start.to_string(),
-                                    start_url: user.notebook_start_url.clone(),
+                                    start_time: nb_start
+                                        .start_time
+                                        .map(|t| t.to_string())
+                                        .unwrap_or_default(),
+                                    start_url: nb_start.start_up_url.clone(),
                                 };
                                 let nsc_json = serde_json::to_string(&notebook_status_cookie)?;
                                 let nsc_cookie =
