@@ -294,23 +294,23 @@ pub mod ws {
                                     match msg {
                                         actix_ws::Message::Text(t) => {
                                             let _ = log_with_level!(
-                                                w.send(tungstenite::Message::Text(t.to_string())).await,
+                                                w.send(tungstenite::Message::Text(t.to_string().into())).await,
                                                 error
                                             );
                                         }
                                         actix_ws::Message::Binary(b) => {
                                             let _ = log_with_level!(
-                                                w.send(tungstenite::Message::Binary(b.to_vec())).await,
+                                                w.send(tungstenite::Message::Binary(b.to_vec().into())).await,
                                                 error
                                             );
                                         }
                                         actix_ws::Message::Ping(p) => {
                                             let _ =
-                                            log_with_level!(w.send(tungstenite::Message::Ping(p.to_vec())).await, error);
+                                            log_with_level!(w.send(tungstenite::Message::Ping(p.to_vec().into())).await, error);
                                         }
                                         actix_ws::Message::Pong(p) => {
                                             let _ =
-                                            log_with_level!(w.send(tungstenite::Message::Pong(p.to_vec())).await, error);
+                                            log_with_level!(w.send(tungstenite::Message::Pong(p.to_vec().into())).await, error);
                                         }
                                         actix_ws::Message::Close(_) => {
                                             let _ = log_with_level!(w.send(tungstenite::Message::Close(None)).await, error);
@@ -340,16 +340,16 @@ pub mod ws {
                                 if let Ok(msg) = result {
                                     match msg {
                                         tungstenite::Message::Text(t) => {
-                                            let _ = log_with_level!(s.text(t).await, error);
+                                            let _ = log_with_level!(s.text(t.as_str()).await, error);
                                         }
                                         tungstenite::Message::Binary(b) => {
-                                            let _ = log_with_level!(s.binary(b).await, error);
+                                            let _ = log_with_level!(s.binary(b.as_slice().to_vec()).await, error);
                                         }
                                         tungstenite::Message::Pong(p) => {
-                                            let _ = log_with_level!(s.pong(&p).await, error);
+                                            let _ = log_with_level!(s.pong(p.as_slice()).await, error);
                                         }
                                         tungstenite::Message::Ping(p) => {
-                                            let _ = log_with_level!(s.ping(&p).await, error);
+                                            let _ = log_with_level!(s.ping(p.as_slice()).await, error);
                                         }
                                         tungstenite::Message::Close(_) => {
                                             let _ = log_with_level!(s.close(None).await, error);
