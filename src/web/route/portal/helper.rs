@@ -147,7 +147,7 @@ where
                                         .start_time
                                         .map(|t| t.to_string())
                                         .unwrap_or_default(),
-                                    start_url: nb_start.start_up_url.clone(),
+                                    start_url: None,
                                 };
                                 let nsc_json = serde_json::to_string(&notebook_status_cookie)?;
                                 let nsc_cookie =

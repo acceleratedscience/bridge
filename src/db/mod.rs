@@ -20,6 +20,12 @@ pub mod mongo;
 // R3 is a generic type that represents the number of records affected
 pub trait Database<'c, R1 = User, Q = Document, N = &'c str, C = &'c str, R2 = Bson, R3 = u64> {
     fn find(&self, query: Q, collection: C) -> impl Future<Output = Result<R1>>;
+    fn find_one_update(
+        &self,
+        query: Q,
+        update: Q,
+        collection: C,
+    ) -> impl Future<Output = Result<R1>>;
     fn find_many(&self, query: Q, collection: C) -> impl Future<Output = Result<Vec<R1>>>;
 
     fn insert(&self, query: R1, collection: C) -> impl Future<Output = Result<R2>>;

@@ -182,7 +182,7 @@ async fn notebook_create(
         helper::log_with_level!(KubeAPI::new(pvc.spec).create().await, error)?;
         // Create a notebook
         let name = notebook_helper::make_notebook_name(&guardian_cookie.subject);
-        let mut starp_up_url = None;
+        let mut start_up_url = None;
         let mut max_idle_time = None;
         let notebook = Notebook::new(
             &name,
@@ -190,7 +190,7 @@ async fn notebook_create(
                 name.clone(),
                 "open_ad_workbench",
                 pvc_name,
-                &mut starp_up_url,
+                &mut start_up_url,
                 &mut max_idle_time,
             ),
         );
@@ -208,7 +208,7 @@ async fn notebook_create(
                         start_time: Some(current_time),
                         last_active: None,
                         max_idle_time,
-                        start_up_url: starp_up_url.clone()})?,
+                        start_up_url: start_up_url.clone()})?,
                 },
             },
             USER,
@@ -223,7 +223,7 @@ async fn notebook_create(
         let notebook_status_cookie = NotebookStatusCookie {
             start_time: current_time.to_string(),
             status: "Pending".to_string(),
-            start_url: starp_up_url,
+            start_url: start_up_url,
         };
         let notebook_json = serde_json::to_string(&notebook_cookie).map_err(|e| {
             GuardianError::GeneralError(format!("Could not serialize notebook cookie: {}", e))
@@ -307,7 +307,6 @@ async fn notebook_delete(
             "$set": doc! {
                 "updated_at": bson(time::OffsetDateTime::now_utc())?,
                 "notebook": null,
-                "notebook_start_url": null,
             },
         },
         USER,
@@ -447,6 +446,82 @@ async fn notebook_status(
     Ok(HttpResponse::ServiceUnavailable().finish())
 }
 
+#[post("enter")]
+async fn notebook_enter(
+    guardian_cookie: Option<ReqData<GuardianCookie>>,
+    nsc: Option<ReqData<NotebookStatusCookie>>,
+    db: Data<&DB>,
+    data: Data<Tera>,
+) -> Result<HttpResponse> {
+    let nsc = nsc
+        .ok_or(GuardianError::NotebookAccessError(
+            "Notebook status cookie not found".to_string(),
+        ))?
+        .into_inner();
+    let guardian_cookie = guardian_cookie
+        .ok_or(GuardianError::NotebookAccessError(
+            "Guardian cookie not found".to_string(),
+        ))?
+        .into_inner();
+
+    let new_nsc = NotebookStatusCookie {
+        start_time: nsc.start_time.clone(),
+        status: nsc.status.clone(),
+        start_url: None,
+    };
+
+    let user: User = db
+        .find(
+            doc! {
+                "_id": ObjectID::new(&guardian_cookie.subject).into_inner(),
+            },
+            USER,
+        )
+        .await?;
+
+    let now = time::OffsetDateTime::now_utc();
+    // update last_active to now
+    db.update(
+        doc! {
+            "_id": ObjectID::new(&guardian_cookie.subject).into_inner(),
+        },
+        doc! {
+            "$set": doc! {
+                "notebook.last_active": bson(now)?,
+                "updated_at": bson(now)?,
+                "last_updated_by": &user.sub,
+            },
+        },
+        USER,
+        PhantomData::<User>,
+    )
+    .await?;
+
+    // update notebook status cookie
+    let notebook_status_json =
+        serde_json::to_string(&new_nsc).map_err(|e| GuardianError::GeneralError(e.to_string()))?;
+    let notebook_status_cookie = Cookie::build(NOTEBOOK_STATUS_COOKIE_NAME, &notebook_status_json)
+        .path("/")
+        .same_site(SameSite::Strict)
+        .secure(true)
+        .http_only(true)
+        .max_age(time::Duration::days(1))
+        .finish();
+
+    let user_notebook = Into::<UserNotebook>::into((guardian_cookie, new_nsc));
+    let mut ctx = Context::new();
+    ctx.insert("notebook", &user_notebook);
+
+    let content = data
+        .render("components/notebook/ready.html", &ctx)
+        .map_err(|e| GuardianError::GeneralError(e.to_string()))?;
+
+    Ok(HttpResponse::Ok()
+        .content_type(ContentType::form_url_encoded())
+        .cookie(notebook_status_cookie)
+        .body(content))
+}
+
 #[instrument(skip(payload))]
 async fn notebook_forward(
     req: HttpRequest,
@@ -475,18 +550,10 @@ async fn notebook_forward(
             )
         }
     };
-    let new_path = notebook_helper::make_notebook_name(&notebook_cookie.subject);
-
-    println!("Path: {}", path);
-    println!("New Path: {}", new_path);
-    let old_path = path.split("/").last().unwrap();
-    if old_path.eq(&new_path) {
-        println!("Path is equal to new path");
-    }
 
     let mut new_url = Url::from_str(&notebook_helper::make_forward_url(
         &notebook_cookie.ip,
-        &new_path,
+        &notebook_helper::make_notebook_name(&notebook_cookie.subject),
         "http",
         None,
     ))?;
@@ -558,6 +625,12 @@ pub mod notebook_helper {
                 },
             };
 
+            let already_visited = user
+                .notebook
+                .as_ref()
+                .map(|nb| nb.last_active.is_some())
+                .unwrap_or(false);
+
             UserNotebook {
                 url: make_path(&make_notebook_name(&user._id.to_string()), None),
                 name: user._id.to_string(),
@@ -566,7 +639,13 @@ pub mod notebook_helper {
                     .map(|x| x.to_string())
                     .unwrap_or_else(|| "None".to_string()),
                 status: "Pending".to_string(),
-                start_up_url: notebook_info.start_up_url.clone(),
+                start_up_url: {
+                    if already_visited {
+                        None
+                    } else {
+                        notebook_info.start_up_url.clone()
+                    }
+                },
             }
         }
     }
@@ -601,7 +680,8 @@ pub fn config_notebook(cfg: &mut web::ServiceConfig) {
             .wrap(Htmx)
             .service(notebook_create)
             .service(notebook_delete)
-            .service(notebook_status),
+            .service(notebook_status)
+            .service(notebook_enter),
     );
 }
 

@@ -112,6 +112,18 @@ where
             .ok_or_else(|| GuardianError::GeneralError("Could not find any document".to_string()))
     }
 
+    async fn find_one_update(
+        &self,
+        query: Document,
+        update: Document,
+        collection: &'c str,
+    ) -> Result<R1> {
+        let col = Self::get_collection(self, collection);
+        col.find_one_and_update(query, update)
+            .await?
+            .ok_or_else(|| GuardianError::GeneralError("Could not find any document".to_string()))
+    }
+
     async fn find_many(&self, query: Document, collection: &'c str) -> Result<Vec<R1>> {
         let mut docs = Vec::new();
         let col = Self::get_collection(self, collection);
