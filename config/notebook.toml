@@ -16,6 +16,7 @@ env = [
 ]
 secret = "quay-notebook-secret"
 start_up_url = "lab/tree/start_menu.ipynb"
+max_idle_time = 60
 
 [datascience_notebook]
 name = "Data Science Notebook"
@@ -32,3 +33,4 @@ env = [
 	"--ServerApp.allow_origin='*'",
 	# base-url is taken care by guardian
 ]
+max_idle_time = 60

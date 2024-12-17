@@ -57,7 +57,8 @@ pub struct User {
 #[derive(Debug, Default, Deserialize, Serialize)]
 pub struct NotebookInfo {
     pub start_time: Option<time::OffsetDateTime>,
-    pub last_visited: Option<time::OffsetDateTime>,
+    pub last_active: Option<time::OffsetDateTime>,
+    pub max_idle_time: Option<u64>,
     pub start_up_url: Option<String>,
 }
 

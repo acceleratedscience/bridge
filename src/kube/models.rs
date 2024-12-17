@@ -25,6 +25,7 @@ impl NotebookSpec {
         notebook_image_name: &str,
         volume_name: String,
         notebook_start_url: &mut Option<String>,
+        max_idle_time: &mut Option<u64>,
     ) -> Self {
         let notebook_image = CONFIG.notebooks.get(notebook_image_name).unwrap();
         let mut env = notebook_image.env.clone().unwrap_or_default();
@@ -33,6 +34,7 @@ impl NotebookSpec {
             NAMESPACE, name
         ));
         *notebook_start_url = notebook_image.start_up_url.clone();
+        *max_idle_time = notebook_image.max_idle_time;
 
         NotebookSpec {
             template: NotebookTemplateSpec {
@@ -199,8 +201,15 @@ mod test {
         let name = "notebook".to_string();
         let volume_name = "notebook-volume".to_string();
         let mut start_url = None;
+        let mut max_idle_time = None;
 
-        let spec = NotebookSpec::new(name, "open_ad_workbench", volume_name, &mut start_url);
+        let spec = NotebookSpec::new(
+            name,
+            "open_ad_workbench",
+            volume_name,
+            &mut start_url,
+            &mut max_idle_time,
+        );
 
         let expected = json!({
             "template": {
@@ -255,6 +264,7 @@ mod test {
         let actual = serde_json::to_value(&spec).unwrap();
         assert_eq!(actual, expected);
         assert_eq!(start_url, Some("/lab/tree/start_menu.ipynb".to_string()));
+        assert_eq!(max_idle_time, Some(60));
     }
 
     #[test]

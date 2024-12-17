@@ -89,7 +89,7 @@ mod tests {
         let inference_services = InferenceServicesHealth::new(&services, client);
         let stream = inference_services.create_stream();
 
-        let results: Vec<Result<(bool, String, u128), reqwest::Error>> = stream.collect().await;
+        let results = stream.collect::<Vec<Result<(bool, String, u128)>>>().await;
         assert_eq!(results.len(), 2);
 
         let mut ok_cnt = 0;

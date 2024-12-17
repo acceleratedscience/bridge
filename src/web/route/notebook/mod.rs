@@ -183,6 +183,7 @@ async fn notebook_create(
         // Create a notebook
         let name = notebook_helper::make_notebook_name(&guardian_cookie.subject);
         let mut starp_up_url = None;
+        let mut max_idle_time = None;
         let notebook = Notebook::new(
             &name,
             NotebookSpec::new(
@@ -190,6 +191,7 @@ async fn notebook_create(
                 "open_ad_workbench",
                 pvc_name,
                 &mut starp_up_url,
+                &mut max_idle_time,
             ),
         );
         helper::log_with_level!(KubeAPI::new(notebook).create().await, error)?;
@@ -204,7 +206,8 @@ async fn notebook_create(
                     "updated_at": bson(current_time)?,
                     "notebook": bson(NotebookInfo{
                         start_time: Some(current_time),
-                        last_visited: None,
+                        last_active: None,
+                        max_idle_time,
                         start_up_url: starp_up_url.clone()})?,
                 },
             },
@@ -426,7 +429,7 @@ async fn notebook_status(
             .max_age(time::Duration::days(1))
             .finish();
 
-        let notebook = Into::<UserNotebook>::into((&guardian_cookie, &notebook_status_cookie));
+        let notebook = Into::<UserNotebook>::into((guardian_cookie, notebook_status_cookie));
         let mut ctx = Context::new();
         ctx.insert("notebook", &notebook);
         let content =
@@ -454,6 +457,12 @@ async fn notebook_forward(
     client: web::Data<reqwest::Client>,
 ) -> Result<HttpResponse> {
     let path = req.uri().path();
+    /* Example
+        Path: /notebook/notebook/675fe4d56881c0dbd5cc2960-notebook/static/lab/main.79b385776e13e3f97005.js
+        New URL: http://localhost:8888/notebook/notebook/675fe4d56881c0dbd5cc2960-notebook
+        New URL with path: http://localhost:8888/notebook/notebook/675fe4d56881c0dbd5cc2960-notebook/static/lab/main.79b385776e13e3f97005.js
+        New URL with query: http://localhost:8888/notebook/notebook/675fe4d56881c0dbd5cc2960-notebook/static/lab/main.79b385776e13e3f97005.js?v=79b385776e13e3f97005
+    */
 
     let notebook_cookie = match notebook_cookie {
         Some(cookie) => cookie.into_inner(),
@@ -466,10 +475,18 @@ async fn notebook_forward(
             )
         }
     };
+    let new_path = notebook_helper::make_notebook_name(&notebook_cookie.subject);
+
+    println!("Path: {}", path);
+    println!("New Path: {}", new_path);
+    let old_path = path.split("/").last().unwrap();
+    if old_path.eq(&new_path) {
+        println!("Path is equal to new path");
+    }
 
     let mut new_url = Url::from_str(&notebook_helper::make_forward_url(
         &notebook_cookie.ip,
-        &notebook_helper::make_notebook_name(&notebook_cookie.subject),
+        &new_path,
         "http",
         None,
     ))?;
@@ -554,16 +571,17 @@ pub mod notebook_helper {
         }
     }
 
-    impl From<(&GuardianCookie, &NotebookStatusCookie)> for UserNotebook {
+    /// Consume the guardian cookie and notebook status cookie to create a UserNotebook
+    impl From<(GuardianCookie, NotebookStatusCookie)> for UserNotebook {
         fn from(
-            (guardian_cookie, notebook_status_cookie): (&GuardianCookie, &NotebookStatusCookie),
+            (guardian_cookie, notebook_status_cookie): (GuardianCookie, NotebookStatusCookie),
         ) -> Self {
             UserNotebook {
                 url: make_path(&make_notebook_name(&guardian_cookie.subject), None),
-                name: guardian_cookie.subject.clone(),
-                start_time: notebook_status_cookie.start_time.clone(),
-                status: notebook_status_cookie.status.clone(),
-                start_up_url: notebook_status_cookie.start_url.clone(),
+                name: guardian_cookie.subject,
+                start_time: notebook_status_cookie.start_time,
+                status: notebook_status_cookie.status,
+                start_up_url: notebook_status_cookie.start_url,
             }
         }
     }

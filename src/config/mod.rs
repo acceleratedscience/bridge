@@ -32,6 +32,7 @@ pub struct Notebook {
     pub command: Option<Vec<String>>,
     pub args: Option<Vec<String>>,
     pub start_up_url: Option<String>,
+    pub max_idle_time: Option<u64>,
 }
 
 pub static CONFIG: LazyLock<Configuration> = LazyLock::new(init_once);
