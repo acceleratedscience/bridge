@@ -41,7 +41,7 @@
 	check = true
 
 	[services.pfas]
-	url = "pfas-openad-model.openad-models.svc.cluster.local"
+	url = "http://pfas-openad-model.openad-models.svc.cluster.local"
 	readiness = "/health"
 	check = true
 

@@ -14,7 +14,7 @@ use crate::{
 };
 
 use super::{
-    models::{Group, User, GROUP, USER},
+    models::{Group, Locks, User, GROUP, LOCKS, USER},
     Database,
 };
 
@@ -39,7 +39,7 @@ impl ObjectID {
 
 pub static DBCONN: OnceLock<DB> = OnceLock::new();
 
-static COLLECTIONS: [&str; 2] = [USER, GROUP];
+static COLLECTIONS: [&str; 3] = [USER, GROUP, LOCKS];
 
 impl DB {
     pub async fn init_once(database: &'static str) -> Result<()> {
@@ -58,6 +58,7 @@ impl DB {
         // create the unique indexes if they do not exist
         Self::create_index::<User, _>(&dbs, USER, "email", 1).await?;
         Self::create_index::<Group, _>(&dbs, GROUP, "name", "text").await?;
+        Self::create_index::<Locks, _>(&dbs, LOCKS, "name", "text").await?;
 
         DBCONN.get_or_init(|| dbs);
 
@@ -98,6 +99,18 @@ impl DB {
         Z: Send + Sync + Serialize + DeserializeOwned,
     {
         d.mongo_database.collection::<Z>(collection)
+    }
+
+    pub async fn get_lock(&self, name: &str) -> Result<()> {
+        let _ = self.insert(doc! {"name": name}, LOCKS).await?;
+        Ok(())
+    }
+
+    pub async fn release_lock(&self, name: &str) -> Result<()> {
+        let _ = self
+            .delete(doc! {"name": name}, LOCKS, PhantomData::<Locks>)
+            .await?;
+        Ok(())
     }
 }
 

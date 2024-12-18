@@ -1,11 +1,19 @@
-use std::{io::Result, process::exit, time::Duration};
+use std::{
+    io::Result,
+    process::exit,
+    sync::{
+        atomic::{self, AtomicBool},
+        Arc,
+    },
+    time::Duration,
+};
 
 use actix_web::{
     middleware::{self},
     web::{self, Data},
     App, HttpServer,
 };
-use tracing::{error, level_filters::LevelFilter};
+use tracing::{error, info, level_filters::LevelFilter};
 
 #[cfg(feature = "notebook")]
 use crate::kube;
@@ -27,6 +35,7 @@ pub use route::proxy::services;
 
 // One hour timeout
 const TIMEOUT: u64 = 60 * 60;
+const AD_LOCK: &str = "guardian-lock";
 
 /// Starts the Guardian server either with or without TLS. If with TLS, please ensure you have the
 /// appropriate certs in the `certs` directory.
@@ -65,6 +74,30 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
     #[cfg(feature = "notebook")]
     kube::init_once().await;
 
+    let db = match DBCONN.get() {
+        Some(db) => db,
+        None => {
+            error!("DB Connection not found... Is the DB running?");
+            exit(1);
+        }
+    };
+
+    // Get the "advisory lock" to the one pod to run certain jobs
+    let notification = Arc::new(AtomicBool::new(false));
+    let notified = notification.clone();
+    let handle = if (db.get_lock(AD_LOCK).await).is_ok() {
+        info!("Unlimited power!!!");
+        Some(tokio::spawn(async move {
+            // No happens before needed, thus Relaxed
+            while !notified.load(atomic::Ordering::Relaxed) {
+                tokio::time::sleep(Duration::from_secs(5)).await;
+                info!("hello...");
+            }
+        }))
+    } else {
+        None
+    };
+
     let server = HttpServer::new(move || {
         let tera = templating::start_template_eng();
         let tera_data = Data::new(tera);
@@ -74,15 +107,7 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
                 .build()
                 .expect("Cannot create reqwest client"),
         );
-        let db = Data::new({
-            match DBCONN.get() {
-                Some(db) => db,
-                None => {
-                    error!("DB Connection not found... Is the DB running?");
-                    exit(1);
-                }
-            }
-        });
+        let db = Data::new(db);
 
         let app = App::new()
             // .wrap(guardian_middleware::HttpRedirect)
@@ -115,10 +140,19 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
                 tls::load_certs("certs/fullchain.cer", "certs/open.accelerator.cafe.key"),
             )?
             .run()
-            .await
+            .await?;
     } else {
-        server.bind(("0.0.0.0", 8080))?.run().await
+        server.bind(("0.0.0.0", 8080))?.run().await?;
     }
+
+    // If the lock was acquired, release it
+    if let Some(handle) = handle {
+        notification.store(true, atomic::Ordering::Relaxed);
+        handle.await?;
+        db.release_lock(AD_LOCK).await.expect("Cannot release advisory lock");
+    }
+
+    Ok(())
 }
 
 #[cfg(test)]

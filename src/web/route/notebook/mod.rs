@@ -4,7 +4,7 @@
 
 use std::{marker::PhantomData, str::FromStr};
 
-use k8s_openapi::api::core::v1::{PersistentVolumeClaim, Pod};
+use k8s_openapi::api::core::v1::Pod;
 use mongodb::bson::doc;
 use serde::Deserialize;
 
@@ -209,6 +209,7 @@ async fn notebook_create(
                         last_active: None,
                         max_idle_time,
                         start_up_url: start_up_url.clone()})?,
+                    "last_updated_by": &user.sub,
                 },
             },
             USER,
@@ -291,28 +292,7 @@ async fn notebook_delete(
         }
     };
 
-    let name = notebook_helper::make_notebook_name(&guardian_cookie.subject);
-    let pvc_name = notebook_helper::make_notebook_volume_name(&guardian_cookie.subject);
-    helper::log_with_level!(KubeAPI::<Notebook>::delete(&name).await, error)?;
-    helper::log_with_level!(
-        KubeAPI::<PersistentVolumeClaim>::delete(&pvc_name).await,
-        error
-    )?;
-
-    db.update(
-        doc! {
-            "_id": ObjectID::new(&guardian_cookie.subject).into_inner(),
-        },
-        doc! {
-            "$set": doc! {
-                "updated_at": bson(time::OffsetDateTime::now_utc())?,
-                "notebook": null,
-            },
-        },
-        USER,
-        PhantomData::<User>,
-    )
-    .await?;
+    helper::utils::notebook_destroy(**db, &guardian_cookie.subject, true).await?;
 
     // delete the cookies
     let mut notebook_cookie = Cookie::build(NOTEBOOK_COOKIE_NAME, "")
@@ -574,7 +554,7 @@ pub mod notebook_helper {
         format!("{}-notebook", subject)
     }
 
-    pub(super) fn make_notebook_volume_name(subject: &str) -> String {
+    pub(crate) fn make_notebook_volume_name(subject: &str) -> String {
         format!("{}-notebook-volume-pvc", subject)
     }
 

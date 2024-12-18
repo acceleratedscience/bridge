@@ -236,6 +236,63 @@ pub mod forwarding {
 }
 
 #[cfg(feature = "notebook")]
+pub mod utils {
+    use std::{marker::PhantomData, ops::Deref};
+
+    use k8s_openapi::api::core::v1::PersistentVolumeClaim;
+    use mongodb::bson::doc;
+
+    use crate::{
+        db::{
+            models::{User, USER},
+            mongo::ObjectID,
+            Database,
+        },
+        errors::Result,
+        kube::{KubeAPI, Notebook},
+        web::{helper::bson, notebook_helper},
+    };
+
+    #[inline]
+    pub async fn notebook_destroy<'a, O, I>(
+        db: O,
+        subject: &str,
+        pvc: bool,
+    ) -> Result<()>
+    where
+        O: Deref<Target = I>,
+        I: Database<'a>,
+    {
+        let name = notebook_helper::make_notebook_name(subject);
+        let pvc_name = notebook_helper::make_notebook_volume_name(subject);
+        log_with_level!(KubeAPI::<Notebook>::delete(&name).await, error)?;
+        if pvc {
+            log_with_level!(
+                KubeAPI::<PersistentVolumeClaim>::delete(&pvc_name).await,
+                error
+            )?;
+        }
+        // TODO: add last_updated_by
+        db.update(
+            doc! {
+                "_id": ObjectID::new(subject).into_inner(),
+            },
+            doc! {
+                "$set": doc! {
+                    "updated_at": bson(time::OffsetDateTime::now_utc())?,
+                    "notebook": null,
+                },
+            },
+            USER,
+            PhantomData::<User>,
+        )
+        .await?;
+
+        Ok(())
+    }
+}
+
+#[cfg(feature = "notebook")]
 /// Websocket proxying utilities
 pub mod ws {
     use actix_web::{
@@ -343,13 +400,13 @@ pub mod ws {
                                             let _ = log_with_level!(s.text(t.as_str()).await, error);
                                         }
                                         tungstenite::Message::Binary(b) => {
-                                            let _ = log_with_level!(s.binary(b.as_slice().to_vec()).await, error);
+                                            let _ = log_with_level!(s.binary(b).await, error);
                                         }
                                         tungstenite::Message::Pong(p) => {
-                                            let _ = log_with_level!(s.pong(p.as_slice()).await, error);
+                                            let _ = log_with_level!(s.pong(&p).await, error);
                                         }
                                         tungstenite::Message::Ping(p) => {
-                                            let _ = log_with_level!(s.ping(p.as_slice()).await, error);
+                                            let _ = log_with_level!(s.ping(&p).await, error);
                                         }
                                         tungstenite::Message::Close(_) => {
                                             let _ = log_with_level!(s.close(None).await, error);

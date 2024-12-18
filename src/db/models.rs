@@ -101,6 +101,13 @@ pub struct Group {
     pub last_updated_by: String,
 }
 
+pub static LOCKS: &str = "locks";
+#[derive(Debug, Deserialize, Serialize)]
+pub struct Locks {
+    pub _id: ObjectId,
+    pub name: String,
+}
+
 /// This is the form verison of the Group struct
 #[derive(Debug)]
 pub struct GroupForm {
