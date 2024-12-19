@@ -558,7 +558,7 @@ pub mod notebook_helper {
         format!("{}-notebook-volume-pvc", subject)
     }
 
-    pub(super) fn make_forward_url(
+    pub(crate) fn make_forward_url(
         ip: &str,
         name: &str,
         protocol: &str,

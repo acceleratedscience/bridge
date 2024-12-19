@@ -18,10 +18,7 @@ use tracing::{error, info, level_filters::LevelFilter};
 #[cfg(feature = "notebook")]
 use crate::kube;
 use crate::{
-    auth::openid,
-    db::mongo::{DB, DBCONN},
-    logger::Logger,
-    templating,
+    auth::openid, db::mongo::{DB, DBCONN}, logger::Logger, templating
 };
 
 mod guardian_middleware;
