@@ -292,7 +292,18 @@ async fn notebook_delete(
         }
     };
 
-    helper::utils::notebook_destroy(**db, &guardian_cookie.subject, true).await?;
+    // get user data
+    // TODO: we should swap guardian_cookie.subject with email, and not do this db call
+    let user: User = db
+        .find(
+            doc! {
+                "email": ObjectID::new(&guardian_cookie.subject).into_inner(),
+            },
+            USER,
+        )
+        .await?;
+
+    helper::utils::notebook_destroy(**db, &guardian_cookie.subject, true, &user.email).await?;
 
     // delete the cookies
     let mut notebook_cookie = Cookie::build(NOTEBOOK_COOKIE_NAME, "")

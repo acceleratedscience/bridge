@@ -26,6 +26,8 @@ mod helper;
 mod route;
 mod tls;
 
+pub use helper::{bson, utils};
+
 #[cfg(feature = "notebook")]
 pub use route::notebook::notebook_helper;
 pub use route::proxy::services;

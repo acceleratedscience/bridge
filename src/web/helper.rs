@@ -258,6 +258,7 @@ pub mod utils {
         db: O,
         subject: &str,
         pvc: bool,
+        user: &str,
     ) -> Result<()>
     where
         O: Deref<Target = I>,
@@ -281,6 +282,7 @@ pub mod utils {
                 "$set": doc! {
                     "updated_at": bson(time::OffsetDateTime::now_utc())?,
                     "notebook": null,
+                    "last_updated_by": user,
                 },
             },
             USER,

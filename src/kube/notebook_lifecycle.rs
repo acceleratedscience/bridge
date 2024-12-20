@@ -7,13 +7,30 @@ use std::{
 
 use futures::{FutureExt, Stream};
 use k8s_openapi::api::core::v1::Pod;
+use mongodb::bson::doc;
 use pin_project::pin_project;
+use reqwest::Client;
 use serde::Deserialize;
 use time::OffsetDateTime;
 use tokio::time::{sleep, Instant, Sleep};
 use tracing::info;
 
-use crate::{errors::Result, kube::KubeAPI};
+use crate::{
+    db::{
+        models::{User, USER},
+        mongo::{ObjectID, DBCONN},
+        Database,
+    },
+    errors::{GuardianError, Result},
+    kube::KubeAPI,
+    web::{
+        notebook_helper::{make_forward_url, make_notebook_name},
+        utils,
+    },
+};
+
+// TODO: move this to notebook.toml... max_idle_time already exists
+const MAX_IDLE_TIME: u64 = 60 * 60 * 24;
 
 #[pin_project]
 pub struct Medium<T, F> {
@@ -99,7 +116,8 @@ where
 
 struct NotebookLifecycle<F> {
     state: State,
-    dat: fn() -> F,
+    dat: fn(Client) -> F,
+    client: Client,
     fut: Pin<Box<dyn Future<Output = Result<()>>>>,
 }
 
@@ -112,10 +130,11 @@ impl<F> NotebookLifecycle<F>
 where
     F: Future<Output = Result<()>>,
 {
-    fn new(dat: fn() -> F) -> Self {
+    fn new(dat: fn(Client) -> F) -> Self {
         Self {
             state: State::Prep,
             dat,
+            client: Client::new(),
             fut: Box::pin(async { Ok(()) }),
         }
     }
@@ -130,13 +149,13 @@ where
     fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
         match self.state {
             State::Prep => {
-                self.fut = Box::pin((self.dat)());
+                self.fut = Box::pin((self.dat)(self.client.clone()));
                 self.state = State::Go;
                 cx.waker().wake_by_ref();
                 Poll::Pending
             }
             State::Go => match self.fut.poll_unpin(cx) {
-                Poll::Ready(r) => {
+                Poll::Ready(_r) => {
                     self.state = State::Prep;
                     cx.waker().wake_by_ref();
                     Poll::Ready(Some(()))
@@ -169,38 +188,124 @@ impl From<&Kernel> for OffsetDateTime {
     }
 }
 
-pub async fn notebook_lifecycle() -> Result<()> {
-    // get all the notesbook
+pub async fn notebook_lifecycle(client: Client) -> Result<()> {
+    info!("Running notebook lifecycle");
+
+    let db = DBCONN
+        .get()
+        .ok_or(GuardianError::GeneralError("DB connection failed".into()))?;
+
     let pods = KubeAPI::<Pod>::get_all_pods().await?;
-    // get the name of the notebook and ip address
+
+    // get the ip and the subject id of all the notebooks
     let pods_detail: Vec<(String, String)> = pods
         .into_iter()
         .filter_map(|mut pod| {
             Some((
+                pod.status.as_mut()?.pod_ip.take()?,
                 pod.metadata
                     .name
                     .and_then(|s| s.split("-").next().map(|s| s.to_owned()))?,
-                pod.status.as_mut()?.pod_ip.take()?,
             ))
         })
         .collect();
 
-    println!("{:?}", pods_detail);
+    // map ip into a forward url
+    let addresses = pods_detail
+        .into_iter()
+        .map(|(ip, id)| {
+            (
+                make_forward_url(&ip, &make_notebook_name(&id), "http", None) + "/api/kernels",
+                id,
+            )
+        })
+        .collect::<Vec<(String, String)>>();
+
+    let now = OffsetDateTime::now_utc();
 
     // call the kernel and get data for each notebook
     // filter the data by those idle for 24 hours or more
+    let mut results = Vec::with_capacity(addresses.len());
+    let mut results_db_chk = Vec::new();
+    for (url, id) in addresses.iter() {
+        info!("Checking notebook {}", id);
+
+        let resp = client.get(url).send().await?;
+        if !resp.status().is_success() {
+            info!("Notebook {} failed to respond... skipping", id);
+            continue;
+        }
+        let body = resp.text().await?;
+        let kernels: Vec<Kernel> = serde_json::from_str(&body)?;
+        // If the notebook was never opened...
+        if kernels.is_empty() {
+            info!(
+                "Notebook {} has no kernel... checking DB for latest activity",
+                id
+            );
+            // check DB for last activity
+            results_db_chk.push(ObjectID::new(id).into_inner());
+            continue;
+        }
+        // convert last_activity to OffsetDateTime, sort to get latest
+        let mut last_activities = kernels
+            .into_iter()
+            .filter(|k| k.connections.eq(&0))
+            .map(|k| (&k).into())
+            .collect::<Vec<OffsetDateTime>>();
+        last_activities.sort();
+        if let Some(t) = last_activities.last() {
+            if (now - *t) >= Duration::from_secs(MAX_IDLE_TIME) {
+                results.push(id.clone());
+            }
+        }
+    }
+
+    // If the user never open their notebook after spinning it up.. the kernel has no information.
+    // In fact, the json is an empty array. Since we cannot let these linger forever...
+    if !results_db_chk.is_empty() {
+        // TODO: look into optimizing this with FindOptions to only get id and start_time
+        let users: Vec<User> = db
+            .find_many(doc! {"_id": {"$in": results_db_chk}}, USER)
+            .await?;
+
+        results.extend(users.into_iter().filter_map(|u| {
+            u.notebook
+                .and_then(|n| n.start_time)
+                .filter(|t| (now - *t) >= Duration::from_secs(MAX_IDLE_TIME))
+                .map(|_| u._id.to_string())
+        }));
+    }
+
     // shutdown the notebook
+    for id in results {
+        match utils::notebook_destroy(db, &id, true, "system").await {
+            Ok(_) => info!(
+                "Notebook {} has been destroyed for being idle for +{} seconds",
+                id, MAX_IDLE_TIME
+            ),
+            Err(e) => info!("Notebook {} failed to be destroyed: {}", id, e),
+        }
+    }
+
     Ok(())
 }
 
 #[cfg(test)]
 mod tests {
+    use crate::db::mongo::DB;
+    use crate::logger;
+
     use super::*;
     use futures::StreamExt;
     use serde_json::json;
     use tokio::time::timeout;
+    use tracing::level_filters::LevelFilter;
 
-    async fn test() -> Result<()> {
+    async fn test(client: Client) -> Result<()> {
+        // ping postman echo
+        let resp = client.get("https://postman-echo.com/get").send().await?;
+        assert!(resp.status().is_success());
         Ok(())
     }
 
@@ -242,6 +347,13 @@ mod tests {
             .for_each(|w| assert!(w[0] <= w[1], "{:?} <= {:?}", w[0], w[1]));
     }
 
+    #[test]
+    fn test_kernel_deserialize_empty() {
+        let kernel_json = json!([]);
+        let k: Vec<Kernel> = serde_json::from_value(kernel_json).unwrap();
+        assert!(k.is_empty());
+    }
+
     #[tokio::test]
     async fn test_notebook_lifecycle() {
         let mut fut = NotebookLifecycle::new(test);
@@ -274,7 +386,10 @@ mod tests {
             .expect("Cannot install default provider");
 
         crate::kube::init_once().await;
-
-        assert!(notebook_lifecycle().await.is_ok());
+        DB::init_once("guardian").await.unwrap();
+        logger::Logger::start(LevelFilter::INFO);
+        let result = notebook_lifecycle(Client::new()).await;
+        println!("{:?}", result);
+        assert!(result.is_ok());
     }
 }
