@@ -1,8 +1,5 @@
 use std::{
-    future::Future,
-    pin::Pin,
-    task::{Context, Poll},
-    time::Duration,
+    future::Future, pin::Pin, task::{Context, Poll}, time::Duration
 };
 
 use futures::{FutureExt, Stream};
@@ -64,8 +61,8 @@ impl<T, F> Medium<T, F> {
 
 impl<T, F> Future for Medium<T, F>
 where
-    T: Stream,
-    F: Future,
+    T: Stream + Send,
+    F: Future + Send,
 {
     type Output = ();
 
@@ -114,11 +111,11 @@ where
     }
 }
 
-struct NotebookLifecycle<F> {
+pub struct LifecycleStream<F> {
     state: State,
     dat: fn(Client) -> F,
     client: Client,
-    fut: Pin<Box<dyn Future<Output = Result<()>>>>,
+    fut: Pin<Box<dyn Future<Output = Result<()>> + Send>>,
 }
 
 enum State {
@@ -126,11 +123,11 @@ enum State {
     Go,
 }
 
-impl<F> NotebookLifecycle<F>
+impl<F> LifecycleStream<F>
 where
     F: Future<Output = Result<()>>,
 {
-    fn new(dat: fn(Client) -> F) -> Self {
+    pub fn new(dat: fn(Client) -> F) -> Self {
         Self {
             state: State::Prep,
             dat,
@@ -140,9 +137,9 @@ where
     }
 }
 
-impl<F> Stream for NotebookLifecycle<F>
+impl<F> Stream for LifecycleStream<F>
 where
-    F: Future<Output = Result<()>> + 'static,
+    F: Future<Output = Result<()>> + Send + 'static,
 {
     type Item = ();
 
@@ -356,7 +353,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_notebook_lifecycle() {
-        let mut fut = NotebookLifecycle::new(test);
+        let mut fut = LifecycleStream::new(test);
         let mut count = 0;
         for _ in 0..10 {
             match fut.next().await {
@@ -372,7 +369,7 @@ mod tests {
     async fn test_medium() {
         let exp_min = Duration::from_secs(1);
         let sleep_min = Duration::from_secs(1);
-        let fut = NotebookLifecycle::new(test);
+        let fut = LifecycleStream::new(test);
         let sigterm = sleep(Duration::from_secs(5));
         let lifecycle = Medium::new(exp_min, sleep_min, fut, sigterm);
 

@@ -18,6 +18,7 @@ mod models;
 pub use models::{Notebook, NotebookSpec, PVCSpec, NAMESPACE};
 
 mod notebook_lifecycle;
+pub use notebook_lifecycle::{notebook_lifecycle, LifecycleStream, Medium};
 
 pub struct KubeAPI<M> {
     model: M,

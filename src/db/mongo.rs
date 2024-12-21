@@ -114,11 +114,18 @@ impl DB {
     }
 }
 
-impl<'c, R1> Database<'c, R1> for DB
+// pub trait Database<'c, R1 = User, Q = Document, N = &'c str, C = &'c str, R2 = Bson, R3 = u64> {
+impl<R1> Database<R1> for DB
 where
     R1: Send + Sync + Serialize + DeserializeOwned,
 {
-    async fn find(&self, query: Document, collection: &'c str) -> Result<R1> {
+    type Q = Document;
+    type N<'a> = &'a str;
+    type C<'a> = &'a str;
+    type R2 = Bson;
+    type R3 = u64;
+
+    async fn find(&self, query: Document, collection: Self::N<'_>) -> Result<R1> {
         let col = Self::get_collection(self, collection);
         col.find_one(query)
             .await?
@@ -129,7 +136,7 @@ where
         &self,
         query: Document,
         update: Document,
-        collection: &'c str,
+        collection: Self::N<'_>,
     ) -> Result<R1> {
         let col = Self::get_collection(self, collection);
         col.find_one_and_update(query, update)
@@ -137,7 +144,7 @@ where
             .ok_or_else(|| GuardianError::GeneralError("Could not find any document".to_string()))
     }
 
-    async fn find_many(&self, query: Document, collection: &'c str) -> Result<Vec<R1>> {
+    async fn find_many(&self, query: Document, collection: Self::N<'_>) -> Result<Vec<R1>> {
         let mut docs = Vec::new();
         let col = Self::get_collection(self, collection);
         let mut cursor = col.find(query).await?;
@@ -154,12 +161,12 @@ where
         Ok(docs)
     }
 
-    async fn insert(&self, query: R1, collection: &'c str) -> Result<Bson> {
+    async fn insert(&self, query: R1, collection: Self::N<'_>) -> Result<Bson> {
         let col = Self::get_collection(self, collection);
         Ok(col.insert_one(query).await?.inserted_id)
     }
 
-    async fn insert_many(&self, query: Vec<R1>, collection: &'c str) -> Result<Vec<Bson>> {
+    async fn insert_many(&self, query: Vec<R1>, collection: Self::N<'_>) -> Result<Vec<Bson>> {
         let mut types = Vec::new();
         let col = Self::get_collection(self, collection);
         let r = col.insert_many(query).await?;
@@ -174,7 +181,7 @@ where
         &self,
         query: Document,
         update: Document,
-        collection: &'c str,
+        collection: Self::N<'_>,
         _model: PhantomData<R1>,
     ) -> Result<u64> {
         let col: Collection<R1> = Self::get_collection(self, collection);
@@ -186,7 +193,7 @@ where
         &self,
         query: Document,
         update: Vec<Document>,
-        collection: &'c str,
+        collection: Self::N<'_>,
         _model: PhantomData<R1>,
     ) -> Result<u64> {
         let col: Collection<R1> = Self::get_collection(self, collection);
@@ -198,7 +205,7 @@ where
     async fn delete(
         &self,
         filter: Document,
-        collection: &'c str,
+        collection: Self::N<'_>,
         _model: PhantomData<R1>,
     ) -> Result<u64> {
         let col: Collection<R1> = Self::get_collection(self, collection);
@@ -210,7 +217,7 @@ where
     async fn delete_many(
         &self,
         filter: Document,
-        collection: &'c str,
+        collection: Self::N<'_>,
         _model: PhantomData<R1>,
     ) -> Result<u64> {
         let col: Collection<R1> = Self::get_collection(self, collection);
@@ -221,8 +228,8 @@ where
 
     async fn search_users(
         &self,
-        name: &'c str,
-        collection: &'c str,
+        name: Self::C<'_>,
+        collection: Self::N<'_>,
         _model: PhantomData<R1>,
     ) -> Result<Vec<R1>> {
         let mut docs = Vec::new();

@@ -1,10 +1,6 @@
 use std::{
     io::Result,
     process::exit,
-    sync::{
-        atomic::{self, AtomicBool},
-        Arc,
-    },
     time::Duration,
 };
 
@@ -13,12 +9,16 @@ use actix_web::{
     web::{self, Data},
     App, HttpServer,
 };
-use tracing::{error, info, level_filters::LevelFilter};
+use tracing::{error, level_filters::LevelFilter};
 
 #[cfg(feature = "notebook")]
-use crate::kube;
+use crate::kube::{self, notebook_lifecycle, LifecycleStream, Medium};
+
 use crate::{
-    auth::openid, db::mongo::{DB, DBCONN}, logger::Logger, templating
+    auth::openid,
+    db::mongo::{DB, DBCONN},
+    logger::Logger,
+    templating,
 };
 
 mod guardian_middleware;
@@ -26,14 +26,21 @@ mod helper;
 mod route;
 mod tls;
 
-pub use helper::{bson, utils};
+pub use helper::bson;
+#[cfg(feature = "notebook")]
+pub use helper::utils;
 
 #[cfg(feature = "notebook")]
 pub use route::notebook::notebook_helper;
 pub use route::proxy::services;
 
 // One hour timeout
-const TIMEOUT: u64 = 60 * 60;
+const TIMEOUT: u64 = 3600;
+#[cfg(feature = "notebook")]
+const LIFECYCLE_TIME: Duration = Duration::from_secs(3600);
+#[cfg(feature = "notebook")]
+const SIGTERM_FREQ: Duration = Duration::from_secs(5);
+#[cfg(feature = "notebook")]
 const AD_LOCK: &str = "guardian-lock";
 
 /// Starts the Guardian server either with or without TLS. If with TLS, please ensure you have the
@@ -82,16 +89,20 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
     };
 
     // Get the "advisory lock" to the one pod to run certain jobs
-    let notification = Arc::new(AtomicBool::new(false));
-    let notified = notification.clone();
+    #[cfg(feature = "notebook")]
     let handle = if (db.get_lock(AD_LOCK).await).is_ok() {
-        info!("Unlimited power!!!");
+        tracing::info!("Unlimited power!!!");
         Some(tokio::spawn(async move {
-            // No happens before needed, thus Relaxed
-            while !notified.load(atomic::Ordering::Relaxed) {
-                tokio::time::sleep(Duration::from_secs(5)).await;
-                info!("hello...");
-            }
+            let stream = LifecycleStream::new(notebook_lifecycle);
+            Medium::new(
+                LIFECYCLE_TIME,
+                SIGTERM_FREQ,
+                stream,
+                tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate())
+                    .expect("Cannot create signal for graceful shutdown")
+                    .recv(),
+            )
+            .await;
         }))
     } else {
         None
@@ -145,10 +156,12 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
     }
 
     // If the lock was acquired, release it
+    #[cfg(feature = "notebook")]
     if let Some(handle) = handle {
-        notification.store(true, atomic::Ordering::Relaxed);
         handle.await?;
-        db.release_lock(AD_LOCK).await.expect("Cannot release advisory lock");
+        db.release_lock(AD_LOCK)
+            .await
+            .expect("Cannot release advisory lock");
     }
 
     Ok(())

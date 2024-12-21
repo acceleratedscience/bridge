@@ -237,7 +237,7 @@ pub mod forwarding {
 
 #[cfg(feature = "notebook")]
 pub mod utils {
-    use std::{marker::PhantomData, ops::Deref};
+    use std::marker::PhantomData;
 
     use k8s_openapi::api::core::v1::PersistentVolumeClaim;
     use mongodb::bson::doc;
@@ -245,7 +245,7 @@ pub mod utils {
     use crate::{
         db::{
             models::{User, USER},
-            mongo::ObjectID,
+            mongo::{ObjectID, DB},
             Database,
         },
         errors::Result,
@@ -254,15 +254,19 @@ pub mod utils {
     };
 
     #[inline]
-    pub async fn notebook_destroy<'a, O, I>(
-        db: O,
-        subject: &str,
-        pvc: bool,
-        user: &str,
-    ) -> Result<()>
-    where
-        O: Deref<Target = I>,
-        I: Database<'a>,
+    // Whould have been nice to keep db behind interface, but bug with compiler https://github.com/rust-lang/rust/issues/64552
+    // pub async fn notebook_destroy<O, I>(db: O, subject: &str, pvc: bool, user: &str) -> Result<()>
+    // where
+    //     O: Deref<Target = I>,
+    //     I: for<'a> Database<
+    //         User,
+    //         Q = Document,
+    //         N<'a> = &'a str,
+    //         C<'a> = &'a str,
+    //         R2 = Bson,
+    //         R3 = u64,
+    //     >,
+    pub async fn notebook_destroy(db: &DB, subject: &str, pvc: bool, user: &str) -> Result<()>
     {
         let name = notebook_helper::make_notebook_name(subject);
         let pvc_name = notebook_helper::make_notebook_volume_name(subject);
