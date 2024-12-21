@@ -254,7 +254,7 @@ pub mod utils {
     };
 
     #[inline]
-    // Whould have been nice to keep db behind interface, but bug with compiler https://github.com/rust-lang/rust/issues/64552
+    // Would have been nice to keep db behind interface, but bug with compiler https://github.com/rust-lang/rust/issues/64552
     // pub async fn notebook_destroy<O, I>(db: O, subject: &str, pvc: bool, user: &str) -> Result<()>
     // where
     //     O: Deref<Target = I>,

@@ -1,8 +1,4 @@
-use std::{
-    io::Result,
-    process::exit,
-    time::Duration,
-};
+use std::{io::Result, process::exit, time::Duration};
 
 use actix_web::{
     middleware::{self},

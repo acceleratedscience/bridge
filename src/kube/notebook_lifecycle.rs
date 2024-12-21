@@ -98,7 +98,6 @@ where
                     return Poll::Ready(());
                 }
                 Poll::Pending => {
-                    info!("Notebook lifecycling is still pending");
                     return Poll::Pending;
                 }
             }
