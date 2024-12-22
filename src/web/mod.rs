@@ -8,7 +8,9 @@ use actix_web::{
 use tracing::{error, level_filters::LevelFilter};
 
 #[cfg(feature = "notebook")]
-use crate::kube::{self, notebook_lifecycle, LifecycleStream, Medium};
+use crate::kube::{self};
+#[cfg(all(feature = "notebook", feature = "lifecycle"))]
+use crate::kube::{notebook_lifecycle, LifecycleStream, Medium};
 
 use crate::{
     auth::openid,
@@ -30,13 +32,13 @@ pub use helper::utils;
 pub use route::notebook::notebook_helper;
 pub use route::proxy::services;
 
-// One hour timeout
+// One hour timeout for client requests
 const TIMEOUT: u64 = 3600;
-#[cfg(feature = "notebook")]
+#[cfg(all(feature = "notebook", feature = "lifecycle"))]
 const LIFECYCLE_TIME: Duration = Duration::from_secs(3600);
-#[cfg(feature = "notebook")]
+#[cfg(all(feature = "notebook", feature = "lifecycle"))]
 const SIGTERM_FREQ: Duration = Duration::from_secs(5);
-#[cfg(feature = "notebook")]
+#[cfg(all(feature = "notebook", feature = "lifecycle"))]
 const AD_LOCK: &str = "guardian-lock";
 
 /// Starts the Guardian server either with or without TLS. If with TLS, please ensure you have the
@@ -73,9 +75,6 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
         error!("{e}");
         exit(1);
     }
-    #[cfg(feature = "notebook")]
-    kube::init_once().await;
-
     let db = match DBCONN.get() {
         Some(db) => db,
         None => {
@@ -83,11 +82,13 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
             exit(1);
         }
     };
-
-    // Get the "advisory lock" to the one pod to run certain jobs
     #[cfg(feature = "notebook")]
+    kube::init_once().await;
+
+    // Lifecycle with "advisory lock"
+    #[cfg(all(feature = "notebook", feature = "lifecycle"))]
     let handle = if (db.get_lock(AD_LOCK).await).is_ok() {
-        tracing::info!("Unlimited power!!!");
+        tracing::info!("Look at me, I'm the captain now...");
         Some(tokio::spawn(async move {
             let stream = LifecycleStream::new(notebook_lifecycle);
             Medium::new(
@@ -152,7 +153,7 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
     }
 
     // If the lock was acquired, release it
-    #[cfg(feature = "notebook")]
+    #[cfg(all(feature = "notebook", feature = "lifecycle"))]
     if let Some(handle) = handle {
         handle.await?;
         db.release_lock(AD_LOCK)

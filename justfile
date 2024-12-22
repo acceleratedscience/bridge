@@ -7,6 +7,9 @@ build:
 build-notebook:
 	podman build -t guardian --build-arg NOTEBOOK=true .
 
+build-notebook-lifecycle:
+	podman build -t guardian --build-arg NOTEBOOK=true --build-arg LIFECYCLE=true .
+
 local-mongo:
 	podman run -d --rm --name mongodb \
 	-e MONGODB_ROOT_PASSWORD="admin123456789" \

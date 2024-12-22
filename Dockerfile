@@ -10,6 +10,9 @@ ARG NOTEBOOK=false
 RUN if [ "$NOTEBOOK" = "true" ]; then \
         echo "Building with Notebook Feature..." \
         && cargo build --release --features notebook; \
+	elif [ "$NOTEBOOK" = "true" ] && [ "$LIFECYCLE" = "false" ]; then \
+		echo "Building without Notebook Feature..." \
+		&& cargo build --release --features notebook lifecycle; \
     else \
         echo "Building without Notebook Feature..." \
         && cargo build --release; \

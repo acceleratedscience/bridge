@@ -16,7 +16,7 @@
     -   Rust
 -   Infrastructure:
     -   OpenShift / Kubernetes
-    -   Docker
+    -   Podman
         -   Primarily used for containerizing the application
     -   Helm
     -   OpenTofu

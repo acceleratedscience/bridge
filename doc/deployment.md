@@ -23,7 +23,7 @@
 
 1.  Start a local MongoDB instance
 
-    Ensure you have Docker or Podman installed on your local machine.
+    Ensure you have Podman installed on your local machine. If you prefer Docker, updated "podman" commands to "docker" commands
 
         just local-mongo
 
@@ -43,7 +43,7 @@
 
 1.  Stop the local MongoDB instance
 
-        docker stop mongodb
+        podman stop mongodb
 
 1.  Clear build artifacts (optional)
 
@@ -63,15 +63,15 @@
 
 1.  Get and use login password for ECR
 
-        aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 260533665315.dkr.ecr.us-east-1.amazonaws.com
+        aws ecr get-login-password --region us-east-1 | podman login --username AWS --password-stdin 260533665315.dkr.ecr.us-east-1.amazonaws.com
 
 1.  Tag the container image
 
-        docker tag guardian:v#.#.# 260533665315.dkr.ecr.us-east-1.amazonaws.com/guardian:v#.#.#
+        podman tag guardian:v#.#.# 260533665315.dkr.ecr.us-east-1.amazonaws.com/guardian:v#.#.#
 
 1.  Push the container image to the ECR
 
-        docker push 260533665315.dkr.ecr.us-east-1.amazonaws.com/guardian:v#.#.#
+        podman push 260533665315.dkr.ecr.us-east-1.amazonaws.com/guardian:v#.#.#
 
 1.  Rotate the ECR secret in OpenShift
 
