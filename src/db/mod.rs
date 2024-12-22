@@ -16,63 +16,63 @@ pub mod mongo;
 pub trait Database<R1> {
     type Q;
     type N<'a>;
-    type C<'a>;
+    type C;
     type R2;
     type R3;
 
     fn find(
         &self,
         query: Self::Q,
-        collection: Self::C<'_>,
+        collection: Self::C,
     ) -> impl Future<Output = Result<R1>>;
     fn find_one_update(
         &self,
         query: Self::Q,
         update: Self::Q,
-        collection: Self::C<'_>,
+        collection: Self::C,
     ) -> impl Future<Output = Result<R1>>;
     fn find_many(
         &self,
         query: Self::Q,
-        collection: Self::C<'_>,
+        collection: Self::C,
     ) -> impl Future<Output = Result<Vec<R1>>>;
 
     fn insert(
         &self,
         query: R1,
-        collection: Self::C<'_>,
+        collection: Self::C,
     ) -> impl Future<Output = Result<Self::R2>>;
     fn insert_many(
         &self,
         query: Vec<R1>,
-        collection: Self::C<'_>,
+        collection: Self::C,
     ) -> impl Future<Output = Result<Vec<Self::R2>>>;
 
     fn update(
         &self,
         query: Self::Q,
         update: Self::Q,
-        collection: Self::C<'_>,
+        collection: Self::C,
         _model: PhantomData<R1>,
     ) -> impl Future<Output = Result<Self::R3>>;
     fn update_many(
         &self,
         query: Self::Q,
         update: Vec<Self::Q>,
-        collection: Self::C<'_>,
+        collection: Self::C,
         _model: PhantomData<R1>,
     ) -> impl Future<Output = Result<Self::R3>>;
 
     fn delete(
         &self,
         filter: Self::Q,
-        collection: Self::C<'_>,
+        collection: Self::C,
         _model: PhantomData<R1>,
     ) -> impl Future<Output = Result<Self::R3>>;
     fn delete_many(
         &self,
         filter: Self::Q,
-        collection: Self::C<'_>,
+        collection: Self::C,
         _model: PhantomData<R1>,
     ) -> impl Future<Output = Result<Self::R3>>;
 
@@ -80,7 +80,7 @@ pub trait Database<R1> {
     fn search_users(
         &self,
         name: Self::N<'_>,
-        collection: Self::C<'_>,
+        collection: Self::C,
         _model: PhantomData<R1>,
     ) -> impl Future<Output = Result<Vec<R1>>>;
 }

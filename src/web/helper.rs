@@ -237,15 +237,15 @@ pub mod forwarding {
 
 #[cfg(feature = "notebook")]
 pub mod utils {
-    use std::marker::PhantomData;
+    use std::{marker::PhantomData, ops::Deref};
 
     use k8s_openapi::api::core::v1::PersistentVolumeClaim;
-    use mongodb::bson::doc;
+    use mongodb::bson::{doc, Bson, Document};
 
     use crate::{
         db::{
             models::{User, USER},
-            mongo::{ObjectID, DB},
+            mongo::ObjectID,
             Database,
         },
         errors::Result,
@@ -254,19 +254,20 @@ pub mod utils {
     };
 
     #[inline]
-    // Would have been nice to keep db behind interface, but bug with compiler https://github.com/rust-lang/rust/issues/64552
-    // pub async fn notebook_destroy<O, I>(db: O, subject: &str, pvc: bool, user: &str) -> Result<()>
-    // where
-    //     O: Deref<Target = I>,
-    //     I: for<'a> Database<
-    //         User,
-    //         Q = Document,
-    //         N<'a> = &'a str,
-    //         C<'a> = &'a str,
-    //         R2 = Bson,
-    //         R3 = u64,
-    //     >,
-    pub async fn notebook_destroy(db: &DB, subject: &str, pvc: bool, user: &str) -> Result<()>
+    // Once this issue is fixed with compiler https://github.com/rust-lang/rust/issues/64552, can
+    // relax C = &'static str to C<'a> = &'a str
+    pub async fn notebook_destroy<O, I>(db: O, subject: &str, pvc: bool, user: &str) -> Result<()>
+    where
+        O: Deref<Target = I>,
+        I: for<'a> Database<
+            User,
+            Q = Document,
+            N<'a> = &'a str,
+            C = &'static str,
+            R2 = Bson,
+            R3 = u64,
+        >,
+    // pub async fn notebook_destroy(db: &DB, subject: &str, pvc: bool, user: &str) -> Result<()>
     {
         let name = notebook_helper::make_notebook_name(subject);
         let pvc_name = notebook_helper::make_notebook_volume_name(subject);
