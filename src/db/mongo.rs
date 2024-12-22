@@ -14,7 +14,7 @@ use crate::{
 };
 
 use super::{
-    models::{Group, User, GROUP, USER},
+    models::{Group, Locks, User, GROUP, LOCKS, USER},
     Database,
 };
 
@@ -39,7 +39,7 @@ impl ObjectID {
 
 pub static DBCONN: OnceLock<DB> = OnceLock::new();
 
-static COLLECTIONS: [&str; 2] = [USER, GROUP];
+static COLLECTIONS: [&str; 3] = [USER, GROUP, LOCKS];
 
 impl DB {
     pub async fn init_once(database: &'static str) -> Result<()> {
@@ -58,6 +58,7 @@ impl DB {
         // create the unique indexes if they do not exist
         Self::create_index::<User, _>(&dbs, USER, "email", 1).await?;
         Self::create_index::<Group, _>(&dbs, GROUP, "name", "text").await?;
+        Self::create_index::<Locks, _>(&dbs, LOCKS, "name", "text").await?;
 
         DBCONN.get_or_init(|| dbs);
 
@@ -99,20 +100,51 @@ impl DB {
     {
         d.mongo_database.collection::<Z>(collection)
     }
+
+    pub async fn get_lock(&self, name: &str) -> Result<()> {
+        let _ = self.insert(doc! {"name": name}, LOCKS).await?;
+        Ok(())
+    }
+
+    pub async fn release_lock(&self, name: &str) -> Result<()> {
+        let _ = self
+            .delete(doc! {"name": name}, LOCKS, PhantomData::<Locks>)
+            .await?;
+        Ok(())
+    }
 }
 
-impl<'c, R1> Database<'c, R1> for DB
+// pub trait Database<'c, R1 = User, Q = Document, N = &'c str, C = &'c str, R2 = Bson, R3 = u64> {
+impl<R1> Database<R1> for DB
 where
     R1: Send + Sync + Serialize + DeserializeOwned,
 {
-    async fn find(&self, query: Document, collection: &'c str) -> Result<R1> {
+    type Q = Document;
+    type N<'a> = &'a str;
+    type C = &'static str;
+    type R2 = Bson;
+    type R3 = u64;
+
+    async fn find(&self, query: Document, collection: Self::C) -> Result<R1> {
         let col = Self::get_collection(self, collection);
         col.find_one(query)
             .await?
             .ok_or_else(|| GuardianError::GeneralError("Could not find any document".to_string()))
     }
 
-    async fn find_many(&self, query: Document, collection: &'c str) -> Result<Vec<R1>> {
+    async fn find_one_update(
+        &self,
+        query: Document,
+        update: Document,
+        collection: Self::C,
+    ) -> Result<R1> {
+        let col = Self::get_collection(self, collection);
+        col.find_one_and_update(query, update)
+            .await?
+            .ok_or_else(|| GuardianError::GeneralError("Could not find any document".to_string()))
+    }
+
+    async fn find_many(&self, query: Document, collection: Self::C) -> Result<Vec<R1>> {
         let mut docs = Vec::new();
         let col = Self::get_collection(self, collection);
         let mut cursor = col.find(query).await?;
@@ -129,12 +161,12 @@ where
         Ok(docs)
     }
 
-    async fn insert(&self, query: R1, collection: &'c str) -> Result<Bson> {
+    async fn insert(&self, query: R1, collection: Self::C) -> Result<Bson> {
         let col = Self::get_collection(self, collection);
         Ok(col.insert_one(query).await?.inserted_id)
     }
 
-    async fn insert_many(&self, query: Vec<R1>, collection: &'c str) -> Result<Vec<Bson>> {
+    async fn insert_many(&self, query: Vec<R1>, collection: Self::C) -> Result<Vec<Bson>> {
         let mut types = Vec::new();
         let col = Self::get_collection(self, collection);
         let r = col.insert_many(query).await?;
@@ -149,7 +181,7 @@ where
         &self,
         query: Document,
         update: Document,
-        collection: &'c str,
+        collection: Self::C,
         _model: PhantomData<R1>,
     ) -> Result<u64> {
         let col: Collection<R1> = Self::get_collection(self, collection);
@@ -161,7 +193,7 @@ where
         &self,
         query: Document,
         update: Vec<Document>,
-        collection: &'c str,
+        collection: Self::C,
         _model: PhantomData<R1>,
     ) -> Result<u64> {
         let col: Collection<R1> = Self::get_collection(self, collection);
@@ -173,7 +205,7 @@ where
     async fn delete(
         &self,
         filter: Document,
-        collection: &'c str,
+        collection: Self::C,
         _model: PhantomData<R1>,
     ) -> Result<u64> {
         let col: Collection<R1> = Self::get_collection(self, collection);
@@ -185,7 +217,7 @@ where
     async fn delete_many(
         &self,
         filter: Document,
-        collection: &'c str,
+        collection: Self::C,
         _model: PhantomData<R1>,
     ) -> Result<u64> {
         let col: Collection<R1> = Self::get_collection(self, collection);
@@ -196,8 +228,8 @@ where
 
     async fn search_users(
         &self,
-        name: &'c str,
-        collection: &'c str,
+        name: Self::N<'_>,
+        collection: Self::C,
         _model: PhantomData<R1>,
     ) -> Result<Vec<R1>> {
         let mut docs = Vec::new();

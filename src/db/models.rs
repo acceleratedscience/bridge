@@ -48,10 +48,18 @@ pub struct User {
     pub groups: Vec<String>,
     pub user_type: UserType,
     pub token: Option<String>,
-    pub notebook: Option<time::OffsetDateTime>,
+    pub notebook: Option<NotebookInfo>,
     pub created_at: time::OffsetDateTime,
     pub updated_at: time::OffsetDateTime,
     pub last_updated_by: String,
+}
+
+#[derive(Debug, Default, Deserialize, Serialize)]
+pub struct NotebookInfo {
+    pub start_time: Option<time::OffsetDateTime>,
+    pub last_active: Option<time::OffsetDateTime>,
+    pub max_idle_time: Option<u64>,
+    pub start_up_url: Option<String>,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -60,6 +68,7 @@ pub struct UserNotebook {
     pub url: String,
     pub start_time: String,
     pub status: String,
+    pub start_up_url: Option<String>,
 }
 
 /// This is the form verison of the User struct
@@ -90,6 +99,13 @@ pub struct Group {
     pub created_at: time::OffsetDateTime,
     pub updated_at: time::OffsetDateTime,
     pub last_updated_by: String,
+}
+
+pub static LOCKS: &str = "locks";
+#[derive(Debug, Deserialize, Serialize)]
+pub struct Locks {
+    pub _id: ObjectId,
+    pub name: String,
 }
 
 /// This is the form verison of the Group struct
@@ -132,6 +148,7 @@ pub struct NotebookCookie {
 pub struct NotebookStatusCookie {
     pub start_time: String,
     pub status: String,
+    pub start_url: Option<String>,
 }
 
 #[derive(Debug, Deserialize, Clone)]

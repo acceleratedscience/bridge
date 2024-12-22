@@ -11,7 +11,7 @@ pub struct CallBackResponse {
 
 struct CallBackVisitor;
 
-impl<'de> Visitor<'de> for CallBackVisitor {
+impl Visitor<'_> for CallBackVisitor {
     type Value = CallBackResponse;
 
     fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {

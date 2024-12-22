@@ -1,8 +1,11 @@
-use std::time::Instant;
+use std::time::{Duration, Instant};
 
 use futures::{stream, Stream, StreamExt};
 use reqwest::Client;
+use tokio::time::timeout;
 use url::Url;
+
+use crate::errors::{GuardianError, Result};
 
 pub struct InferenceServicesHealth<'a> {
     services: &'a Vec<(Url, String)>,
@@ -27,14 +30,15 @@ impl<'a> InferenceServicesHealth<'a> {
         }
     }
 
-    pub fn create_stream(
-        &'a self,
-    ) -> impl Stream<Item = Result<(bool, String, u128), reqwest::Error>> + 'a {
+    pub fn create_stream(&'a self) -> impl Stream<Item = Result<(bool, String, u128)>> + 'a {
         let requests = stream::iter(self.services.iter().map(|(url, name)| {
             let client = self.client.clone();
             async move {
                 let now = Instant::now();
-                let response = client.get(url.as_str()).send().await?;
+                let fut = client.get(url.as_str()).send();
+                let response = timeout(Duration::from_secs(1), fut).await.map_err(|_| {
+                    GuardianError::GeneralError("Call to inference service timed out".to_string())
+                })??;
                 let elapsed = now.elapsed();
                 Ok((
                     response.status().is_success(),
@@ -47,7 +51,7 @@ impl<'a> InferenceServicesHealth<'a> {
     }
 }
 
-impl<'a> ListBuilder<'a> {
+impl ListBuilder<'_> {
     pub fn add_inner_body(&mut self, up: bool, name: &str, elapsed: u128) {
         let status = if up { "up" } else { "down" };
         let state = if elapsed.gt(&500) {
@@ -85,7 +89,7 @@ mod tests {
         let inference_services = InferenceServicesHealth::new(&services, client);
         let stream = inference_services.create_stream();
 
-        let results: Vec<Result<(bool, String, u128), reqwest::Error>> = stream.collect().await;
+        let results = stream.collect::<Vec<Result<(bool, String, u128)>>>().await;
         assert_eq!(results.len(), 2);
 
         let mut ok_cnt = 0;

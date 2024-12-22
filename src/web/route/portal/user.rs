@@ -78,15 +78,14 @@ pub(super) async fn user(
             });
         }
         let content = helper::log_with_level!(
-            profile.render(data, nsc, helper::add_token_exp_to_tera).await,
+            profile
+                .render(data, nsc, helper::add_token_exp_to_tera)
+                .await,
             error
         )?;
 
         if let Some([nc, nsc]) = content.1 {
-            return Ok(HttpResponse::Ok()
-                .cookie(nc)
-                .cookie(nsc)
-                .body(content.0));
+            return Ok(HttpResponse::Ok().cookie(nc).cookie(nsc).body(content.0));
         }
 
         return Ok(HttpResponse::Ok().body(content.0));

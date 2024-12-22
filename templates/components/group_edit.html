@@ -12,16 +12,22 @@
 		
 		<!-- Group name -->
 		{% if not group_name %}
-		<cds-text-input label="Group name" name="name" required></cds-text-input>
+			<cds-text-input label="Group name" name="name" required></cds-text-input>
 		{% else %}
-		<cds-text-input label="Group name" name="name" value="{{ group_name }}" hidden></cds-text-input>
+			<cds-text-input label="Group name" name="name" value="{{ group_name }}" hidden></cds-text-input>
 		{% endif %}
 
 		<!-- Subscriptions -->
-		<cds-multi-select title-text="Subscriptions" label="Select models" name="subscriptions" required>
-			{% for item in items %}
-				<cds-multi-select-item value="{{ item }}">{{ item }}</cds-multi-select-item>
-			{% endfor %}
+		<cds-multi-select title-text="Subscriptions" label="Select models" name="subscriptions" {% if group_name %}value="{{ selected }}" open=true{% endif %} filterable>
+			{% if group_name %}
+				{% for item in selections %}
+				<cds-multi-select-item {% if item.1 %}selected {% endif %}value="{{ item.0 }}">{{ item.0 }}</cds-multi-select-item>
+				{% endfor %}
+			{% else %}
+				{% for item in items %}
+					<cds-multi-select-item value="{{ item }}">{{ item }}</cds-multi-select-item>
+				{% endfor %}
+			{% endif %}
 		</cds-multi-select>
 
 		<!-- Hidden: Last edit  -->
@@ -38,3 +44,9 @@
 		</cds-button-set>
 	</form>
 </div>
+{% if group_name %}
+	<script nonce="carbon-sucks">
+		const multiSelect = document.querySelector('cds-multi-select');
+		multiSelect.setAttribute('value', "{{ selected }}"); 
+	</script>
+{% endif %}

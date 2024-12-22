@@ -5,7 +5,10 @@ build:
 	podman build -t guardian .
 
 build-notebook:
-	podman build -f Dockerfile_notebook -t guardian .
+	podman build -t guardian --build-arg NOTEBOOK=true .
+
+build-notebook-lifecycle:
+	podman build -t guardian --build-arg NOTEBOOK=true --build-arg LIFECYCLE=true .
 
 local-mongo:
 	podman run -d --rm --name mongodb \

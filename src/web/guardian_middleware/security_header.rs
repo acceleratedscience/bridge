@@ -49,7 +49,7 @@ where
             let mut res = response.await?;
             res.headers_mut().insert(
              header::CONTENT_SECURITY_POLICY,
-             HeaderValue::from_str("default-src 'self'; font-src 1.www.s81c.com; img-src * data:; style-src 'self' 'unsafe-inline' https://1.www.s81c.com https://cdn.jsdelivr.net; script-src 'self' 'nonce-login-redirect-guardian' 'nonce-guardian-group-form-val' https://unpkg.com https://1.www.s81c.com https://cdn.jsdelivr.net;")?,
+             HeaderValue::from_str("default-src 'self'; font-src 1.www.s81c.com; img-src * data:; style-src 'self' 'unsafe-inline' https://1.www.s81c.com https://cdn.jsdelivr.net; script-src 'self' 'nonce-carbon-sucks' 'nonce-login-redirect-guardian' 'nonce-guardian-group-form-val' https://unpkg.com https://1.www.s81c.com https://cdn.jsdelivr.net;")?,
             );
             Ok(res)
         })

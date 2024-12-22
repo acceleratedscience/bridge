@@ -1,4 +1,5 @@
 use std::{
+    collections::HashMap,
     fs::{self, read_to_string},
     path::PathBuf,
     str::FromStr,
@@ -6,18 +7,32 @@ use std::{
 };
 
 use jsonwebtoken::{Algorithm, DecodingKey, EncodingKey, Validation};
+use serde::Deserialize;
 
 pub struct Configuration {
     pub encoder: EncodingKey,
     pub decoder: DecodingKey,
     pub validation: Validation,
     pub db: Database,
-    pub notebook_image: String,
-    pub notebook_image_pull_policy: String,
+    pub notebooks: HashMap<String, Notebook>,
 }
 
 pub struct Database {
     pub url: String,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct Notebook {
+    pub url: String,
+    pub pull_policy: String,
+    pub working_dir: Option<String>,
+    pub volume_mnt_path: Option<String>,
+    pub env: Option<Vec<String>>,
+    pub secret: Option<String>,
+    pub command: Option<Vec<String>>,
+    pub args: Option<Vec<String>>,
+    pub start_up_url: Option<String>,
+    pub max_idle_time: Option<u64>,
 }
 
 pub static CONFIG: LazyLock<Configuration> = LazyLock::new(init_once);
@@ -54,26 +69,30 @@ pub fn init_once() -> Configuration {
         },
     };
 
-    let notebook_table: toml::Table = toml::from_str(
+    let notebooks: HashMap<String, Notebook> = toml::from_str(
         &read_to_string(PathBuf::from_str("config/notebook.toml").unwrap()).unwrap(),
     )
     .unwrap();
-
-    let notebook_image = notebook_table["notebook"]["jupyter"]["image"]
-        .as_str()
-        .unwrap()
-        .to_string();
-    let notebook_image_pull_policy = notebook_table["notebook"]["jupyter"]["image_pull_policy"]
-        .as_str()
-        .unwrap()
-        .to_string();
 
     Configuration {
         encoder,
         decoder,
         validation,
         db,
-        notebook_image,
-        notebook_image_pull_policy,
+        notebooks,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_config_init_once() {
+        let config = init_once();
+        let workbench = config.notebooks.get("open_ad_workbench").unwrap();
+        assert_eq!(workbench.pull_policy, "IfNotPresent");
+        assert_eq!(workbench.working_dir, Some("/opt/app-root/src".to_string()));
+        assert_eq!(workbench.start_up_url, Some("/lab/tree/start_menu.ipynb".to_string()));
     }
 }

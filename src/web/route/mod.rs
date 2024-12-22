@@ -17,10 +17,10 @@ use crate::{
 pub mod auth;
 pub mod foo;
 pub mod health;
-pub mod portal;
-pub mod proxy;
 #[cfg(feature = "notebook")]
 pub mod notebook;
+pub mod portal;
+pub mod proxy;
 
 static APP_VERSION: &str = env!("CARGO_PKG_VERSION");
 

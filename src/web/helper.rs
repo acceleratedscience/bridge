@@ -236,6 +236,70 @@ pub mod forwarding {
 }
 
 #[cfg(feature = "notebook")]
+pub mod utils {
+    use std::{marker::PhantomData, ops::Deref};
+
+    use k8s_openapi::api::core::v1::PersistentVolumeClaim;
+    use mongodb::bson::{doc, Bson, Document};
+
+    use crate::{
+        db::{
+            models::{User, USER},
+            mongo::ObjectID,
+            Database,
+        },
+        errors::Result,
+        kube::{KubeAPI, Notebook},
+        web::{helper::bson, notebook_helper},
+    };
+
+    #[inline]
+    // Once this issue is fixed with compiler https://github.com/rust-lang/rust/issues/64552, can
+    // relax C = &'static str to C<'a> = &'a str
+    pub async fn notebook_destroy<O, I>(db: O, subject: &str, pvc: bool, user: &str) -> Result<()>
+    where
+        O: Deref<Target = I>,
+        I: for<'a> Database<
+            User,
+            Q = Document,
+            N<'a> = &'a str,
+            C = &'static str,
+            R2 = Bson,
+            R3 = u64,
+        >,
+    // pub async fn notebook_destroy(db: &DB, subject: &str, pvc: bool, user: &str) -> Result<()>
+    {
+        let name = notebook_helper::make_notebook_name(subject);
+        let pvc_name = notebook_helper::make_notebook_volume_name(subject);
+        log_with_level!(KubeAPI::<Notebook>::delete(&name).await, error)?;
+        if pvc {
+            log_with_level!(
+                KubeAPI::<PersistentVolumeClaim>::delete(&pvc_name).await,
+                error
+            )?;
+        }
+        // TODO: add last_updated_by
+        db.update(
+            doc! {
+                "_id": ObjectID::new(subject).into_inner(),
+            },
+            doc! {
+                "$set": doc! {
+                    "updated_at": bson(time::OffsetDateTime::now_utc())?,
+                    "notebook": null,
+                    "last_updated_by": user,
+                },
+            },
+            USER,
+            PhantomData::<User>,
+        )
+        .await?;
+
+        Ok(())
+    }
+}
+
+#[cfg(feature = "notebook")]
 /// Websocket proxying utilities
 pub mod ws {
     use actix_web::{
@@ -294,23 +358,23 @@ pub mod ws {
                                     match msg {
                                         actix_ws::Message::Text(t) => {
                                             let _ = log_with_level!(
-                                                w.send(tungstenite::Message::Text(t.to_string())).await,
+                                                w.send(tungstenite::Message::Text(t.to_string().into())).await,
                                                 error
                                             );
                                         }
                                         actix_ws::Message::Binary(b) => {
                                             let _ = log_with_level!(
-                                                w.send(tungstenite::Message::Binary(b.to_vec())).await,
+                                                w.send(tungstenite::Message::Binary(b.to_vec().into())).await,
                                                 error
                                             );
                                         }
                                         actix_ws::Message::Ping(p) => {
                                             let _ =
-                                            log_with_level!(w.send(tungstenite::Message::Ping(p.to_vec())).await, error);
+                                            log_with_level!(w.send(tungstenite::Message::Ping(p.to_vec().into())).await, error);
                                         }
                                         actix_ws::Message::Pong(p) => {
                                             let _ =
-                                            log_with_level!(w.send(tungstenite::Message::Pong(p.to_vec())).await, error);
+                                            log_with_level!(w.send(tungstenite::Message::Pong(p.to_vec().into())).await, error);
                                         }
                                         actix_ws::Message::Close(_) => {
                                             let _ = log_with_level!(w.send(tungstenite::Message::Close(None)).await, error);
@@ -340,7 +404,7 @@ pub mod ws {
                                 if let Ok(msg) = result {
                                     match msg {
                                         tungstenite::Message::Text(t) => {
-                                            let _ = log_with_level!(s.text(t).await, error);
+                                            let _ = log_with_level!(s.text(t.as_str()).await, error);
                                         }
                                         tungstenite::Message::Binary(b) => {
                                             let _ = log_with_level!(s.binary(b).await, error);

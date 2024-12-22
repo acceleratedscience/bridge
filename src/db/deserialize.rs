@@ -18,7 +18,7 @@ impl<'de> Deserialize<'de> for GroupForm {
     }
 }
 
-impl<'de> Visitor<'de> for GroupFormVisitor {
+impl Visitor<'_> for GroupFormVisitor {
     type Value = GroupForm;
 
     fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
@@ -79,7 +79,7 @@ impl<'de> Deserialize<'de> for UserForm {
     }
 }
 
-impl<'de> Visitor<'de> for UserFormVisitor {
+impl Visitor<'_> for UserFormVisitor {
     type Value = UserForm;
 
     fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
@@ -144,7 +144,7 @@ impl<'de> Deserialize<'de> for UserDeleteForm {
     }
 }
 
-impl<'de> Visitor<'de> for UserDeleteFormVisitor {
+impl Visitor<'_> for UserDeleteFormVisitor {
     type Value = UserDeleteForm;
 
     fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {

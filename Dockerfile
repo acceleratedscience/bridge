@@ -1,11 +1,22 @@
 # Stage 1 build
-FROM rust:1.82.0 AS builder
+FROM rust:1.83.0 AS builder
 
 WORKDIR /app
 
 COPY . ./
 
-RUN cargo build --release
+ARG NOTEBOOK=false
+
+RUN if [ "$NOTEBOOK" = "true" ]; then \
+        echo "Building with Notebook Feature..." \
+        && cargo build --release --features notebook; \
+	elif [ "$NOTEBOOK" = "true" ] && [ "$LIFECYCLE" = "false" ]; then \
+		echo "Building without Notebook Feature..." \
+		&& cargo build --release --features notebook lifecycle; \
+    else \
+        echo "Building without Notebook Feature..." \
+        && cargo build --release; \
+    fi
 
 # Stage 2 build
 FROM debian:stable-slim

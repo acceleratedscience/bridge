@@ -342,21 +342,44 @@ async fn system_tab_htmx(
                         }),
                     )?
                 }
-                AdminTab::GroupCreate => group_form.render(
-                    &user.email,
-                    data,
-                    CREATE_MODIFY_GROUP,
-                    None::<fn(&mut tera::Context)>,
-                )?,
-                AdminTab::GroupModify => match tab.group {
-                    Some(name) => group_form.render(
+                AdminTab::GroupCreate => helper::log_with_level!(
+                    group_form.render(
                         &user.email,
                         data,
                         CREATE_MODIFY_GROUP,
-                        Some(|ctx: &mut tera::Context| {
-                            ctx.insert("group_name", &name);
-                        }),
-                    )?,
+                        None::<fn(&mut tera::Context)>,
+                    ),
+                    error
+                )?,
+                AdminTab::GroupModify => match tab.group {
+                    Some(name) => {
+                        let group_info: Group = db
+                            .find(
+                                doc! {
+                                    "name": &name,
+                                },
+                                GROUP,
+                            )
+                            .await?;
+
+                        let mut selections = group_form
+                            .items
+                            .iter()
+                            .map(|v| (v.clone(), group_info.subscriptions.contains(v)))
+                            .collect::<Vec<(String, bool)>>();
+                        selections.sort_by_key(|(_, b)| !*b);
+
+                        group_form.render(
+                            &user.email,
+                            data,
+                            CREATE_MODIFY_GROUP,
+                            Some(|ctx: &mut tera::Context| {
+                                ctx.insert("group_name", &name);
+                                ctx.insert("selected", &group_info.subscriptions.join(","));
+                                ctx.insert("selections", &selections);
+                            }),
+                        )?
+                    }
                     None => {
                         return Err(GuardianError::GeneralError("No group provided".to_string()))
                     }

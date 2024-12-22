@@ -46,7 +46,7 @@ where
     fn call(&self, req: ServiceRequest) -> Self::Future {
         if req.connection_info().scheme() == "http" {
             let new_uri = format!("https://{}{}", req.connection_info().host(), req.uri());
-            let response = HttpResponse::TemporaryRedirect()
+            let response = HttpResponse::PermanentRedirect()
                 .append_header((header::LOCATION, new_uri))
                 .finish()
                 .map_into_right_body();

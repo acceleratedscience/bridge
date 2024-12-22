@@ -22,36 +22,53 @@ pub struct NotebookSpec {
 impl NotebookSpec {
     pub fn new(
         name: String,
-        image_pull_secret: String,
-        command: Option<Vec<String>>,
-        args: Option<Vec<String>>,
-        notebook_env: Option<Vec<String>>,
+        notebook_image_name: &str,
         volume_name: String,
-        volume_mount_path: String,
+        notebook_start_url: &mut Option<String>,
+        max_idle_time: &mut Option<u64>,
     ) -> Self {
+        let notebook_image = CONFIG.notebooks.get(notebook_image_name).unwrap();
+        let mut env = notebook_image.env.clone().unwrap_or_default();
+        env.push(format!(
+            "--ServerApp.base_url='notebook/{}/{}'",
+            NAMESPACE, name
+        ));
+        *notebook_start_url = notebook_image.start_up_url.clone();
+        *max_idle_time = notebook_image.max_idle_time;
+
         NotebookSpec {
             template: NotebookTemplateSpec {
                 spec: PodSpec {
                     containers: vec![ContainerSpec {
                         name,
-                        image: CONFIG.notebook_image.clone(),
-                        image_pull_policy: CONFIG.notebook_image_pull_policy.clone(),
+                        image: notebook_image.url.clone(),
+                        resources: Some(ResourceRequirements {
+                            requests: BTreeMap::from([
+                                ("cpu".to_string(), "2".to_string()),
+                                ("memory".to_string(), "4Gi".to_string()),
+                            ]),
+                            limits: BTreeMap::from([
+                                ("cpu".to_string(), "2".to_string()),
+                                ("memory".to_string(), "4Gi".to_string()),
+                            ]),
+                        }),
+                        image_pull_policy: notebook_image.pull_policy.clone(),
                         volume_mounts: Some(vec![VolumeMount {
                             name: volume_name.clone(),
-                            mount_path: volume_mount_path,
+                            mount_path: notebook_image.volume_mnt_path.clone().unwrap_or_default(),
                         }]),
-                        command,
-                        args,
+                        command: notebook_image.command.clone(),
+                        args: notebook_image.args.clone(),
+                        workingdir: notebook_image.working_dir.clone(),
                         env: Some(vec![EnvVar {
                             name: "NOTEBOOK_ARGS".to_string(),
-                            // resorting to default here if the vec is empty, but the vec should
-                            // never be empty
-                            value: notebook_env.unwrap_or_default().join(" "),
+                            value: env.join(" "),
                         }]),
                     }],
-                    image_pull_secrets: Some(vec![ImagePullSecret {
-                        name: image_pull_secret,
-                    }]),
+                    image_pull_secrets: notebook_image
+                        .secret
+                        .clone()
+                        .map(|secret| vec![ImagePullSecret { name: secret }]),
                     volumes: Some(vec![VolumeSpec {
                         name: volume_name.clone(),
                         persistent_volume_claim: Some(PersistentVolumeClaimSpec {
@@ -88,6 +105,9 @@ pub struct ImagePullSecret {
 pub struct ContainerSpec {
     name: String,
     image: String,
+    resources: Option<ResourceRequirements>,
+    #[serde(rename = "workingDir")]
+    workingdir: Option<String>,
     #[serde(rename = "imagePullPolicy")]
     image_pull_policy: String,
     #[serde(rename = "volumeMounts")]
@@ -95,6 +115,12 @@ pub struct ContainerSpec {
     command: Option<Vec<String>>,
     args: Option<Vec<String>>,
     env: Option<Vec<EnvVar>>,
+}
+
+#[derive(Deserialize, Serialize, Clone, Debug, JsonSchema)]
+struct ResourceRequirements {
+    requests: BTreeMap<String, String>,
+    limits: BTreeMap<String, String>,
 }
 
 #[derive(Deserialize, Serialize, Clone, Debug, JsonSchema)]
@@ -173,66 +199,72 @@ mod test {
     #[test]
     fn test_notebook_spec() {
         let name = "notebook".to_string();
-        let image_pull_secret = "gcr-secret".to_string();
         let volume_name = "notebook-volume".to_string();
-        let volume_mount_path = "/mnt/notebook".to_string();
-        let command = Some(vec!["/bin/bash".to_string()]);
-        let args = Some(vec!["-c".to_string(), "echo 'Hello, World!'".to_string()]);
-        let env = Some(vec!["FOO=bar".to_string()]);
+        let mut start_url = None;
+        let mut max_idle_time = None;
 
         let spec = NotebookSpec::new(
             name,
-            image_pull_secret,
-            command,
-            args,
-            env,
+            "open_ad_workbench",
             volume_name,
-            volume_mount_path,
+            &mut start_url,
+            &mut max_idle_time,
         );
 
         let expected = json!({
             "template": {
                 "spec": {
-                    "containers": [
-                        {
+                    "containers": [{
                             "name": "notebook",
                             "image": "quay.io/ibmdpdev/openad_workbench:latest",
+                            "resources": {
+                                "requests": {
+                                    "cpu": "2",
+                                    "memory": "4Gi"
+                                },
+                                "limits": {
+                                    "cpu": "2",
+                                    "memory": "4Gi"
+                                }
+                            },
+                            "workingDir": "/opt/app-root/src",
                             "imagePullPolicy": "IfNotPresent",
                             "volumeMounts": [
                                 {
                                     "name": "notebook-volume",
-                                    "mountPath": "/mnt/notebook"
+                                    "mountPath": "/opt/app-root/src"
                                 }
                             ],
-                            "command": ["/bin/bash"],
-                            "args": ["-c", "echo 'Hello, World!'"],
+                            "command": null,
+                            "args": null,
                             "env": [
                                 {
                                     "name": "NOTEBOOK_ARGS",
-                                    "value": "FOO=bar"
+                                    "value": "--ServerApp.token='' --ServerApp.password='' --ServerApp.notebook_dir='/opt/app-root/src' --ServerApp.quit_button=False"
+                                },
+                                {
+                                    "name": "NOTEBOOK_BASE_URL",
+                                    "value": "notebook/notebook/notebook"
                                 }
                             ]
+                    }],
+                    "imagePullSecrets": [{
+                        "name": "quay-notebook-secret"
+                    }],
+                    "volumes": [{
+                        "name": "notebook-volume",
+                        "persistentVolumeClaim": {
+                            "claimName": "notebook-volume"
                         }
-                    ],
-                    "imagePullSecrets": [
-                        {
-                            "name": "gcr-secret"
-                        }
-                    ],
-                    "volumes": [
-                        {
-                            "name": "notebook-volume",
-                            "persistentVolumeClaim": {
-                                "claimName": "notebook-volume-pvc"
-                            }
-                        }
-                    ]
-                }
+                    }]
+                },
             }
         });
 
         let actual = serde_json::to_value(&spec).unwrap();
         assert_eq!(actual, expected);
+        assert_eq!(start_url, Some("/lab/tree/start_menu.ipynb".to_string()));
+        assert_eq!(max_idle_time, Some(60));
     }
 
     #[test]

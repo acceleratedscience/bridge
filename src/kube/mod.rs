@@ -17,6 +17,9 @@ use crate::errors::{GuardianError, Result};
 mod models;
 pub use models::{Notebook, NotebookSpec, PVCSpec, NAMESPACE};
 
+mod notebook_lifecycle;
+pub use notebook_lifecycle::{notebook_lifecycle, LifecycleStream, Medium};
+
 pub struct KubeAPI<M> {
     model: M,
 }
@@ -99,6 +102,12 @@ where
             .as_ref()
             .map(|status| status.phase == Some("Running".to_string()))
             .unwrap_or(false))
+    }
+
+    pub async fn get_all_pods() -> Result<Vec<Pod>> {
+        let pods = Api::<Pod>::namespaced(Self::get_kube_client()?.clone(), NAMESPACE);
+        let list = pods.list(&Default::default()).await?;
+        Ok(list.items)
     }
 
     pub async fn get_pod_ip(name: &str) -> Result<String> {

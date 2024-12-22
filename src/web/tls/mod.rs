@@ -2,6 +2,7 @@ use std::{fs::File, io::BufReader};
 
 use rustls::server::ServerConfig;
 use rustls_pemfile::{certs, private_key};
+use tracing::error;
 
 pub fn load_certs(cert: &str, key: &str) -> ServerConfig {
     // init server config builder with safe defaults
@@ -24,7 +25,7 @@ pub fn load_certs(cert: &str, key: &str) -> ServerConfig {
             .with_single_cert(cert_chain, key)
             .expect("Could not load key/cert")
     } else {
-        eprintln!("Could not locate PKCS 8 private keys.");
+        error!("Could not locate PKCS 8 private keys.");
         std::process::exit(1);
     }
 }
