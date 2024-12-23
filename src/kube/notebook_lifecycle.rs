@@ -82,7 +82,7 @@ where
 
         // check if we need to shutdown
         if this.sigterm.poll(cx).is_ready() {
-            info!("Received SIGTERM, shutting down lifecycle");
+            info!("Received signal, shutting down lifecycle");
             return Poll::Ready(());
         }
 

@@ -1,10 +1,11 @@
-use std::{io::Result, process::exit, time::Duration};
+use std::{io::Result, pin::pin, process::exit, time::Duration};
 
 use actix_web::{
     middleware::{self},
     web::{self, Data},
     App, HttpServer,
 };
+use futures::future::select;
 use tracing::{error, level_filters::LevelFilter};
 
 #[cfg(feature = "notebook")]
@@ -95,9 +96,18 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
                 LIFECYCLE_TIME,
                 SIGTERM_FREQ,
                 stream,
-                tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate())
-                    .expect("Cannot create signal for graceful shutdown")
-                    .recv(),
+                select(
+                    pin!(
+                        tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate())
+                            .expect("Cannot establish SIGTERM signal")
+                            .recv()
+                    ),
+                    pin!(
+                        tokio::signal::unix::signal(tokio::signal::unix::SignalKind::interrupt())
+                            .expect("Cannot establish SIGINT signal")
+                            .recv()
+                    ),
+                ),
             )
             .await;
         }))

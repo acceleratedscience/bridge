@@ -60,6 +60,7 @@ pub struct NotebookInfo {
     pub last_active: Option<time::OffsetDateTime>,
     pub max_idle_time: Option<u64>,
     pub start_up_url: Option<String>,
+    pub persist_pvc: bool,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
