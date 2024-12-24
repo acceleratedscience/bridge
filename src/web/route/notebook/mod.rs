@@ -296,14 +296,16 @@ async fn notebook_delete(
 
     // get user data
     // TODO: we should swap guardian_cookie.subject with email, and not do this db call
-    let user: User = db
-        .find(
+    let user: User = helper::log_with_level!(
+        db.find(
             doc! {
-                "email": ObjectID::new(&guardian_cookie.subject).into_inner(),
+                "_id": ObjectID::new(&guardian_cookie.subject).into_inner(),
             },
             USER,
         )
-        .await?;
+        .await,
+        error
+    )?;
 
     helper::utils::notebook_destroy(**db, &guardian_cookie.subject, true, &user.email).await?;
 
