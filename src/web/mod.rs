@@ -1,13 +1,17 @@
-use std::{io::Result, pin::pin, process::exit, time::Duration};
+use std::{io::Result, process::exit, time::Duration};
+
+#[cfg(all(feature = "notebook", feature = "lifecycle"))]
+use std::pin::pin;
 
 use actix_web::{
     middleware::{self},
     web::{self, Data},
     App, HttpServer,
 };
-use futures::future::select;
 use tracing::{error, level_filters::LevelFilter};
 
+#[cfg(all(feature = "notebook", feature = "lifecycle"))]
+use futures::future::select;
 #[cfg(feature = "notebook")]
 use crate::kube::{self};
 #[cfg(all(feature = "notebook", feature = "lifecycle"))]
