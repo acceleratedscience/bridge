@@ -1,5 +1,8 @@
 use std::{
-    future::Future, pin::Pin, task::{Context, Poll}, time::Duration
+    future::Future,
+    pin::Pin,
+    task::{Context, Poll},
+    time::Duration,
 };
 
 use futures::{FutureExt, Stream};
@@ -38,14 +41,14 @@ pub struct Medium<T, F> {
     sleep_min: Duration,
     exp_min: Duration,
     #[pin]
-    fut: T,
+    stream: T,
     #[pin]
     sigterm: F,
 }
 
 impl<T, F> Medium<T, F> {
     /// Create a new Medium instance
-    pub fn new(exp_min: Duration, sleep_min: Duration, fut: T, sigterm: F) -> Self {
+    pub fn new(exp_min: Duration, sleep_min: Duration, stream: T, sigterm: F) -> Self {
         let expiration = OffsetDateTime::now_utc() + exp_min;
         Self {
             expiration,
@@ -53,7 +56,7 @@ impl<T, F> Medium<T, F> {
             sleep_min,
             exp_min,
             slept: false,
-            fut,
+            stream,
             sigterm,
         }
     }
@@ -89,7 +92,7 @@ where
         let now = OffsetDateTime::now_utc();
 
         if now >= *this.expiration {
-            match this.fut.poll_next(cx) {
+            match this.stream.poll_next(cx) {
                 Poll::Ready(Some(_)) => {
                     info!("Notebook lifecycling has finished");
                     *this.expiration = OffsetDateTime::now_utc() + *this.exp_min;
