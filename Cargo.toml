@@ -25,6 +25,7 @@ tokio-stream = { version = "0.1.15", features = ["sync"] }
 pin-project = "1"
 # Other dep
 time = { version = "0.3.36", features = ["serde"] }
+parking_lot = "0.12.3"
 # Web deps
 actix-web = { version = "~4.9", features = ["rustls-0_23", "cookies"] }
 actix-web-httpauth = "0.8"

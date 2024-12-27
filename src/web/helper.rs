@@ -9,6 +9,7 @@ use crate::{auth::jwt::validate_token, config::CONFIG, errors::GuardianError, er
 /// This macro logs the error, warn, info, or debug level of the error message.
 /// Macro is used instead of a helper function to leverage debug symbols and print out line
 /// numbers.
+#[macro_export]
 macro_rules! log_with_level {
     ($res:expr, error) => {{
         let result = $res;
@@ -256,7 +257,7 @@ pub mod utils {
     #[inline]
     // Once this issue is fixed with compiler https://github.com/rust-lang/rust/issues/64552, can
     // relax C = &'static str to C<'a> = &'a str
-    pub async fn notebook_destroy<O, I>(db: O, subject: &str, pvc: bool, user: &str) -> Result<()>
+    pub async fn notebook_destroy<O, I>(db: O, subject: &str, persist_pvc: bool, user: &str) -> Result<()>
     where
         O: Deref<Target = I>,
         I: for<'a> Database<
@@ -272,7 +273,7 @@ pub mod utils {
         let name = notebook_helper::make_notebook_name(subject);
         let pvc_name = notebook_helper::make_notebook_volume_name(subject);
         log_with_level!(KubeAPI::<Notebook>::delete(&name).await, error)?;
-        if pvc {
+        if !persist_pvc {
             log_with_level!(
                 KubeAPI::<PersistentVolumeClaim>::delete(&pvc_name).await,
                 error

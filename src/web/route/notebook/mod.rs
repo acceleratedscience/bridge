@@ -115,12 +115,19 @@ async fn notebook_ws_session(
 #[post("/create")]
 async fn notebook_create(
     subject: Option<ReqData<GuardianCookie>>,
+    payload: web::Payload,
     db: Data<&DB>,
     data: Data<Tera>,
 ) -> Result<HttpResponse> {
     if let Some(_subject) = subject {
         let guardian_cookie = _subject.into_inner();
         let id = ObjectID::new(&guardian_cookie.subject);
+
+        let mut persist_pvc = false;
+        let pl = payload.to_bytes().await?;
+        if String::from_utf8_lossy(&pl).eq("volume=on") {
+            persist_pvc = true;
+        }
 
         // check if the user can create a notebook
         let user: User = helper::log_with_level!(
@@ -179,7 +186,15 @@ async fn notebook_create(
         // Create a PVC at 1Gi
         let pvc_name = notebook_helper::make_notebook_volume_name(&guardian_cookie.subject);
         let pvc = PVCSpec::new(pvc_name.clone(), 1);
-        helper::log_with_level!(KubeAPI::new(pvc.spec).create().await, error)?;
+        if let Err(e) = KubeAPI::new(pvc.spec).create().await {
+            match e {
+                GuardianError::NotebookExistsError(_) => info!(
+                    "PVC {} already exists, most likely persisted from last session, reusing",
+                    pvc_name
+                ),
+                _ => helper::log_with_level!(Err(e), error)?,
+            }
+        }
         // Create a notebook
         let name = notebook_helper::make_notebook_name(&guardian_cookie.subject);
         let mut start_up_url = None;
@@ -209,7 +224,7 @@ async fn notebook_create(
                         last_active: None,
                         max_idle_time,
                         start_up_url: start_up_url.clone(),
-                        persist_pvc: false,
+                        persist_pvc,
                     })?,
                     "last_updated_by": &user.sub,
                 },
@@ -306,8 +321,15 @@ async fn notebook_delete(
         .await,
         error
     )?;
+    let persist_pvc = user
+        .notebook
+        .ok_or_else(|| {
+            GuardianError::NotebookExistsError("Notebook entry not found in DB".to_string())
+        })?
+        .persist_pvc;
 
-    helper::utils::notebook_destroy(**db, &guardian_cookie.subject, true, &user.email).await?;
+    helper::utils::notebook_destroy(**db, &guardian_cookie.subject, persist_pvc, &user.email)
+        .await?;
 
     // delete the cookies
     let mut notebook_cookie = Cookie::build(NOTEBOOK_COOKIE_NAME, "")

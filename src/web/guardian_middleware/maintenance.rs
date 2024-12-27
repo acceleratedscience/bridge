@@ -1,7 +1,4 @@
-use std::{
-    future::{ready, Ready},
-    sync::RwLock,
-};
+use std::future::{ready, Ready};
 
 use actix_web::{
     body::EitherBody,
@@ -10,8 +7,9 @@ use actix_web::{
     Error, HttpResponse,
 };
 use futures::{future::LocalBoxFuture, FutureExt, TryFutureExt};
+use parking_lot::RwLock;
 
-static MAINTENANCE_WINDOWS: RwLock<bool> = RwLock::new(true);
+static MAINTENANCE_WINDOWS: RwLock<bool> = RwLock::new(false);
 
 pub struct Maintainence;
 
@@ -51,21 +49,18 @@ where
     fn call(&self, req: ServiceRequest) -> Self::Future {
         // check if the request url is already to /maintenance
         if req.path().ne("/maintenance") {
-            match MAINTENANCE_WINDOWS.try_read() {
-                Ok(rg) => {
-                    if *rg {
-                        // Guardian under maintenance
-                        return Box::pin(async move {
-                            Ok(req.into_response(
-                                HttpResponse::Found()
-                                    .append_header((header::LOCATION, "/maintenance"))
-                                    .finish()
-                                    .map_into_right_body(),
-                            ))
-                        });
-                    }
+            if let Some(rg) = MAINTENANCE_WINDOWS.try_read() {
+                if *rg {
+                    // Guardian under maintenance
+                    return Box::pin(async move {
+                        Ok(req.into_response(
+                            HttpResponse::Found()
+                                .append_header((header::LOCATION, "/maintenance"))
+                                .finish()
+                                .map_into_right_body(),
+                        ))
+                    });
                 }
-                Err(_e) => (),
             }
         }
 
