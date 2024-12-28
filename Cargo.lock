@@ -1417,6 +1417,7 @@ dependencies = [
  "k8s-openapi",
  "kube",
  "mongodb",
+ "num-bigint",
  "openidconnect",
  "openssl",
  "parking_lot",

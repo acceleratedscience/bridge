@@ -1,4 +1,4 @@
-use std::sync::LazyLock;
+use std::sync::OnceLock;
 
 use actix_web::web::Bytes;
 use redis::{
@@ -8,22 +8,24 @@ use redis::{
 
 use crate::{config::CONFIG, errors::Result};
 
-pub static CACHEDB: LazyLock<CacheDB> = LazyLock::new(CacheDB::init_once);
+pub static CACHEDB: OnceLock<CacheDB> = OnceLock::new();
 
 pub struct CacheDB {
     client: Client,
+    conn: MultiplexedConnection,
 }
 
 impl CacheDB {
-    pub fn init_once() -> Self {
+    pub async fn init_once() -> Result<()> {
         let url = &CONFIG.cache.url;
-        CacheDB {
-            client: Client::open(url.clone()).expect("Failed to connect to cache"),
-        }
+        let client = Client::open(url.clone()).expect("Failed to connect to cache");
+        let conn = client.get_multiplexed_async_connection().await?;
+        CACHEDB.get_or_init(|| CacheDB { client, conn });
+        Ok(())
     }
 
-    pub async fn get_connection(&self) -> Result<MultiplexedConnection> {
-        Ok(self.client.get_multiplexed_async_connection().await?)
+    pub fn get_connection(&self) -> MultiplexedConnection {
+        self.conn.clone()
     }
 
     pub async fn get_async_sub<T: AsRef<str>>(&self, channel: T) -> Result<PubSubStream> {
@@ -62,10 +64,11 @@ mod tests {
 
     #[tokio::test]
     async fn test_cache_db() {
-        let cache = &CACHEDB;
-        let result = cache.get_connection().await;
-        assert!(result.is_ok());
-        let mut conn = result.unwrap();
+        let _ = CacheDB::init_once().await.unwrap();
+        let result = CACHEDB.get();
+        assert!(result.is_some());
+        let cache = result.unwrap();
+        let mut conn = cache.get_connection();
 
         let data_in = json!({"hello": ["world", "foo", "bar"]});
         let data_str = data_in.to_string();
@@ -74,6 +77,9 @@ mod tests {
         let data_out_value: serde_json::Value = serde_json::from_str(&data_out).unwrap();
         assert_eq!(data_in, data_out_value);
         println!("data_out: {}", data_out);
+
+        let not_exist: Option<String> = conn.get("nothing").await.unwrap();
+        println!("{:?}", not_exist);
 
         // let mut stream = cache.get_async_sub("maintenance").await.unwrap();
         // let msg = stream.next().await.unwrap();

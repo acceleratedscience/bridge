@@ -2,12 +2,15 @@ use actix_web::web;
 use mongodb::bson::{to_bson, Bson};
 use serde::Deserialize;
 use tera::Context;
-use tokio::task::JoinHandle;
 use tokio_stream::StreamExt;
-use tracing::{error, info};
+use tracing::{error, info, warn};
 
-use crate::db::keydb::{MaintenanceMSG, CACHEDB};
-use crate::{auth::jwt::validate_token, config::CONFIG, errors::GuardianError, errors::Result};
+use crate::{
+    auth::jwt::validate_token,
+    config::CONFIG,
+    db::keydb::{MaintenanceMSG, CACHEDB},
+    errors::{GuardianError, Result},
+};
 
 /// This macro logs the error, warn, info, or debug level of the error message.
 /// Macro is used instead of a helper function to leverage debug symbols and print out line
@@ -112,10 +115,16 @@ where
 /// Watch for pubsub message to determine if maintenance window is active. This runs in the
 /// background and will not block the main thread. Nothing is persisted here, so no graceful exit
 /// needed.
-pub fn maintenance_watch() -> Result<JoinHandle<()>> {
-    Ok(tokio::spawn(async move {
-        let cache = &CACHEDB;
+pub fn maintenance_watch() -> Result<()> {
+    let cache = if let Some(c) = CACHEDB.get() {
+        c
+    } else {
+        warn!("Cache not initialized. Maintenance window will not be watched.");
+        // the caller can ignore this error
+        return Ok(());
+    };
 
+    tokio::spawn(async move {
         let mut stream = match cache.get_async_sub("maintenance").await {
             Ok(stream) => stream,
             Err(e) => {
@@ -139,7 +148,9 @@ pub fn maintenance_watch() -> Result<JoinHandle<()>> {
                 _ => (),
             }
         }
-    }))
+    });
+
+    Ok(())
 }
 
 /// http proxying utilities

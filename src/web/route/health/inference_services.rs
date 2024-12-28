@@ -1,15 +1,21 @@
 use std::time::{Duration, Instant};
 
 use futures::{stream, Stream, StreamExt};
+use num_bigint::BigUint;
+use redis::AsyncCommands;
 use reqwest::Client;
 use tokio::time::timeout;
 use url::Url;
 
-use crate::errors::{GuardianError, Result};
+use crate::{
+    db::keydb::CacheDB,
+    errors::{GuardianError, Result},
+};
 
 pub struct InferenceServicesHealth<'a> {
     services: &'a Vec<(Url, String)>,
     client: Client,
+    cache: Option<&'a CacheDB>,
 }
 
 pub struct ListBuilder<'a> {
@@ -18,8 +24,16 @@ pub struct ListBuilder<'a> {
 }
 
 impl<'a> InferenceServicesHealth<'a> {
-    pub fn new(services: &'a Vec<(Url, String)>, client: Client) -> Self {
-        InferenceServicesHealth { services, client }
+    pub fn new(
+        services: &'a Vec<(Url, String)>,
+        client: Client,
+        cache: Option<&'a CacheDB>,
+    ) -> Self {
+        InferenceServicesHealth {
+            services,
+            client,
+            cache,
+        }
     }
 
     pub fn builder(&self) -> ListBuilder {
@@ -30,21 +44,42 @@ impl<'a> InferenceServicesHealth<'a> {
         }
     }
 
-    pub fn create_stream(&'a self) -> impl Stream<Item = Result<(bool, String, u128)>> + 'a {
+    pub fn create_stream(
+        &'a self,
+    ) -> impl Stream<Item = Result<(bool, &'a String, u128)>> + use<'a> {
         let requests = stream::iter(self.services.iter().map(|(url, name)| {
             let client = self.client.clone();
+            let cache = self.cache.map(|c| c.get_connection());
+
+            // If caching is available, we hit the cache first and immediately return the
+            // value if it exists. Otherwise, we make the request. We only cache if caching is
+            // available.
             async move {
+                if let Some(mut conn) = cache.clone() {
+                    if let Some(t) = conn
+                        .get::<'_, _, Option<u128>>(String::from("health:") + name)
+                        .await?
+                    {
+                        return Ok((true, name, t));
+                    }
+                }
+
                 let now = Instant::now();
+
                 let fut = client.get(url.as_str()).send();
                 let response = timeout(Duration::from_secs(1), fut).await.map_err(|_| {
                     GuardianError::GeneralError("Call to inference service timed out".to_string())
                 })??;
+
                 let elapsed = now.elapsed();
-                Ok((
-                    response.status().is_success(),
-                    name.clone(),
-                    elapsed.as_millis(),
-                ))
+
+                if let Some(mut conn) = cache {
+                    let big_uint = BigUint::from(elapsed.as_millis());
+                    conn.set_ex::<'_, _, _, ()>(String::from("health:") + name, big_uint, 60 * 30)
+                        .await?;
+                }
+
+                Ok((response.status().is_success(), name, elapsed.as_millis()))
             }
         }));
         requests.buffer_unordered(5)
@@ -86,10 +121,10 @@ mod tests {
         let url2 = Url::parse("https://postman-echo.com/hello").unwrap(); // 404 response
         let services = vec![(url1, "200".to_string()), (url2, "400".to_string())];
         let client = Client::new();
-        let inference_services = InferenceServicesHealth::new(&services, client);
+        let inference_services = InferenceServicesHealth::new(&services, client, None);
         let stream = inference_services.create_stream();
 
-        let results = stream.collect::<Vec<Result<(bool, String, u128)>>>().await;
+        let results = stream.collect::<Vec<Result<(bool, &String, u128)>>>().await;
         assert_eq!(results.len(), 2);
 
         let mut ok_cnt = 0;
