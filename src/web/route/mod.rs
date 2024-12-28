@@ -1,7 +1,6 @@
 use actix_web::{
     get,
     http::header,
-    post,
     web::{self, Data},
     HttpRequest, HttpResponse,
 };
@@ -9,9 +8,8 @@ use tera::{Context, Tera};
 
 use crate::{
     auth::COOKIE_NAME,
-    db::models::MaintenanceMode,
     errors::Result,
-    web::helper::{self, payload_to_struct},
+    web::helper::{self},
 };
 
 pub mod auth;
@@ -49,13 +47,14 @@ async fn maintenance(data: Data<Tera>) -> Result<HttpResponse> {
     Ok(HttpResponse::ServiceUnavailable().body(rendered))
 }
 
-#[post("mode")]
-async fn mode(_req: HttpRequest, pl: web::Payload) -> Result<HttpResponse> {
-    let _payload = payload_to_struct::<MaintenanceMode>(pl).await?;
+// TODO: protect this endpoint with basic auth... and add db ping
+#[get("")]
+async fn health_check() -> Result<HttpResponse> {
     Ok(HttpResponse::Ok().finish())
 }
 
 pub fn config_index(cfg: &mut web::ServiceConfig) {
     cfg.service(web::scope("/").service(index))
-        .service(web::scope("/maintenance").service(maintenance));
+        .service(web::scope("/maintenance").service(maintenance))
+        .service(web::scope("/health").service(health_check));
 }

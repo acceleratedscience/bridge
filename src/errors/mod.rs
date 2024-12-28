@@ -72,6 +72,8 @@ pub enum GuardianError {
     KubeClientError(String),
     #[error("{0}")]
     ReqwestError(#[from] reqwest::Error),
+    #[error("{0}")]
+    RedisError(#[from] redis::RedisError),
 }
 
 // Workaround for Infallible, which may get solved by rust-lang: https://github.com/rust-lang/rust/issues/64715
@@ -139,6 +141,7 @@ impl ResponseError for GuardianError {
             GuardianError::SerdeJsonError(_) => StatusCode::INTERNAL_SERVER_ERROR,
             GuardianError::WSError(_) => StatusCode::INTERNAL_SERVER_ERROR,
             GuardianError::ReqwestError(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            GuardianError::RedisError(_) => StatusCode::INTERNAL_SERVER_ERROR,
 
             #[cfg(feature = "notebook")]
             GuardianError::KubeError(_) => StatusCode::INTERNAL_SERVER_ERROR,

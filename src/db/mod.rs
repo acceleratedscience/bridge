@@ -4,6 +4,7 @@ use crate::errors::Result;
 
 pub mod deserialize;
 pub mod models;
+pub mod keydb;
 pub mod mongo;
 
 // Database interface

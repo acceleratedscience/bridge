@@ -23,6 +23,14 @@ local-mongo-arm:
 	-e MONGO_INITDB_DATABASE="guardian" \
 	-p 27017:27017 mongodb/mongodb-community-server
 
+local-keydb:
+	podman run -d --rm --name keydb \
+	-e KEYDB_PASSWORD="admin123456789" \
+	-p 6379:6379 bitnami/keydb:latest
+
+down-local-keydb:
+	podman stop keydb
+
 certs:
 	mkdir certs
 	@openssl req -x509 -newkey rsa:2048 -nodes -keyout certs/key.pem -out certs/cert.pem -days 365 -subj '/CN=open.accelerator.cafe'

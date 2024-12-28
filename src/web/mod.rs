@@ -10,12 +10,12 @@ use actix_web::{
 };
 use tracing::{error, level_filters::LevelFilter};
 
-#[cfg(all(feature = "notebook", feature = "lifecycle"))]
-use futures::future::select;
 #[cfg(feature = "notebook")]
 use crate::kube::{self};
 #[cfg(all(feature = "notebook", feature = "lifecycle"))]
 use crate::kube::{notebook_lifecycle, LifecycleStream, Medium};
+#[cfg(all(feature = "notebook", feature = "lifecycle"))]
+use futures::future::select;
 
 use crate::{
     auth::openid,
@@ -36,6 +36,8 @@ pub use helper::utils;
 #[cfg(feature = "notebook")]
 pub use route::notebook::notebook_helper;
 pub use route::proxy::services;
+
+use self::helper::maintenance_watch;
 
 // One hour timeout for client requests
 const TIMEOUT: u64 = 3600;
@@ -90,6 +92,8 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
     #[cfg(feature = "notebook")]
     kube::init_once().await;
 
+    let _ = maintenance_watch();
+
     // Lifecycle with "advisory lock"
     #[cfg(all(feature = "notebook", feature = "lifecycle"))]
     let handle = if (db.get_lock(AD_LOCK).await).is_ok() {
@@ -138,12 +142,12 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
             .wrap(guardian_middleware::custom_code_handle(tera_data))
             .wrap(middleware::NormalizePath::trim())
             .wrap(middleware::Compress::default())
+            .wrap(guardian_middleware::Maintainence)
             .service(actix_files::Files::new("/static", "static"));
         #[cfg(feature = "notebook")]
         let app = app.configure(route::notebook::config_notebook);
         app.service(
             web::scope("")
-                // .wrap(guardian_middleware::Maintainence)
                 .wrap(guardian_middleware::SecurityHeader)
                 .configure(route::auth::config_auth)
                 .configure(route::health::config_status)

@@ -170,12 +170,6 @@ pub struct AdminTabs {
     pub group: Option<String>,
 }
 
-#[derive(Debug, Deserialize)]
-pub struct MaintenanceMode {
-    pub enabled: bool,
-    pub message: String,
-}
-
 #[cfg(test)]
 mod tests {
     use crate::db::models::UserType;

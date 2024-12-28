@@ -9,7 +9,7 @@ use actix_web::{
 use futures::{future::LocalBoxFuture, FutureExt, TryFutureExt};
 use parking_lot::RwLock;
 
-static MAINTENANCE_WINDOWS: RwLock<bool> = RwLock::new(false);
+pub static MAINTENANCE_WINDOWS: RwLock<bool> = RwLock::new(false);
 
 pub struct Maintainence;
 
@@ -48,7 +48,7 @@ where
 
     fn call(&self, req: ServiceRequest) -> Self::Future {
         // check if the request url is already to /maintenance
-        if req.path().ne("/maintenance") {
+        if req.path().ne("/maintenance") && req.path().ne("/health") {
             if let Some(rg) = MAINTENANCE_WINDOWS.try_read() {
                 if *rg {
                     // Guardian under maintenance
