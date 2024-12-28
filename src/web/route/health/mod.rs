@@ -10,6 +10,7 @@ use tera::{Context, Tera};
 use tracing::{error, instrument};
 
 use crate::{
+    db::keydb::CacheDB,
     errors::Result,
     web::{guardian_middleware::Htmx, helper, services::CATALOG_URLS},
 };
@@ -26,10 +27,17 @@ async fn pulse(data: Data<Tera>) -> Result<HttpResponse> {
 }
 
 #[get("")]
-#[instrument]
-async fn status(req: HttpRequest, client: Data<Client>) -> Result<HttpResponse> {
-    let is =
-        inference_services::InferenceServicesHealth::new(&CATALOG_URLS, client.as_ref().clone());
+#[instrument(skip(cache))]
+async fn status(
+    req: HttpRequest,
+    client: Data<Client>,
+    cache: Data<Option<&CacheDB>>,
+) -> Result<HttpResponse> {
+    let is = inference_services::InferenceServicesHealth::new(
+        &CATALOG_URLS,
+        client.as_ref().clone(),
+        **cache,
+    );
 
     let mut stream = is.create_stream();
     let mut builder = is.builder();
@@ -40,7 +48,7 @@ async fn status(req: HttpRequest, client: Data<Client>) -> Result<HttpResponse> 
                 if !cfg!(debug_assertions) && name == "postman" {
                     continue;
                 };
-                builder.add_inner_body(up, &name, elapsed);
+                builder.add_inner_body(up, name, elapsed);
             }
             Err(e) => {
                 // log and continue

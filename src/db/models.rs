@@ -60,6 +60,7 @@ pub struct NotebookInfo {
     pub last_active: Option<time::OffsetDateTime>,
     pub max_idle_time: Option<u64>,
     pub start_up_url: Option<String>,
+    pub persist_pvc: bool,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -167,12 +168,6 @@ pub struct AdminTabs {
     pub tab: AdminTab,
     pub user: Option<String>,
     pub group: Option<String>,
-}
-
-#[derive(Debug, Deserialize)]
-pub struct MaintenanceMode {
-    pub enabled: bool,
-    pub message: String,
 }
 
 #[cfg(test)]

@@ -22,6 +22,7 @@
     -   OpenTofu
 -   Database:
     -   MongoDB
+    -   Redis / KeyDB (Optional)
 
 <br>
 
@@ -37,12 +38,14 @@ flowchart LR
 	model2["Model Service 2"]
 	model3["Model Service 3"]
 	mongodb[("MongoDB")]
+	cache[("In-memory Cache")]
 
 	user --> route
 	subgraph "AWS"
 	route --> elb --> guardian
 	subgraph "Openshift"
 	guardian --> mongodb
+    guardian -- optional --> cache
 	guardian --> model1
 	guardian --> model2
 	guardian --> model3

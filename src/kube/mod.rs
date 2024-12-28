@@ -57,7 +57,20 @@ where
     pub async fn create(&self) -> Result<M> {
         let crd = Api::<M>::namespaced(Self::get_kube_client()?.clone(), NAMESPACE);
         let pp = PostParams::default();
-        let res = crd.create(&pp, &self.model).await?;
+        let res = match crd.create(&pp, &self.model).await {
+            Ok(res) => res,
+            Err(e) => match e {
+                kube::Error::Api(ref error_response) => {
+                    if error_response.reason == "AlreadyExists" {
+                        return Err(GuardianError::NotebookExistsError(
+                            "AlreadyExists".to_string(),
+                        ));
+                    }
+                    Err(e)?
+                }
+                _ => Err(e)?,
+            },
+        };
         Ok(res)
     }
 

@@ -1,10 +1,14 @@
 use std::{
-    future::Future, pin::Pin, task::{Context, Poll}, time::Duration
+    collections::HashMap,
+    future::Future,
+    pin::Pin,
+    task::{Context, Poll},
+    time::Duration,
 };
 
 use futures::{FutureExt, Stream};
 use k8s_openapi::api::core::v1::Pod;
-use mongodb::bson::doc;
+use mongodb::bson::{doc, oid::ObjectId};
 use pin_project::pin_project;
 use reqwest::Client;
 use serde::Deserialize;
@@ -14,7 +18,7 @@ use tracing::info;
 
 use crate::{
     db::{
-        models::{User, USER},
+        models::{NotebookInfo, User, USER},
         mongo::{ObjectID, DBCONN},
         Database,
     },
@@ -38,14 +42,14 @@ pub struct Medium<T, F> {
     sleep_min: Duration,
     exp_min: Duration,
     #[pin]
-    fut: T,
+    stream: T,
     #[pin]
     sigterm: F,
 }
 
 impl<T, F> Medium<T, F> {
     /// Create a new Medium instance
-    pub fn new(exp_min: Duration, sleep_min: Duration, fut: T, sigterm: F) -> Self {
+    pub fn new(exp_min: Duration, sleep_min: Duration, stream: T, sigterm: F) -> Self {
         let expiration = OffsetDateTime::now_utc() + exp_min;
         Self {
             expiration,
@@ -53,7 +57,7 @@ impl<T, F> Medium<T, F> {
             sleep_min,
             exp_min,
             slept: false,
-            fut,
+            stream,
             sigterm,
         }
     }
@@ -82,14 +86,14 @@ where
 
         // check if we need to shutdown
         if this.sigterm.poll(cx).is_ready() {
-            info!("Received SIGTERM, shutting down lifecycle");
+            info!("Shutting down lifecycle");
             return Poll::Ready(());
         }
 
         let now = OffsetDateTime::now_utc();
 
         if now >= *this.expiration {
-            match this.fut.poll_next(cx) {
+            match this.stream.poll_next(cx) {
                 Poll::Ready(Some(_)) => {
                     info!("Notebook lifecycling has finished");
                     *this.expiration = OffsetDateTime::now_utc() + *this.exp_min;
@@ -193,39 +197,60 @@ pub async fn notebook_lifecycle(client: Client) -> Result<()> {
 
     let pods = KubeAPI::<Pod>::get_all_pods().await?;
 
-    // get the ip and the subject id of all the notebooks
+    // get the subject id and corresponding ip of all the notebooks
     let pods_detail: Vec<(String, String)> = pods
         .into_iter()
         .filter_map(|mut pod| {
             Some((
-                pod.status.as_mut()?.pod_ip.take()?,
                 pod.metadata
                     .name
                     .and_then(|s| s.split("-").next().map(|s| s.to_owned()))?,
+                pod.status.as_mut()?.pod_ip.take()?,
             ))
         })
         .collect();
 
-    // map ip into a forward url
-    let addresses = pods_detail
+    // hashmap key: subject id and value: forward url
+    let mut addresses = pods_detail
         .into_iter()
-        .map(|(ip, id)| {
-            (
-                make_forward_url(&ip, &make_notebook_name(&id), "http", None) + "/api/kernels",
-                id,
-            )
+        .map(|(id, ip)| {
+            let url =
+                make_forward_url(&ip, &make_notebook_name(&id), "http", None) + "/api/kernels";
+            (id, (url, None))
         })
-        .collect::<Vec<(String, String)>>();
+        .collect::<HashMap<String, (String, Option<User>)>>();
+
+    let all_ids = addresses
+        .keys()
+        .map(|id| ObjectID::new(id).into_inner())
+        .collect::<Vec<ObjectId>>();
+
+    // TODO: look into optimizing this with FindOptions to only get id and start_time
+    let users: Vec<User> = crate::log_with_level!(
+        db.find_many(
+            doc! {
+                "_id": {"$in": all_ids}
+            },
+            USER,
+        )
+        .await,
+        error
+    )?;
+
+    users.into_iter().for_each(|u| {
+        if u.notebook.is_some() {
+            let id = u._id.to_string();
+            let v = addresses.get_mut(&id).unwrap();
+            v.1 = Some(u);
+        }
+    });
 
     let now = OffsetDateTime::now_utc();
 
     // call the kernel and get data for each notebook
     // filter the data by those idle for 24 hours or more
-    let mut results = Vec::with_capacity(addresses.len());
-    let mut results_db_chk = Vec::new();
-    for (url, id) in addresses.iter() {
-        info!("Checking notebook {}", id);
-
+    let mut notebook_to_shutdown = Vec::with_capacity(addresses.len());
+    for (id, (url, user)) in addresses.into_iter() {
         let resp = client.get(url).send().await?;
         if !resp.status().is_success() {
             info!("Notebook {} failed to respond... skipping", id);
@@ -240,7 +265,24 @@ pub async fn notebook_lifecycle(client: Client) -> Result<()> {
                 id
             );
             // check DB for last activity
-            results_db_chk.push(ObjectID::new(id).into_inner());
+            if let Some(User {
+                notebook:
+                    Some(NotebookInfo {
+                        start_time: Some(t),
+                        ..
+                    }),
+                ..
+            }) = user
+            {
+                if (now - t) >= Duration::from_secs(MAX_IDLE_TIME) {
+                    notebook_to_shutdown.push((id, user));
+                    continue;
+                }
+            }
+
+            // One or more not present: kernel, notebook, start_time. In these situation, mark for
+            // deletion
+            notebook_to_shutdown.push((id, None));
             continue;
         }
         // convert last_activity to OffsetDateTime, sort to get latest
@@ -252,30 +294,19 @@ pub async fn notebook_lifecycle(client: Client) -> Result<()> {
         last_activities.sort();
         if let Some(t) = last_activities.last() {
             if (now - *t) >= Duration::from_secs(MAX_IDLE_TIME) {
-                results.push(id.clone());
+                notebook_to_shutdown.push((id, user));
             }
         }
     }
 
-    // If the user never open their notebook after spinning it up.. the kernel has no information.
-    // In fact, the json is an empty array. Since we cannot let these linger forever...
-    if !results_db_chk.is_empty() {
-        // TODO: look into optimizing this with FindOptions to only get id and start_time
-        let users: Vec<User> = db
-            .find_many(doc! {"_id": {"$in": results_db_chk}}, USER)
-            .await?;
-
-        results.extend(users.into_iter().filter_map(|u| {
-            u.notebook
-                .and_then(|n| n.start_time)
-                .filter(|t| (now - *t) >= Duration::from_secs(MAX_IDLE_TIME))
-                .map(|_| u._id.to_string())
-        }));
-    }
-
     // shutdown the notebook
-    for id in results {
-        match utils::notebook_destroy(db, &id, true, "system").await {
+    for (id, user) in notebook_to_shutdown {
+        let persist_pvc = match user {
+            Some(u) => u.notebook.map(|n| n.persist_pvc).unwrap_or(false),
+            None => false,
+        };
+
+        match utils::notebook_destroy(db, &id, persist_pvc, "system").await {
             Ok(_) => info!(
                 "Notebook {} has been destroyed for being idle for +{} seconds",
                 id, MAX_IDLE_TIME

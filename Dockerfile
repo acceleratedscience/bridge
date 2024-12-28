@@ -12,7 +12,7 @@ RUN if [ "$NOTEBOOK" = "true" ]; then \
         && cargo build --release --features notebook; \
 	elif [ "$NOTEBOOK" = "true" ] && [ "$LIFECYCLE" = "false" ]; then \
 		echo "Building without Notebook Feature..." \
-		&& cargo build --release --features notebook lifecycle; \
+		&& cargo build --release --features notebook,lifecycle; \
     else \
         echo "Building without Notebook Feature..." \
         && cargo build --release; \

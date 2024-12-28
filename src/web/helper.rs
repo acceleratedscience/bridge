@@ -3,12 +3,19 @@ use mongodb::bson::{to_bson, Bson};
 use serde::Deserialize;
 use tera::Context;
 use tokio_stream::StreamExt;
+use tracing::{error, info, warn};
 
-use crate::{auth::jwt::validate_token, config::CONFIG, errors::GuardianError, errors::Result};
+use crate::{
+    auth::jwt::validate_token,
+    config::CONFIG,
+    db::keydb::{MaintenanceMSG, CACHEDB},
+    errors::{GuardianError, Result},
+};
 
 /// This macro logs the error, warn, info, or debug level of the error message.
 /// Macro is used instead of a helper function to leverage debug symbols and print out line
 /// numbers.
+#[macro_export]
 macro_rules! log_with_level {
     ($res:expr, error) => {{
         let result = $res;
@@ -57,6 +64,8 @@ macro_rules! log_with_level {
 
 pub(crate) use log_with_level;
 
+use super::guardian_middleware::MAINTENANCE_WINDOWS;
+
 pub fn bson<T>(t: T) -> Result<Bson>
 where
     T: serde::Serialize,
@@ -101,6 +110,47 @@ where
     let body = String::from_utf8_lossy(&body);
     let deserializer = serde::de::value::StrDeserializer::<serde::de::value::Error>::new(&body);
     Ok(log_with_level!(T::deserialize(deserializer), error)?)
+}
+
+/// Watch for pubsub message to determine if maintenance window is active. This runs in the
+/// background and will not block the main thread. Nothing is persisted here, so no graceful exit
+/// needed.
+pub fn maintenance_watch() -> Result<()> {
+    let cache = if let Some(c) = CACHEDB.get() {
+        c
+    } else {
+        warn!("Cache not initialized. Maintenance window will not be watched.");
+        // the caller can ignore this error
+        return Ok(());
+    };
+
+    tokio::spawn(async move {
+        let mut stream = match cache.get_async_sub("maintenance").await {
+            Ok(stream) => stream,
+            Err(e) => {
+                error!("{:?}", e);
+                return;
+            }
+        };
+
+        while let Some(msg) = stream.next().await {
+            match Into::<MaintenanceMSG>::into(msg) {
+                MaintenanceMSG::Start => {
+                    info!("Maintenance window started");
+                    let mut mw = MAINTENANCE_WINDOWS.write();
+                    *mw = true;
+                }
+                MaintenanceMSG::Stop => {
+                    info!("Maintenance window stopped");
+                    let mut mw = MAINTENANCE_WINDOWS.write();
+                    *mw = false;
+                }
+                _ => (),
+            }
+        }
+    });
+
+    Ok(())
 }
 
 /// http proxying utilities
@@ -256,7 +306,12 @@ pub mod utils {
     #[inline]
     // Once this issue is fixed with compiler https://github.com/rust-lang/rust/issues/64552, can
     // relax C = &'static str to C<'a> = &'a str
-    pub async fn notebook_destroy<O, I>(db: O, subject: &str, pvc: bool, user: &str) -> Result<()>
+    pub async fn notebook_destroy<O, I>(
+        db: O,
+        subject: &str,
+        persist_pvc: bool,
+        user: &str,
+    ) -> Result<()>
     where
         O: Deref<Target = I>,
         I: for<'a> Database<
@@ -267,12 +322,12 @@ pub mod utils {
             R2 = Bson,
             R3 = u64,
         >,
-    // pub async fn notebook_destroy(db: &DB, subject: &str, pvc: bool, user: &str) -> Result<()>
+        // pub async fn notebook_destroy(db: &DB, subject: &str, pvc: bool, user: &str) -> Result<()>
     {
         let name = notebook_helper::make_notebook_name(subject);
         let pvc_name = notebook_helper::make_notebook_volume_name(subject);
         log_with_level!(KubeAPI::<Notebook>::delete(&name).await, error)?;
-        if pvc {
+        if !persist_pvc {
             log_with_level!(
                 KubeAPI::<PersistentVolumeClaim>::delete(&pvc_name).await,
                 error

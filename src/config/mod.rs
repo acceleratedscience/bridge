@@ -14,10 +14,15 @@ pub struct Configuration {
     pub decoder: DecodingKey,
     pub validation: Validation,
     pub db: Database,
+    pub cache: CacheDB,
     pub notebooks: HashMap<String, Notebook>,
 }
 
 pub struct Database {
+    pub url: String,
+}
+
+pub struct CacheDB {
     pub url: String,
 }
 
@@ -59,13 +64,21 @@ pub fn init_once() -> Configuration {
     )
     .unwrap();
 
-    let db_table = db_table["database"].as_table().unwrap();
-
+    let mongo_table = db_table["mongodb"].as_table().unwrap();
     let db = Database {
         url: if cfg!(debug_assertions) {
-            db_table["url_local"].as_str().unwrap().to_string()
+            mongo_table["url_local"].as_str().unwrap().to_string()
         } else {
-            db_table["url"].as_str().unwrap().to_string()
+            mongo_table["url"].as_str().unwrap().to_string()
+        },
+    };
+
+    let cache_db = db_table["keydb"].as_table().unwrap();
+    let cache = CacheDB {
+        url: if cfg!(debug_assertions) {
+            cache_db["url_local"].as_str().unwrap().to_string()
+        } else {
+            cache_db["url"].as_str().unwrap().to_string()
         },
     };
 
@@ -79,6 +92,7 @@ pub fn init_once() -> Configuration {
         decoder,
         validation,
         db,
+        cache,
         notebooks,
     }
 }
@@ -93,6 +107,9 @@ mod tests {
         let workbench = config.notebooks.get("open_ad_workbench").unwrap();
         assert_eq!(workbench.pull_policy, "IfNotPresent");
         assert_eq!(workbench.working_dir, Some("/opt/app-root/src".to_string()));
-        assert_eq!(workbench.start_up_url, Some("/lab/tree/start_menu.ipynb".to_string()));
+        assert_eq!(
+            workbench.start_up_url,
+            Some("/lab/tree/start_menu.ipynb".to_string())
+        );
     }
 }
