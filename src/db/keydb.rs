@@ -64,7 +64,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_cache_db() {
-        let _ = CacheDB::init_once().await.unwrap();
+        CacheDB::init_once().await.unwrap();
         let result = CACHEDB.get();
         assert!(result.is_some());
         let cache = result.unwrap();

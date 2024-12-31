@@ -31,6 +31,9 @@ local-keydb:
 down-local-keydb:
 	podman stop keydb
 
+build-tailwind:
+	tailwindcss -i ./static/css/input.css -o ./static/css/output.css --minify --watch
+
 certs:
 	mkdir certs
 	@openssl req -x509 -newkey rsa:2048 -nodes -keyout certs/key.pem -out certs/cert.pem -days 365 -subj '/CN=open.accelerator.cafe'
