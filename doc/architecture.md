@@ -11,7 +11,8 @@
 
 -   Front-end:
     -   HTMX
-    -   JavaScript
+    -   TypeScript
+    -   Tailwind CSS
 -   Back-end:
     -   Rust
 -   Infrastructure:
@@ -23,6 +24,12 @@
 -   Database:
     -   MongoDB
     -   Redis / KeyDB (Optional)
+-   Dev Tooling:
+    -   rust-analyzer
+    -   bacon
+    -   tsc
+    -   typescript-language-serve (ts_ls)
+    -   tailwind cli
 
 <br>
 

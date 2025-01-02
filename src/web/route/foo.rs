@@ -20,7 +20,7 @@ async fn foo(data: Data<Tera>) -> Result<HttpResponse> {
 
 #[get("/bar")]
 async fn bar(data: Data<Tera>) -> Result<HttpResponse> {
-    let content = data.render("main.html", &tera::Context::new())?;
+    let content = data.render("foundation.html", &tera::Context::new())?;
     Ok(HttpResponse::Ok()
         .content_type(ContentType::html())
         .body(content))

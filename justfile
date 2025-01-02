@@ -10,6 +10,10 @@ build-notebook:
 build-notebook-lifecycle:
 	podman build -t guardian --build-arg NOTEBOOK=true --build-arg LIFECYCLE=true .
 
+build-front:
+	tailwindcss -i ./static/css/input.css -o ./static/css/output.css --minify
+	tsc
+
 local-mongo:
 	podman run -d --rm --name mongodb \
 	-e MONGODB_ROOT_PASSWORD="admin123456789" \
@@ -31,8 +35,11 @@ local-keydb:
 down-local-keydb:
 	podman stop keydb
 
-build-tailwind:
+watch-tailwind:
 	tailwindcss -i ./static/css/input.css -o ./static/css/output.css --minify --watch
+
+watch-rust:
+	bacon run-long --watch . --features "notebook lifecycle"
 
 certs:
 	mkdir certs

@@ -131,8 +131,7 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
     };
 
     let server = HttpServer::new(move || {
-        let tera = templating::start_template_eng();
-        let tera_data = Data::new(tera);
+        let tera_data = Data::new(templating::start_template_eng());
         let client_data = Data::new(
             reqwest::Client::builder()
                 .timeout(Duration::from_secs(TIMEOUT))
