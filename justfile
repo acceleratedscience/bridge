@@ -35,6 +35,9 @@ local-keydb:
 down-local-keydb:
 	podman stop keydb
 
+mini-js:
+	uglifyjs ./static/js/main.js -o ./static/js/main.js -c -m
+
 watch-tailwind:
 	tailwindcss -i ./static/css/input.css -o ./static/css/output.css --minify --watch
 
