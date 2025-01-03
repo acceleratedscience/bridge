@@ -1,7 +1,6 @@
-use std::{
-    future::{ready, Ready},
-    net::SocketAddr,
-};
+use std::
+    future::{ready, Ready}
+;
 
 use actix_web::{
     body::EitherBody,
@@ -57,11 +56,10 @@ where
                 .map_ok(ServiceResponse::map_into_left_body)
                 .boxed_local(),
             _ => {
-                let ip = req.peer_addr().map_or_else(
-                    || "unknown".to_string(),
-                    |addr: SocketAddr| addr.to_string(),
+                warn!(
+                    "Request is not an htmx request from {:?}",
+                    req.connection_info().realip_remote_addr()
                 );
-                warn!("Request is not an htmx request from {}", ip);
                 let res = HttpResponse::BadRequest().finish().map_into_right_body();
                 Box::pin(async { Ok(req.into_response(res)) })
             }

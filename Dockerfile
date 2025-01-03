@@ -6,12 +6,13 @@ WORKDIR /app
 COPY . ./
 
 ARG NOTEBOOK=false
+ARG LIFECYCLE=false
 
-RUN if [ "$NOTEBOOK" = "true" ]; then \
+RUN if [ "$NOTEBOOK" = "true" ] && [ "$LIFECYCLE" = "false" ]; then \
         echo "Building with Notebook Feature..." \
         && cargo build --release --features notebook; \
-	elif [ "$NOTEBOOK" = "true" ] && [ "$LIFECYCLE" = "false" ]; then \
-		echo "Building without Notebook Feature..." \
+	elif [ "$NOTEBOOK" = "true" ] && [ "$LIFECYCLE" = "true" ]; then \
+		echo "Building Notebook and Lifecycle Feature..." \
 		&& cargo build --release --features notebook,lifecycle; \
     else \
         echo "Building without Notebook Feature..." \

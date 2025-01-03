@@ -5,7 +5,7 @@ build:
 	podman build -t guardian .
 
 build-notebook:
-	podman build -t guardian --build-arg NOTEBOOK=true .
+	podman build -t guardian --build-arg NOTEBOOK=true --build-arg LIFECYCLE=false .
 
 build-notebook-lifecycle:
 	podman build -t guardian --build-arg NOTEBOOK=true --build-arg LIFECYCLE=true .
