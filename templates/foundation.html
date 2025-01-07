@@ -25,7 +25,7 @@
 	<nav id="navigation" class="bg-[#f4f4f4] dark:bg-[#121619] sticky top-0 w-full z-10 drop-shadow-md">
 		<div class="mx-auto max-w-7xl px-2 sm:px-6 lg:px-8">
 			<div class="relative flex h-12 items-center justify-between">
-				<div class="absolute inset-y-0 left-0 flex items-center sm:hidden">
+				<div class="absolute inset-y-0 left-0 flex items-center md:hidden">
 					{# Mobile menu button #}
 					<button id="menu_button" type="button"
 						class="relative inline-flex items-center justify-center rounded-md p-2 text-gray-400 hover:bg-gray-700 hover:text-white focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
@@ -45,7 +45,7 @@
 						</svg>
 					</button>
 				</div>
-				<div class="flex flex-1 min-h-full items-center justify-center sm:items-stretch sm:justify-start">
+				<div class="flex flex-1 min-h-full items-center justify-center sm:items-stretch md:justify-start">
 					<div class="flex shrink-0 items-center">
 						<img class="h-8 w-auto" src="/static/img/favicon.svg" alt="Guardian">
 						<span class="text-lg ml-2">Open AD</span>
@@ -83,11 +83,10 @@
 
 	<div class="flex grid-cols-2 mx-auto max-w-7xl px-2 sm:px-6 lg:px-8 relative">
 
-		<div class="flex-none fixed w-56 pt-4 dark:bg-[#343a3f] sm:block hidden">
+		<div class="flex-none fixed w-56 pt-4 dark:bg-[#343a3f] md:block hidden">
 			<div class="flex flex-col grid-cols-1 grid-rows-2 min-h-[calc(100vh-3rem)]">
 				<div id="menu_big" class="flex-none">
-					<a href="#"
-						class="block py-2 px-4 bg-[#c6c6c6] dark:bg-[#4d5358] dark:hover:bg-[#4d5358] hover:bg-[#c6c6c6] menu_selected">
+					<a href="#" class="block py-2 px-4 dark:hover:bg-[#4d5358] hover:bg-[#c6c6c6] menu_selected">
 						<div class="flex">
 							<svg preserveAspectRatio="xMidYMid meet" fill="currentColor" width="32" height="32"
 								viewBox="0 0 32 32" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
@@ -155,7 +154,7 @@
 			</div>
 		</div>
 
-		<div class="flex-1 pl-2 sm:pl-56 pt-4">
+		<div class="flex-1 pl-2 md:pl-56 pt-4">
 			<div class="pl-2">
 				<p class="pb-10">Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor
 					incididunt ut labore
@@ -215,7 +214,7 @@
 		</div>
 	</div>
 	<div id="menu"
-		class="fixed flex-col left-0 top-12 bg-[#f4f4f4]/70 dark:bg-[#121619]/50 min-h-96 min-w-52 rounded-br-md backdrop-blur-sm drop-shadow-md hidden">
+		class="fixed flex-col left-0 top-12 bg-[#f4f4f4]/70 dark:bg-[#121619]/70 min-h-96 min-w-52 rounded-br-md backdrop-blur-sm drop-shadow-md hidden md:hidden">
 		<div><a href="#"
 				class="block py-3 px-4 border-l-4 border-[#4589ff] dark:hover:bg-[#4d5358] hover:bg-[#c6c6c6]">Available
 				Models</a></div>

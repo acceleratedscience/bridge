@@ -196,6 +196,10 @@ pub async fn notebook_lifecycle(client: Client) -> Result<()> {
         .ok_or(GuardianError::GeneralError("DB connection failed".into()))?;
 
     let pods = KubeAPI::<Pod>::get_all_pods().await?;
+    if pods.is_empty() {
+        info!("No running notebooks found");
+        return Ok(());
+    }
 
     // get the subject id and corresponding ip of all the notebooks
     let pods_detail: Vec<(String, String)> = pods
@@ -276,8 +280,8 @@ pub async fn notebook_lifecycle(client: Client) -> Result<()> {
             {
                 if (now - t) >= Duration::from_secs(MAX_IDLE_TIME) {
                     notebook_to_shutdown.push((id, user));
-                    continue;
                 }
+                continue;
             }
 
             // One or more not present: kernel, notebook, start_time. In these situation, mark for

@@ -1,1 +1,51 @@
-window.addEventListener("DOMContentLoaded",()=>{let t=document.getElementById("menu_button"),n=document.getElementById("menu_big").childNodes,s=document.getElementById("menu");n.forEach(t=>{t.addEventListener("click",e=>{n.forEach(e=>{e instanceof HTMLElement&&e.classList.remove("menu_selected")}),t instanceof HTMLElement&&t.classList.add("menu_selected")})}),t.addEventListener("click",()=>{s.classList.contains("hidden")?(s.classList.add("flex"),s.classList.remove("hidden")):(s.classList.add("hidden"),s.classList.remove("flex"))}),document.addEventListener("click",e=>{e.target instanceof HTMLElement&&!t.contains(e.target)&&s.classList.contains("flex")&&(s.classList.add("hidden"),s.classList.remove("flex"))})});
+class Menu {
+    menu_button;
+    menu_big;
+    menu;
+    menu_open;
+    menu_close;
+    constructor() {
+        this.menu_button = document.getElementById("menu_button");
+        this.menu_big = document.getElementById("menu_big").childNodes;
+        this.menu = document.getElementById("menu");
+        this.menu_open = document.getElementById("menu_open");
+        this.menu_close = document.getElementById("menu_close");
+        this.menu_big.forEach((node) => {
+            node.addEventListener("click", () => {
+                this.menu_big.forEach((node) => {
+                    if (node instanceof HTMLElement) {
+                        node.classList.remove("menu_selected");
+                    }
+                });
+                if (node instanceof HTMLElement) {
+                    node.classList.add("menu_selected");
+                }
+            });
+        });
+        this.menu_button.addEventListener("click", () => {
+            if (this.menu.classList.contains("hidden")) {
+                this.menu.classList.add("flex");
+                this.menu.classList.remove("hidden");
+                this.menu_open.classList.add("hidden");
+                this.menu_close.classList.remove("hidden");
+            }
+            else {
+                this.menu.classList.add("hidden");
+                this.menu.classList.remove("flex");
+                this.menu_open.classList.remove("hidden");
+                this.menu_close.classList.add("hidden");
+            }
+        });
+        document.addEventListener("click", (e) => {
+            if (e.target instanceof HTMLElement && !this.menu_button.contains(e.target) && this.menu.classList.contains("flex")) {
+                this.menu.classList.add("hidden");
+                this.menu.classList.remove("flex");
+                this.menu_open.classList.remove("hidden");
+                this.menu_close.classList.add("hidden");
+            }
+        });
+    }
+}
+window.addEventListener("DOMContentLoaded", () => {
+    const menu = new Menu();
+});
