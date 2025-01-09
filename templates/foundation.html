@@ -86,7 +86,7 @@
 		<div class="flex-none fixed w-56 pt-4 dark:bg-[#343a3f] md:block hidden">
 			<div class="flex flex-col grid-cols-1 grid-rows-2 min-h-[calc(100vh-3rem)]">
 				<div id="menu_big" class="flex-none">
-					<a href="#" class="block py-2 px-4 dark:hover:bg-[#4d5358] hover:bg-[#c6c6c6] menu_selected">
+					<a href="#" id="big_models" class="block py-2 px-4 dark:hover:bg-[#4d5358] hover:bg-[#c6c6c6] menu_selected">
 						<div class="flex">
 							<svg preserveAspectRatio="xMidYMid meet" fill="currentColor" width="32" height="32"
 								viewBox="0 0 32 32" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
@@ -98,7 +98,7 @@
 							<p class="self-center grow pl-4">Available Models</p>
 						</div>
 					</a>
-					<a href="#" class="block py-2 px-4 dark:hover:bg-[#4d5358] hover:bg-[#c6c6c6]">
+					<a href="#" id="big_token" class="block py-2 px-4 dark:hover:bg-[#4d5358] hover:bg-[#c6c6c6]">
 						<div class="flex">
 							<svg preserveAspectRatio="xMidYMid meet" fill="currentColor" width="32" height="32"
 								viewBox="0 0 32 32" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
@@ -110,7 +110,7 @@
 							<p class="self-center grow pl-4">Token</p>
 						</div>
 					</a>
-					<a href="#" class="block py-2 px-4 dark:hover:bg-[#4d5358] hover:bg-[#c6c6c6]">
+					<a href="#" id="big_notebook" class="block py-2 px-4 dark:hover:bg-[#4d5358] hover:bg-[#c6c6c6]">
 						<div class="flex">
 							<svg preserveAspectRatio="xMidYMid meet" fill="currentColor" width="32" height="32"
 								viewBox="0 0 32 32" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
@@ -122,7 +122,7 @@
 							<p class="self-center grow pl-4">Notebook</p>
 						</div>
 					</a>
-					<a href="#" class="block py-2 px-4 dark:hover:bg-[#4d5358] hover:bg-[#c6c6c6]">
+					<a href="#" id="big_groups" class="block py-2 px-4 dark:hover:bg-[#4d5358] hover:bg-[#c6c6c6]">
 						<div class="flex">
 							<svg preserveAspectRatio="xMidYMid meet" fill="currentColor" width="32" height="32"
 								viewBox="0 0 32 32" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
@@ -136,7 +136,7 @@
 							<p class="self-center grow pl-4">Groups</p>
 						</div>
 					</a>
-					<a href="#" class="block py-2 px-4 dark:hover:bg-[#4d5358] hover:bg-[#c6c6c6]">
+					<a href="#" id="big_users" class="block py-2 px-4 dark:hover:bg-[#4d5358] hover:bg-[#c6c6c6]">
 						<div class="flex">
 							<svg preserveAspectRatio="xMidYMid meet" fill="currentColor" width="32" height="32"
 								viewBox="0 0 32 32" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
@@ -144,7 +144,7 @@
 									d="M16 4a5 5 0 11-5 5 5 5 0 015-5m0-2a7 7 0 107 7A7 7 0 0016 2zM26 30H24V25a5 5 0 00-5-5H13a5 5 0 00-5 5v5H6V25a7 7 0 017-7h6a7 7 0 017 7z">
 								</path>
 							</svg>
-							<p class="self-center grow pl-4">User</p>
+							<p class="self-center grow pl-4">Users</p>
 						</div>
 					</a>
 				</div>
@@ -215,13 +215,13 @@
 	</div>
 	<div id="menu"
 		class="fixed flex-col left-0 top-12 bg-[#f4f4f4]/70 dark:bg-[#121619]/70 min-h-96 min-w-52 rounded-br-md backdrop-blur-sm drop-shadow-md hidden md:hidden">
-		<div><a href="#"
+		<div><a href="#" id="mobile-models"
 				class="block py-3 px-4 border-l-4 border-[#4589ff] dark:hover:bg-[#4d5358] hover:bg-[#c6c6c6]">Available
 				Models</a></div>
-		<div><a href="#" class="block py-3 px-4 dark:hover:bg-[#4d5358] hover:bg-[#c6c6c6]">Token</a></div>
-		<div><a href="#" class="block py-3 px-4 dark:hover:bg-[#4d5358] hover:bg-[#c6c6c6]">Notebook</a></div>
-		<div><a href="#" class="block py-3 px-4 dark:hover:bg-[#4d5358] hover:bg-[#c6c6c6]">Groups</a></div>
-		<div><a href="#" class="block py-3 px-4 dark:hover:bg-[#4d5358] hover:bg-[#c6c6c6]">User</a></div>
+		<div><a href="#" id="mobile-token" class="block py-3 px-4 dark:hover:bg-[#4d5358] hover:bg-[#c6c6c6]">Token</a></div>
+		<div><a href="#" id="mobile-notebook" class="block py-3 px-4 dark:hover:bg-[#4d5358] hover:bg-[#c6c6c6]">Notebook</a></div>
+		<div><a href="#" id="mobile-groups" class="block py-3 px-4 dark:hover:bg-[#4d5358] hover:bg-[#c6c6c6]">Groups</a></div>
+		<div><a href="#" id="mobile-users" class="block py-3 px-4 dark:hover:bg-[#4d5358] hover:bg-[#c6c6c6]">Users</a></div>
 		<div class="grow flex flex-col justify-end">
 			<p class="text-xs self-center pb-0.5">Powered by Guardian v0.4.0</p>
 		</div>
