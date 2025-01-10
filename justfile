@@ -2,13 +2,13 @@ down-local-mongo:
 	podman stop mongodb
 
 build:
-	podman build -t guardian .
+	podman build -t bridge .
 
 build-notebook:
-	podman build -t guardian --build-arg NOTEBOOK=true --build-arg LIFECYCLE=false .
+	podman build -t bridge --build-arg NOTEBOOK=true --build-arg LIFECYCLE=false .
 
 build-notebook-lifecycle:
-	podman build -t guardian --build-arg NOTEBOOK=true --build-arg LIFECYCLE=true .
+	podman build -t bridge --build-arg NOTEBOOK=true --build-arg LIFECYCLE=true .
 
 build-front:
 	tailwindcss -i ./static/css/input.css -o ./static/css/output.css --minify

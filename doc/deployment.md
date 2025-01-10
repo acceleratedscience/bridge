@@ -1,10 +1,10 @@
-[&#8592; Back](../#guardian)
+[&#8592; Back](../#bridge)
 
 # Deployment
 
 <br>
 
-### Initiating Guardian locally
+### Initiating OpenBridge locally
 
 1.  Clone the repository
 2.  Create the self-signed certificate and asymmetric key pairs
@@ -19,7 +19,7 @@
 
 <br>
 
-### Running Guardian locally
+### Running OpenBridge locally
 
 1.  Start a local MongoDB instance
 
@@ -27,7 +27,7 @@
 
         just local-mongo
 
-1.  Start the Guardian server
+1.  Start the OpenBridge server
 
         cargo run
 
@@ -35,9 +35,9 @@
 
 <br>
 
-### Destroying Guardian running locally
+### Destroying OpenBridge running locally
 
-1.  Stop the Guardian server
+1.  Stop the OpenBridge server
 
     Press `Ctrl + C` in the terminal where the server is running or send a sigterm.
 
@@ -51,13 +51,13 @@
 
 <br>
 
-### Updating Guardian on OpenShift
+### Updating OpenBridge on OpenShift
 
 > [!WARNING]
 > This will definitely change as processes are automated further in the very near future.
-> This section also requires Guardian to already be deployed on OpenShift. Deployment process is still being worked on and streamlined.
+> This section also requires OpenBridge to already be deployed on OpenShift. Deployment process is still being worked on and streamlined.
 
-1.  Build the Guardian container image
+1.  Build the OpenBridge container image
 
         just build
 
@@ -67,23 +67,23 @@
 
 1.  Tag the container image
 
-        podman tag guardian:v#.#.# 260533665315.dkr.ecr.us-east-1.amazonaws.com/guardian:v#.#.#
+        podman tag bridge:v#.#.# 260533665315.dkr.ecr.us-east-1.amazonaws.com/bridge:v#.#.#
 
 1.  Push the container image to the ECR
 
-        podman push 260533665315.dkr.ecr.us-east-1.amazonaws.com/guardian:v#.#.#
+        podman push 260533665315.dkr.ecr.us-east-1.amazonaws.com/bridge:v#.#.#
 
 1.  Rotate the ECR secret in OpenShift
 
-        kubectl delete secret -n guardian ecr-registry
-        aws ecr get-login-password --region us-east-1 | kubectl create secret docker-registry ecr-registry --docker-server=260533665315.dkr.ecr.us-east-1.amazonaws.com/guardian --docker-username=AWS --docker-password=$(aws ecr get-login-password --region us-east-1)
+        kubectl delete secret -n bridge ecr-registry
+        aws ecr get-login-password --region us-east-1 | kubectl create secret docker-registry ecr-registry --docker-server=260533665315.dkr.ecr.us-east-1.amazonaws.com/bridge --docker-username=AWS --docker-password=$(aws ecr get-login-password --region us-east-1)
 
 1.  Delete currently running pod to have OpenShift spin up a new pod using the new image pushed to ECR
 
         # This is not the "recommended" way of deploying
         # This is a temporary solution while we are actively developing the stage env
-        kubectl delete pod -n guardian guardian-tls-<pod_id>
+        kubectl delete pod -n bridge bridge-tls-<pod_id>
 
 1.  Check and ensure the new pod is running
 
-        kubectl get pods -n guardian
+        kubectl get pods -n bridge

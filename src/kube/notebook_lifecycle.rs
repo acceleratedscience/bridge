@@ -22,7 +22,7 @@ use crate::{
         mongo::{ObjectID, DBCONN},
         Database,
     },
-    errors::{GuardianError, Result},
+    errors::{BridgeError, Result},
     kube::KubeAPI,
     web::{
         notebook_helper::{make_forward_url, make_notebook_name},
@@ -193,7 +193,7 @@ pub async fn notebook_lifecycle(client: Client) -> Result<()> {
 
     let db = DBCONN
         .get()
-        .ok_or(GuardianError::GeneralError("DB connection failed".into()))?;
+        .ok_or(BridgeError::GeneralError("DB connection failed".into()))?;
 
     let pods = KubeAPI::<Pod>::get_all_pods().await?;
     if pods.is_empty() {

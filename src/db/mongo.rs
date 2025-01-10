@@ -10,7 +10,7 @@ use serde::{de::DeserializeOwned, Serialize};
 
 use crate::{
     config::CONFIG,
-    errors::{GuardianError, Result},
+    errors::{BridgeError, Result},
 };
 
 use super::{
@@ -164,7 +164,7 @@ where
         let col = Self::get_collection(self, collection);
         col.find_one(query)
             .await?
-            .ok_or_else(|| GuardianError::GeneralError("Could not find any document".to_string()))
+            .ok_or_else(|| BridgeError::GeneralError("Could not find any document".to_string()))
     }
 
     async fn find_one_update(
@@ -176,7 +176,7 @@ where
         let col = Self::get_collection(self, collection);
         col.find_one_and_update(query, update)
             .await?
-            .ok_or_else(|| GuardianError::GeneralError("Could not find any document".to_string()))
+            .ok_or_else(|| BridgeError::GeneralError("Could not find any document".to_string()))
     }
 
     async fn find_many(&self, query: Document, collection: Self::C) -> Result<Vec<R1>> {
@@ -189,7 +189,7 @@ where
         }
 
         if docs.is_empty() {
-            return Err(GuardianError::GeneralError(
+            return Err(BridgeError::GeneralError(
                 "Could not find any documents".to_string(),
             ));
         }
@@ -282,7 +282,7 @@ where
         }
 
         if docs.is_empty() {
-            return Err(GuardianError::RecordSearchError(
+            return Err(BridgeError::RecordSearchError(
                 "Could not find any documents".to_string(),
             ));
         }

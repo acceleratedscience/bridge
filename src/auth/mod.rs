@@ -3,9 +3,9 @@ use openssl::{ec, pkey::PKey};
 pub mod jwt;
 pub mod openid;
 
-pub static COOKIE_NAME: &str = "guardian-user";
-pub static NOTEBOOK_COOKIE_NAME: &str = "guardian-notebook";
-pub static NOTEBOOK_STATUS_COOKIE_NAME: &str = "guardian-notebook-status";
+pub static COOKIE_NAME: &str = "bridge-user";
+pub static NOTEBOOK_COOKIE_NAME: &str = "bridge-notebook";
+pub static NOTEBOOK_STATUS_COOKIE_NAME: &str = "bridge-notebook-status";
 
 /// Convert SEC1 to PKCS8
 pub fn sec1_to_pkcs8(secret_pem: &[u8]) -> Vec<u8> {

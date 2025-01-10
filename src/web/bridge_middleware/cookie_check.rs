@@ -8,11 +8,14 @@ use actix_web::{
 use futures::{future::LocalBoxFuture, FutureExt, TryFutureExt};
 use tracing::warn;
 
-use crate::{auth::NOTEBOOK_COOKIE_NAME, db::models::NotebookCookie};
+use crate::{
+    auth::{COOKIE_NAME, NOTEBOOK_STATUS_COOKIE_NAME},
+    db::models::{BridgeCookie, NotebookStatusCookie},
+};
 
-pub struct NotebookCookieCheck;
+pub struct CookieCheck;
 
-impl<S, B> Transform<S, ServiceRequest> for NotebookCookieCheck
+impl<S, B> Transform<S, ServiceRequest> for CookieCheck
 where
     S: Service<ServiceRequest, Response = ServiceResponse<B>, Error = Error>,
     S::Future: 'static,
@@ -21,19 +24,19 @@ where
     type Response = ServiceResponse<EitherBody<B>>;
     type Error = Error;
     type InitError = ();
-    type Transform = NotebookCookieCheckMW<S>;
+    type Transform = CookieCheckMW<S>;
     type Future = Ready<Result<Self::Transform, Self::InitError>>;
 
     fn new_transform(&self, service: S) -> Self::Future {
-        ready(Ok(NotebookCookieCheckMW { service }))
+        ready(Ok(CookieCheckMW { service }))
     }
 }
 
-pub struct NotebookCookieCheckMW<S> {
+pub struct CookieCheckMW<S> {
     service: S,
 }
 
-impl<S, B> Service<ServiceRequest> for NotebookCookieCheckMW<S>
+impl<S, B> Service<ServiceRequest> for CookieCheckMW<S>
 where
     S: Service<ServiceRequest, Response = ServiceResponse<B>, Error = Error>,
     S::Future: 'static,
@@ -46,14 +49,19 @@ where
     forward_ready!(service);
 
     fn call(&self, req: ServiceRequest) -> Self::Future {
-        match req
-            .cookie(NOTEBOOK_COOKIE_NAME)
-            .map(|c| c.value().to_string())
-        {
+        match req.cookie(COOKIE_NAME).map(|c| c.value().to_string()) {
             Some(v) => {
-                let guardian_cookie_result = serde_json::from_str::<NotebookCookie>(&v);
-                match guardian_cookie_result {
+                let bridge_cookie_result = serde_json::from_str::<BridgeCookie>(&v);
+                match bridge_cookie_result {
                     Ok(gcs) => {
+                        // also insert notebook_status_cookie if available
+                        if let Some(ncs) = req.cookie(NOTEBOOK_STATUS_COOKIE_NAME) {
+                            if let Ok(ncs) =
+                                serde_json::from_str::<NotebookStatusCookie>(ncs.value())
+                            {
+                                req.extensions_mut().insert(ncs);
+                            }
+                        }
                         req.extensions_mut().insert(gcs);
                         self.service
                             .call(req)
@@ -61,7 +69,7 @@ where
                             .boxed_local()
                     }
                     Err(e) => {
-                        warn!("Guardian cookie deserialization error: {:?}", e);
+                        warn!("Bridge cookie deserialization error: {:?}", e);
                         let res = HttpResponse::InternalServerError()
                             .finish()
                             .map_into_right_body();
@@ -70,8 +78,9 @@ where
                 }
             }
             None => {
+                // Make sure "X-Forwarded-For" is present in the header
                 warn!(
-                    "Guardian cookie not found from ip {:?}",
+                    "Bridge cookie not found from ip {:?}",
                     req.connection_info().realip_remote_addr()
                 );
                 let res = HttpResponse::Forbidden().finish().map_into_right_body();

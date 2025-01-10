@@ -17,15 +17,15 @@ use tracing::instrument;
 use crate::{
     db::{
         models::{
-            AdminTab, AdminTabs, Group, GroupForm, GuardianCookie, NotebookStatusCookie, User,
+            AdminTab, AdminTabs, Group, GroupForm, BridgeCookie, NotebookStatusCookie, User,
             UserDeleteForm, UserForm, UserType, GROUP, USER,
         },
         mongo::DB,
         Database,
     },
-    errors::{GuardianError, Result},
+    errors::{BridgeError, Result},
     web::{
-        guardian_middleware::{Htmx, HTMX_ERROR_RES},
+        bridge_middleware::{Htmx, HTMX_ERROR_RES},
         helper::{self, bson, payload_to_struct},
         route::portal::helper::{check_admin, get_all_groups},
         services::CATALOG,
@@ -46,15 +46,15 @@ const USER_PAGE: &str = "pages/portal_system.html";
 pub(super) async fn system(
     data: Data<Tera>,
     req: HttpRequest,
-    subject: Option<ReqData<GuardianCookie>>,
+    subject: Option<ReqData<BridgeCookie>>,
     nsc: Option<ReqData<NotebookStatusCookie>>,
     db: Data<&DB>,
 ) -> Result<HttpResponse> {
     // get the subject id from middleware
-    let guardian_cookie = check_admin(subject, UserType::SystemAdmin)?;
+    let bridge_cookie = check_admin(subject, UserType::SystemAdmin)?;
 
-    let id = ObjectId::from_str(&guardian_cookie.subject)
-        .map_err(|e| GuardianError::GeneralError(e.to_string()))?;
+    let id = ObjectId::from_str(&bridge_cookie.subject)
+        .map_err(|e| BridgeError::GeneralError(e.to_string()))?;
 
     // check the db using objectid and get info on user
     let result: Result<User> = db
@@ -74,7 +74,7 @@ pub(super) async fn system(
     match user.user_type {
         UserType::SystemAdmin => {}
         _ => {
-            return Err(GuardianError::UserNotAllowedOnPage(USER_PAGE.to_string()));
+            return Err(BridgeError::UserNotAllowedOnPage(USER_PAGE.to_string()));
         }
     }
 
@@ -115,7 +115,7 @@ pub(super) async fn system(
 async fn system_create_group(
     db: Data<&DB>,
     pl: web::Payload,
-    subject: Option<ReqData<GuardianCookie>>,
+    subject: Option<ReqData<BridgeCookie>>,
 ) -> Result<HttpResponse> {
     // TODO: do this at the middleware level
     let _ = check_admin(subject, UserType::SystemAdmin)?;
@@ -172,7 +172,7 @@ async fn system_create_group(
 async fn system_update_group(
     db: Data<&DB>,
     pl: web::Payload,
-    subject: Option<ReqData<GuardianCookie>>,
+    subject: Option<ReqData<BridgeCookie>>,
 ) -> Result<HttpResponse> {
     // TODO: do this at the middleware level
     let _ = check_admin(subject, UserType::SystemAdmin)?;
@@ -213,7 +213,7 @@ async fn system_update_group(
 async fn system_update_user(
     db: Data<&DB>,
     pl: web::Payload,
-    subject: Option<ReqData<GuardianCookie>>,
+    subject: Option<ReqData<BridgeCookie>>,
 ) -> Result<HttpResponse> {
     // TODO: do this at the middleware level
     let _ = check_admin(subject, UserType::SystemAdmin)?;
@@ -260,7 +260,7 @@ async fn system_update_user(
 async fn system_delete_user(
     db: Data<&DB>,
     req: HttpRequest,
-    subject: Option<ReqData<GuardianCookie>>,
+    subject: Option<ReqData<BridgeCookie>>,
 ) -> Result<HttpResponse> {
     // TODO: do this at the middleware level
     let _ = check_admin(subject, UserType::SystemAdmin)?;
@@ -291,12 +291,12 @@ async fn system_tab_htmx(
     req: HttpRequest,
     db: Data<&DB>,
     data: Data<Tera>,
-    subject: Option<ReqData<GuardianCookie>>,
+    subject: Option<ReqData<BridgeCookie>>,
 ) -> Result<HttpResponse> {
     let gc = check_admin(subject, UserType::SystemAdmin)?;
 
     let id =
-        ObjectId::from_str(&gc.subject).map_err(|e| GuardianError::GeneralError(e.to_string()))?;
+        ObjectId::from_str(&gc.subject).map_err(|e| BridgeError::GeneralError(e.to_string()))?;
 
     // get user from objectid
     let user: User = db
@@ -320,7 +320,7 @@ async fn system_tab_htmx(
                 .0
                 .get("services")
                 .and_then(|v| v.as_table())
-                .ok_or(GuardianError::GeneralError("No services found".to_string()))?
+                .ok_or(BridgeError::GeneralError("No services found".to_string()))?
                 .iter()
                 .for_each(|(k, _)| {
                     // TODO: remove this clone and use &'static str
@@ -381,7 +381,7 @@ async fn system_tab_htmx(
                         )?
                     }
                     None => {
-                        return Err(GuardianError::GeneralError("No group provided".to_string()))
+                        return Err(BridgeError::GeneralError("No group provided".to_string()))
                     }
                 },
                 _ => unreachable!(),
@@ -393,7 +393,7 @@ async fn system_tab_htmx(
             let target_user = tab
                 .user
                 .as_ref()
-                .ok_or(GuardianError::GeneralError("No user provided".to_string()))?;
+                .ok_or(BridgeError::GeneralError("No user provided".to_string()))?;
 
             get_all_groups(&db)
                 .await

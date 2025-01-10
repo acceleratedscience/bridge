@@ -133,7 +133,7 @@ pub enum ModifyUser {
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
-pub struct GuardianCookie {
+pub struct BridgeCookie {
     pub subject: String,
     pub user_type: UserType,
 }

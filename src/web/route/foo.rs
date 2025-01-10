@@ -8,14 +8,14 @@ use tera::Tera;
 use tracing::instrument;
 
 use crate::{
-    errors::{GuardianError, Result},
+    errors::{BridgeError, Result},
     web::helper,
 };
 
 #[get("")]
 #[instrument]
 async fn foo(data: Data<Tera>) -> Result<HttpResponse> {
-    helper::log_with_level!(Err(GuardianError::GeneralError("Foo!".to_string())), error)?
+    helper::log_with_level!(Err(BridgeError::GeneralError("Foo!".to_string())), error)?
 }
 
 #[get("/bar")]

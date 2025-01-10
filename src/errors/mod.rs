@@ -3,10 +3,10 @@ use std::convert::Infallible;
 use actix_web::{http::StatusCode, ResponseError};
 use thiserror::Error;
 
-pub type Result<T> = std::result::Result<T, GuardianError>;
+pub type Result<T> = std::result::Result<T, BridgeError>;
 
 #[derive(Error, Debug)]
-pub enum GuardianError {
+pub enum BridgeError {
     #[error("{0}")]
     GeneralError(String),
     #[error("HTMX tag not found in header")]
@@ -64,10 +64,13 @@ pub enum GuardianError {
     #[cfg(feature = "notebook")]
     #[error("{0}")]
     KubeError(#[from] kube::Error),
+    #[cfg(feature = "notebook")]
     #[error("{0}")]
     NotebookExistsError(String),
+    #[cfg(feature = "notebook")]
     #[error("{0}")]
     NotebookAccessError(String),
+    #[cfg(feature = "notebook")]
     #[error("{0}")]
     KubeClientError(String),
     #[error("{0}")]
@@ -77,26 +80,26 @@ pub enum GuardianError {
 }
 
 // Workaround for Infallible, which may get solved by rust-lang: https://github.com/rust-lang/rust/issues/64715
-impl From<Infallible> for GuardianError {
+impl From<Infallible> for BridgeError {
     fn from(_: Infallible) -> Self {
         unreachable!()
     }
 }
 
-impl ResponseError for GuardianError {
+impl ResponseError for BridgeError {
     fn status_code(&self) -> StatusCode {
         match self {
-            GuardianError::GeneralError(_) => StatusCode::INTERNAL_SERVER_ERROR,
-            GuardianError::TeraError(_) => StatusCode::INTERNAL_SERVER_ERROR,
-            GuardianError::SystemTimeError(_) => StatusCode::INTERNAL_SERVER_ERROR,
-            GuardianError::QueryDeserializeError(_) => StatusCode::BAD_REQUEST,
-            GuardianError::InferenceServiceHeaderNotFound => StatusCode::BAD_REQUEST,
-            GuardianError::ServiceDoesNotExist(_) => StatusCode::BAD_REQUEST,
-            GuardianError::HtmxTagNotFound => StatusCode::BAD_REQUEST,
-            GuardianError::AuthorizationServerNotSupported => StatusCode::BAD_REQUEST,
-            GuardianError::FormDeserializeError(_) => StatusCode::BAD_REQUEST,
-            GuardianError::RecordSearchError(_) => StatusCode::BAD_REQUEST,
-            GuardianError::JsonWebTokenError(e) => {
+            BridgeError::GeneralError(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            BridgeError::TeraError(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            BridgeError::SystemTimeError(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            BridgeError::QueryDeserializeError(_) => StatusCode::BAD_REQUEST,
+            BridgeError::InferenceServiceHeaderNotFound => StatusCode::BAD_REQUEST,
+            BridgeError::ServiceDoesNotExist(_) => StatusCode::BAD_REQUEST,
+            BridgeError::HtmxTagNotFound => StatusCode::BAD_REQUEST,
+            BridgeError::AuthorizationServerNotSupported => StatusCode::BAD_REQUEST,
+            BridgeError::FormDeserializeError(_) => StatusCode::BAD_REQUEST,
+            BridgeError::RecordSearchError(_) => StatusCode::BAD_REQUEST,
+            BridgeError::JsonWebTokenError(e) => {
                 match e.kind() {
                     // Unauthorized errors
                     jsonwebtoken::errors::ErrorKind::InvalidToken => StatusCode::UNAUTHORIZED,
@@ -131,33 +134,34 @@ impl ResponseError for GuardianError {
                     _ => StatusCode::INTERNAL_SERVER_ERROR,
                 }
             }
-            GuardianError::TomlLookupError => StatusCode::INTERNAL_SERVER_ERROR,
-            GuardianError::StringConversionError => StatusCode::INTERNAL_SERVER_ERROR,
-            GuardianError::DeserializationError(_) => StatusCode::INTERNAL_SERVER_ERROR,
-            GuardianError::IOError(_) => StatusCode::INTERNAL_SERVER_ERROR,
-            GuardianError::TomlError(_) => StatusCode::INTERNAL_SERVER_ERROR,
-            GuardianError::URLParseError(_) => StatusCode::INTERNAL_SERVER_ERROR,
-            GuardianError::MongoError(_) => StatusCode::INTERNAL_SERVER_ERROR,
-            GuardianError::SerdeJsonError(_) => StatusCode::INTERNAL_SERVER_ERROR,
-            GuardianError::WSError(_) => StatusCode::INTERNAL_SERVER_ERROR,
-            GuardianError::ReqwestError(_) => StatusCode::INTERNAL_SERVER_ERROR,
-            GuardianError::RedisError(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            BridgeError::TomlLookupError => StatusCode::INTERNAL_SERVER_ERROR,
+            BridgeError::StringConversionError => StatusCode::INTERNAL_SERVER_ERROR,
+            BridgeError::DeserializationError(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            BridgeError::IOError(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            BridgeError::TomlError(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            BridgeError::URLParseError(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            BridgeError::MongoError(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            BridgeError::SerdeJsonError(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            BridgeError::WSError(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            BridgeError::ReqwestError(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            BridgeError::RedisError(_) => StatusCode::INTERNAL_SERVER_ERROR,
 
             #[cfg(feature = "notebook")]
-            GuardianError::KubeError(_) => StatusCode::INTERNAL_SERVER_ERROR,
-            GuardianError::KubeClientError(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            BridgeError::KubeError(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            #[cfg(feature = "notebook")]
+            BridgeError::KubeClientError(_) => StatusCode::INTERNAL_SERVER_ERROR,
 
-            GuardianError::NotAdmin => StatusCode::UNAUTHORIZED,
-            GuardianError::Unauthorized(_) => StatusCode::UNAUTHORIZED,
-            GuardianError::ClaimsVerificationError(_) => StatusCode::UNAUTHORIZED,
-            GuardianError::NonceCookieNotFound => StatusCode::UNAUTHORIZED,
-            GuardianError::TokenRequestError(_) => StatusCode::UNAUTHORIZED,
+            BridgeError::NotAdmin => StatusCode::UNAUTHORIZED,
+            BridgeError::Unauthorized(_) => StatusCode::UNAUTHORIZED,
+            BridgeError::ClaimsVerificationError(_) => StatusCode::UNAUTHORIZED,
+            BridgeError::NonceCookieNotFound => StatusCode::UNAUTHORIZED,
+            BridgeError::TokenRequestError(_) => StatusCode::UNAUTHORIZED,
 
-            GuardianError::UserNotFound(_) => StatusCode::FORBIDDEN,
-            GuardianError::UserNotAllowedOnPage(_) => StatusCode::FORBIDDEN,
-            GuardianError::NotebookAccessError(_) => StatusCode::FORBIDDEN,
+            BridgeError::UserNotFound(_) => StatusCode::FORBIDDEN,
+            BridgeError::UserNotAllowedOnPage(_) => StatusCode::FORBIDDEN,
+            BridgeError::NotebookAccessError(_) => StatusCode::FORBIDDEN,
 
-            GuardianError::NotebookExistsError(_) => StatusCode::CONFLICT,
+            BridgeError::NotebookExistsError(_) => StatusCode::CONFLICT,
         }
     }
 }

@@ -51,7 +51,7 @@ where
         if req.path().ne("/maintenance") && req.path().ne("/health") {
             if let Some(rg) = MAINTENANCE_WINDOWS.try_read() {
                 if *rg {
-                    // Guardian under maintenance
+                    // OpenBridge under maintenance
                     return Box::pin(async move {
                         Ok(req.into_response(
                             HttpResponse::Found()

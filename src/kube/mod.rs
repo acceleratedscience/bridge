@@ -12,7 +12,7 @@ use reqwest::StatusCode;
 use serde::{Deserialize, Serialize};
 use tracing::info;
 
-use crate::errors::{GuardianError, Result};
+use crate::errors::{BridgeError, Result};
 
 mod models;
 pub use models::{Notebook, NotebookSpec, PVCSpec, NAMESPACE};
@@ -49,7 +49,7 @@ where
     }
 
     pub fn get_kube_client() -> Result<&'static Client> {
-        KUBECLIENT.get().ok_or(GuardianError::KubeClientError(
+        KUBECLIENT.get().ok_or(BridgeError::KubeClientError(
             "Could not get kube client".to_string(),
         ))
     }
@@ -62,7 +62,7 @@ where
             Err(e) => match e {
                 kube::Error::Api(ref error_response) => {
                     if error_response.reason == "AlreadyExists" {
-                        return Err(GuardianError::NotebookExistsError(
+                        return Err(BridgeError::NotebookExistsError(
                             "AlreadyExists".to_string(),
                         ));
                     }

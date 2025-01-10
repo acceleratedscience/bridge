@@ -12,7 +12,7 @@ use tracing::{error, instrument};
 use crate::{
     db::keydb::CacheDB,
     errors::Result,
-    web::{guardian_middleware::Htmx, helper, services::CATALOG_URLS},
+    web::{bridge_middleware::Htmx, helper, services::CATALOG_URLS},
 };
 
 mod inference_services;

@@ -9,7 +9,7 @@ use crate::{
     auth::jwt::validate_token,
     config::CONFIG,
     db::keydb::{MaintenanceMSG, CACHEDB},
-    errors::{GuardianError, Result},
+    errors::{BridgeError, Result},
 };
 
 /// This macro logs the error, warn, info, or debug level of the error message.
@@ -64,7 +64,7 @@ macro_rules! log_with_level {
 
 pub(crate) use log_with_level;
 
-use super::guardian_middleware::MAINTENANCE_WINDOWS;
+use super::bridge_middleware::MAINTENANCE_WINDOWS;
 
 pub fn bson<T>(t: T) -> Result<Bson>
 where
@@ -72,7 +72,7 @@ where
 {
     match to_bson(&t) {
         Ok(bson) => Ok(bson),
-        Err(e) => Err(GuardianError::GeneralError(e.to_string())),
+        Err(e) => Err(BridgeError::GeneralError(e.to_string())),
     }
 }
 
@@ -176,7 +176,7 @@ pub mod forwarding {
 
     use actix_web::http::StatusCode;
 
-    use crate::errors::{GuardianError, Result};
+    use crate::errors::{BridgeError, Result};
 
     // No inline needed... generic are inherently inlined
     pub async fn forward<T>(
@@ -216,7 +216,7 @@ pub mod forwarding {
             "CONNECT" => reqwest::Method::CONNECT,
             "PATCH" => reqwest::Method::PATCH,
             _ => {
-                return Err(GuardianError::GeneralError(
+                return Err(BridgeError::GeneralError(
                     "Unsupported HTTP method".to_string(),
                 ))
             }
@@ -251,13 +251,13 @@ pub mod forwarding {
             forwarded_req
                 .send()
                 .await
-                .map_err(|e| { GuardianError::GeneralError(e.to_string()) }),
+                .map_err(|e| { BridgeError::GeneralError(e.to_string()) }),
             error
         )?;
 
         let status = res.status().as_u16();
         let status =
-            StatusCode::from_u16(status).map_err(|e| GuardianError::GeneralError(e.to_string()))?;
+            StatusCode::from_u16(status).map_err(|e| BridgeError::GeneralError(e.to_string()))?;
 
         let mut client_resp = HttpResponse::build(status);
         // Removing `Connection` and 'keep-alive' as per
@@ -367,7 +367,7 @@ pub mod ws {
     use reqwest::StatusCode;
     use tokio_tungstenite::tungstenite::{self, handshake::client::Request};
 
-    use crate::errors::{GuardianError, Result};
+    use crate::errors::{BridgeError, Result};
 
     pub async fn manage_connection<T>(
         req: HttpRequest,
@@ -393,7 +393,7 @@ pub mod ws {
 
         let (stream, res) = tokio_tungstenite::connect_async(request).await.unwrap();
         if !res.status().eq(&StatusCode::SWITCHING_PROTOCOLS) {
-            return Err(GuardianError::GeneralError(
+            return Err(BridgeError::GeneralError(
                 "Failed to establish websocket connection".to_string(),
             ));
         }

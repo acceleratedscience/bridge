@@ -1,4 +1,4 @@
-[&#8592; Back](../#guardian)
+[&#8592; Back](../#bridge)
 
 # Architecture
 
@@ -7,7 +7,7 @@
 
 <br>
 
-### Technology powering Guardian
+### Technology powering OpenBridge
 
 -   Front-end:
     -   HTMX
@@ -40,7 +40,7 @@ flowchart LR
 	user["User"]
 	route["Route 53"]
 	elb["Elasitc Load Balancer"]
-	guardian["Guardian"]
+	ob["OpenBridge"]
 	model1["Model Service 1"]
 	model2["Model Service 2"]
 	model3["Model Service 3"]
@@ -49,13 +49,13 @@ flowchart LR
 
 	user --> route
 	subgraph "AWS"
-	route --> elb --> guardian
+	route --> elb --> bridge
 	subgraph "Openshift"
-	guardian --> mongodb
-    guardian -- optional --> cache
-	guardian --> model1
-	guardian --> model2
-	guardian --> model3
+	bridge --> mongodb
+    bridge -- optional --> cache
+	bridge --> model1
+	bridge --> model2
+	bridge --> model3
 	end
 	end
 ```
@@ -71,7 +71,7 @@ flowchart TD
 	elb["Elasitc Load Balancer"]
 	waf["Web Application Firewall"]
 	redis[("Redis")]
-	guardian["Guardian"]
+	ob["OpenBridge"]
 	model1["Model Service 1"]
 	model2["Model Service 2"]
 	model3["Model Service 3"]
@@ -79,13 +79,13 @@ flowchart TD
 
 	user --> route
 	subgraph "AWS"
-	route --> waf -- Security  Group --> elb -- Security Group --> guardian
+	route --> waf -- Security  Group --> elb -- Security Group --> bridge
 	subgraph "Openshift"
-	guardian -- Security Group --> mongodb
-	guardian -- Security Group --> redis
-	guardian --> model1
-	guardian --> model2
-	guardian --> model3
+	bridge -- Security Group --> mongodb
+	bridge -- Security Group --> redis
+	bridge --> model1
+	bridge --> model2
+	bridge --> model3
 	end
 	end
 ```

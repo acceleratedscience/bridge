@@ -11,11 +11,11 @@ use tera::Context;
 
 use crate::{
     db::{
-        models::{Group, GuardianCookie, User, UserType, GROUP},
+        models::{Group, BridgeCookie, User, UserType, GROUP},
         mongo::DB,
         Database,
     },
-    errors::{GuardianError, Result},
+    errors::{BridgeError, Result},
     web::helper,
 };
 
@@ -31,7 +31,7 @@ use k8s_openapi::api::core::v1::Pod;
 
 #[allow(dead_code)]
 #[allow(unused_variables)]
-pub(super) fn portal_hygienic_group(gc: &GuardianCookie, doc: &dyn Any) -> Result<bool> {
+pub(super) fn portal_hygienic_group(gc: &BridgeCookie, doc: &dyn Any) -> Result<bool> {
     // Downcast to Group
     if let Some(group) = doc.downcast_ref::<Group>() {
         // group_admin cannot edit groups
@@ -43,22 +43,22 @@ pub(super) fn portal_hygienic_group(gc: &GuardianCookie, doc: &dyn Any) -> Resul
         return Ok(true);
     }
 
-    Err(GuardianError::GeneralError(
+    Err(BridgeError::GeneralError(
         "Portal Hygienic Error".to_string(),
     ))
 }
 
 pub(super) fn check_admin(
-    subject: Option<ReqData<GuardianCookie>>,
+    subject: Option<ReqData<BridgeCookie>>,
     admin: UserType,
-) -> Result<GuardianCookie> {
+) -> Result<BridgeCookie> {
     Ok(match subject {
         // System admin
         Some(cookie_subject) if cookie_subject.user_type == admin => cookie_subject.into_inner(),
         // All other users
         Some(g) => {
             return helper::log_with_level!(
-                Err(GuardianError::UserNotFound(format!(
+                Err(BridgeError::UserNotFound(format!(
                     "User {} is not a system admin",
                     g.into_inner().subject
                 ))),
@@ -67,7 +67,7 @@ pub(super) fn check_admin(
         }
         None => {
             return helper::log_with_level!(
-                Err(GuardianError::UserNotFound(
+                Err(BridgeError::UserNotFound(
                     "No user passed from middleware... subject not passed from middleware"
                         .to_string(),
                 )),

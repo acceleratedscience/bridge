@@ -1401,53 +1401,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "guardian"
-version = "0.3.10"
-dependencies = [
- "actix-files",
- "actix-web",
- "actix-web-httpauth",
- "actix-ws",
- "argon2",
- "either",
- "futures",
- "futures-util",
- "jsonwebtoken",
- "k8s-openapi",
- "kube",
- "mongodb",
- "num-bigint",
- "openidconnect",
- "openssl",
- "parking_lot",
- "pin-project",
- "rand_core",
- "redis",
- "reqwest 0.12.12",
- "rustls 0.23.20",
- "rustls-pemfile 2.2.0",
- "rustls-pki-types",
- "schemars",
- "serde",
- "serde_json",
- "serde_urlencoded",
- "sha2",
- "tera",
- "thiserror 2.0.9",
- "time",
- "tokio",
- "tokio-rustls 0.26.1",
- "tokio-stream",
- "tokio-tungstenite",
- "toml",
- "tracing",
- "tracing-subscriber",
- "url",
- "urlencoding",
- "utils",
-]
-
-[[package]]
 name = "h2"
 version = "0.3.26"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2173,7 +2126,7 @@ dependencies = [
  "pest_derive",
  "regex",
  "serde_json",
- "thiserror 2.0.9",
+ "thiserror 2.0.10",
 ]
 
 [[package]]
@@ -2257,7 +2210,7 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_yaml",
- "thiserror 2.0.9",
+ "thiserror 2.0.10",
  "tokio",
  "tokio-util",
  "tower",
@@ -2280,7 +2233,7 @@ dependencies = [
  "serde",
  "serde-value",
  "serde_json",
- "thiserror 2.0.9",
+ "thiserror 2.0.10",
 ]
 
 [[package]]
@@ -2319,7 +2272,7 @@ dependencies = [
  "pin-project",
  "serde",
  "serde_json",
- "thiserror 2.0.9",
+ "thiserror 2.0.10",
  "tokio",
  "tokio-util",
  "tracing",
@@ -2688,6 +2641,53 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1261fe7e33c73b354eab43b1273a57c8f967d0391e80353e51f764ac02cf6775"
 
 [[package]]
+name = "openbridge"
+version = "0.1.0"
+dependencies = [
+ "actix-files",
+ "actix-web",
+ "actix-web-httpauth",
+ "actix-ws",
+ "argon2",
+ "either",
+ "futures",
+ "futures-util",
+ "jsonwebtoken",
+ "k8s-openapi",
+ "kube",
+ "mongodb",
+ "num-bigint",
+ "openidconnect",
+ "openssl",
+ "parking_lot",
+ "pin-project",
+ "rand_core",
+ "redis",
+ "reqwest 0.12.12",
+ "rustls 0.23.20",
+ "rustls-pemfile 2.2.0",
+ "rustls-pki-types",
+ "schemars",
+ "serde",
+ "serde_json",
+ "serde_urlencoded",
+ "sha2",
+ "tera",
+ "thiserror 2.0.10",
+ "time",
+ "tokio",
+ "tokio-rustls 0.26.1",
+ "tokio-stream",
+ "tokio-tungstenite",
+ "toml",
+ "tracing",
+ "tracing-subscriber",
+ "url",
+ "urlencoding",
+ "utils",
+]
+
+[[package]]
 name = "openidconnect"
 version = "3.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2898,7 +2898,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8b7cafe60d6cf8e62e1b9b2ea516a089c008945bb5a275416789e7db0bc199dc"
 dependencies = [
  "memchr",
- "thiserror 2.0.9",
+ "thiserror 2.0.10",
  "ucd-trie",
 ]
 
@@ -4074,11 +4074,11 @@ dependencies = [
 
 [[package]]
 name = "thiserror"
-version = "2.0.9"
+version = "2.0.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f072643fd0190df67a8bab670c20ef5d8737177d6ac6b2e9a236cb096206b2cc"
+checksum = "a3ac7f54ca534db81081ef1c1e7f6ea8a3ef428d2fc069097c079443d24124d3"
 dependencies = [
- "thiserror-impl 2.0.9",
+ "thiserror-impl 2.0.10",
 ]
 
 [[package]]
@@ -4094,9 +4094,9 @@ dependencies = [
 
 [[package]]
 name = "thiserror-impl"
-version = "2.0.9"
+version = "2.0.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7b50fa271071aae2e6ee85f842e2e28ba8cd2c5fb67f11fcb1fd70b276f9e7d4"
+checksum = "9e9465d30713b56a37ede7185763c3492a91be2f5fa68d958c44e41ab9248beb"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -4426,7 +4426,7 @@ dependencies = [
  "log",
  "rand",
  "sha1",
- "thiserror 2.0.9",
+ "thiserror 2.0.10",
  "url",
  "utf-8",
 ]

@@ -12,7 +12,7 @@ env = [
 	"--LabApp.default_url='/lab/tree/start_menu.ipynb'",
 	"--ServerApp.default_url='/lab/tree/start_menu.ipynb'",
 	"--ServerApp.trust_xheaders=True",
-	# base-url is taken care by guardian
+	# base-url is taken care by bridge
 ]
 secret = "quay-notebook-secret"
 start_up_url = "lab/tree/start_menu.ipynb"
@@ -31,6 +31,6 @@ env = [
 	"--ServerApp.quit_button=False",
 	"--ServerApp.disable_check_xsrf=True",
 	"--ServerApp.allow_origin='*'",
-	# base-url is taken care by guardian
+	# base-url is taken care by bridge
 ]
 max_idle_time = 86400

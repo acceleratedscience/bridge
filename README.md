@@ -1,4 +1,4 @@
-# Guardian
+# OpenBridge
 
 **A proxy server for the Accelerated Discovery Platform**
 

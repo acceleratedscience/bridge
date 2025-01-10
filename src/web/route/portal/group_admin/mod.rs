@@ -15,15 +15,15 @@ use tracing::instrument;
 use crate::{
     db::{
         models::{
-            AdminTab, AdminTabs, Group, GuardianCookie, ModifyUser, NotebookStatusCookie, User,
+            AdminTab, AdminTabs, Group, BridgeCookie, ModifyUser, NotebookStatusCookie, User,
             UserGroupMod, UserType, GROUP, USER,
         },
         mongo::DB,
         Database,
     },
-    errors::{GuardianError, Result},
+    errors::{BridgeError, Result},
     web::{
-        guardian_middleware::{Htmx, HTMX_ERROR_RES},
+        bridge_middleware::{Htmx, HTMX_ERROR_RES},
         helper::{self, bson},
         route::portal::helper::check_admin,
     },
@@ -45,13 +45,13 @@ pub(super) async fn group(
     req: HttpRequest,
     nsc: Option<ReqData<NotebookStatusCookie>>,
     db: Data<&DB>,
-    subject: Option<ReqData<GuardianCookie>>,
+    subject: Option<ReqData<BridgeCookie>>,
 ) -> Result<HttpResponse> {
     // get the subject id from middleware
-    let guardian_cookie = check_admin(subject, UserType::GroupAdmin)?;
+    let bridge_cookie = check_admin(subject, UserType::GroupAdmin)?;
 
-    let id = ObjectId::from_str(&guardian_cookie.subject)
-        .map_err(|e| GuardianError::GeneralError(e.to_string()))?;
+    let id = ObjectId::from_str(&bridge_cookie.subject)
+        .map_err(|e| BridgeError::GeneralError(e.to_string()))?;
 
     // check the db using objectid and get info on user
     let result: Result<User> = db
@@ -71,7 +71,7 @@ pub(super) async fn group(
     match user.user_type {
         UserType::GroupAdmin => {}
         _ => {
-            return Err(GuardianError::UserNotAllowedOnPage(USER_PAGE.to_string()));
+            return Err(BridgeError::UserNotAllowedOnPage(USER_PAGE.to_string()));
         }
     }
 
@@ -112,7 +112,7 @@ pub(super) async fn group(
 async fn group_update_user(
     db: Data<&DB>,
     mut pl: web::Payload,
-    subject: Option<ReqData<GuardianCookie>>,
+    subject: Option<ReqData<BridgeCookie>>,
 ) -> Result<HttpResponse> {
     let _ = check_admin(subject, UserType::GroupAdmin)?;
 
@@ -214,7 +214,7 @@ async fn group_tab_htmx(
     req: HttpRequest,
     db: Data<&DB>,
     data: Data<Tera>,
-    subject: Option<ReqData<GuardianCookie>>,
+    subject: Option<ReqData<BridgeCookie>>,
 ) -> Result<HttpResponse> {
     let gc = check_admin(subject, UserType::GroupAdmin)?;
     let query = req.query_string();
@@ -223,7 +223,7 @@ async fn group_tab_htmx(
 
     // get the group you below to
     let id =
-        ObjectId::from_str(&gc.subject).map_err(|e| GuardianError::GeneralError(e.to_string()))?;
+        ObjectId::from_str(&gc.subject).map_err(|e| BridgeError::GeneralError(e.to_string()))?;
 
     // get user from objectid
     let user: User = db
@@ -238,7 +238,7 @@ async fn group_tab_htmx(
     let content = match tab.tab {
         AdminTab::UserModify => {
             let group_name = user.groups.first().ok_or_else(|| {
-                GuardianError::GeneralError(
+                BridgeError::GeneralError(
                     "Group admin doesn't belong to any group... something is not right".to_string(),
                 )
             })?;
@@ -254,7 +254,7 @@ async fn group_tab_htmx(
         }
         AdminTab::GroupView => {
             let group_name = user.groups.first().ok_or_else(|| {
-                GuardianError::GeneralError(
+                BridgeError::GeneralError(
                     "Group admin doesn't belong to any group... something is not right".to_string(),
                 )
             })?;

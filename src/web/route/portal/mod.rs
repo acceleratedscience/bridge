@@ -15,13 +15,13 @@ use tracing::warn;
 use crate::{
     auth::{COOKIE_NAME, NOTEBOOK_COOKIE_NAME, NOTEBOOK_STATUS_COOKIE_NAME},
     db::{
-        models::{GuardianCookie, User, UserType, USER},
+        models::{BridgeCookie, User, UserType, USER},
         mongo::DB,
         Database,
     },
-    errors::{GuardianError, Result},
+    errors::{BridgeError, Result},
     web::{
-        guardian_middleware::{CookieCheck, Htmx, HTMX_ERROR_RES},
+        bridge_middleware::{CookieCheck, Htmx, HTMX_ERROR_RES},
         helper::log_with_level,
     },
 };
@@ -35,12 +35,12 @@ mod user;
 mod user_htmx;
 
 #[get("")]
-async fn index(data: Option<ReqData<GuardianCookie>>) -> Result<HttpResponse> {
+async fn index(data: Option<ReqData<BridgeCookie>>) -> Result<HttpResponse> {
     // get cookie if it exists
     match data {
         Some(r) => {
-            let guardian_cookie = r.into_inner();
-            match guardian_cookie.user_type {
+            let bridge_cookie = r.into_inner();
+            match bridge_cookie.user_type {
                 UserType::User => Ok(HttpResponse::TemporaryRedirect()
                     .append_header((header::LOCATION, "/portal/user"))
                     .finish()),
@@ -64,20 +64,20 @@ async fn index(data: Option<ReqData<GuardianCookie>>) -> Result<HttpResponse> {
 #[get("search_by_email")]
 async fn search_by_email(
     req: HttpRequest,
-    cookie: Option<ReqData<GuardianCookie>>,
+    cookie: Option<ReqData<BridgeCookie>>,
     db: Data<&DB>,
     data: Data<Tera>,
 ) -> Result<HttpResponse> {
     if let Some(r) = cookie {
-        let guardian_cookie = r.into_inner();
+        let bridge_cookie = r.into_inner();
 
         // Only Admins should be able to interact with this endpoint
-        if guardian_cookie.user_type == UserType::SystemAdmin
-            || guardian_cookie.user_type == UserType::GroupAdmin
+        if bridge_cookie.user_type == UserType::SystemAdmin
+            || bridge_cookie.user_type == UserType::GroupAdmin
         {
             // Get caller's User data from the database
-            let id = ObjectId::from_str(&guardian_cookie.subject)
-                .map_err(|e| GuardianError::GeneralError(e.to_string()))?;
+            let id = ObjectId::from_str(&bridge_cookie.subject)
+                .map_err(|e| BridgeError::GeneralError(e.to_string()))?;
             let user: User = match db.find(doc! {"_id": id}, USER).await {
                 Ok(user) => user,
                 Err(e) => return Err(e),
@@ -99,7 +99,7 @@ async fn search_by_email(
             let res = match db.search_users(email, USER, PhantomData::<User>).await {
                 Ok(documents) => documents,
                 Err(e) => match e {
-                    GuardianError::RecordSearchError(_) => {
+                    BridgeError::RecordSearchError(_) => {
                         return Ok(HttpResponse::BadRequest()
                             .append_header((
                                 HTMX_ERROR_RES,
@@ -116,11 +116,11 @@ async fn search_by_email(
             let mut ctx = Context::new();
             ctx.insert("users", &res);
 
-            let template = match guardian_cookie.user_type {
+            let template = match bridge_cookie.user_type {
                 UserType::SystemAdmin => "components/user_view_result_system.html",
                 UserType::GroupAdmin => {
                     let group = log_with_level!(
-                        user.groups.first().ok_or(GuardianError::GeneralError(
+                        user.groups.first().ok_or(BridgeError::GeneralError(
                             "Group admin is not part of any group... this should not happen"
                                 .to_string()
                         )),
@@ -146,7 +146,7 @@ async fn search_by_email(
     }
 
     warn!("SHIT");
-    Err(GuardianError::UserNotAllowedOnPage(
+    Err(BridgeError::UserNotAllowedOnPage(
         "User is not allowed to view this page".to_string(),
     ))
 }
