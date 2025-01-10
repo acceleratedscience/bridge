@@ -1,4 +1,4 @@
-[&#8592; Back](../#bridge)
+[&#8592; Back](../#OpenBridge)
 
 # Architecture
 
@@ -49,13 +49,13 @@ flowchart LR
 
 	user --> route
 	subgraph "AWS"
-	route --> elb --> bridge
+	route --> elb --> ob
 	subgraph "Openshift"
-	bridge --> mongodb
-    bridge -- optional --> cache
-	bridge --> model1
-	bridge --> model2
-	bridge --> model3
+	ob --> mongodb
+    ob -- optional --> cache
+	ob --> model1
+	ob --> model2
+	ob --> model3
 	end
 	end
 ```
@@ -79,13 +79,13 @@ flowchart TD
 
 	user --> route
 	subgraph "AWS"
-	route --> waf -- Security  Group --> elb -- Security Group --> bridge
+	route --> waf -- Security  Group --> elb -- Security Group --> ob
 	subgraph "Openshift"
-	bridge -- Security Group --> mongodb
-	bridge -- Security Group --> redis
-	bridge --> model1
-	bridge --> model2
-	bridge --> model3
+	ob -- Security Group --> mongodb
+	ob -- Security Group --> redis
+	ob --> model1
+	ob --> model2
+	ob --> model3
 	end
 	end
 ```
