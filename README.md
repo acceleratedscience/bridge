@@ -1,7 +1,9 @@
+<div align="center">
 <img src="https://github.com/user-attachments/assets/0dc46b0f-1072-4b75-a3ec-d84d4733f775" width="300">
-<br>
 
 # OpenBridge
+
+</div>
 
 **A proxy server for the Accelerated Discovery Platform**
 
