@@ -48,8 +48,6 @@ const TIMEOUT: u64 = 3600;
 const LIFECYCLE_TIME: Duration = Duration::from_secs(3600);
 #[cfg(all(feature = "notebook", feature = "lifecycle"))]
 const SIGTERM_FREQ: Duration = Duration::from_secs(5);
-#[cfg(all(feature = "notebook", feature = "lifecycle"))]
-const AD_LOCK: &str = "bridge-lock";
 
 /// Starts the OpenBridge server either with or without TLS. If with TLS, please ensure you have the
 /// appropriate certs in the `certs` directory.
@@ -103,32 +101,28 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
 
     // Lifecycle with "advisory lock"
     #[cfg(all(feature = "notebook", feature = "lifecycle"))]
-    let handle = if (db.get_lock(AD_LOCK).await).is_ok() {
-        tracing::info!("Look at me, I'm the captain now...");
-        Some(tokio::spawn(async move {
-            let stream = LifecycleStream::new(notebook_lifecycle);
-            Medium::new(
-                LIFECYCLE_TIME,
-                SIGTERM_FREQ,
-                stream,
-                select(
-                    pin!(
-                        tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate())
-                            .expect("Cannot establish SIGTERM signal")
-                            .recv()
-                    ),
-                    pin!(
-                        tokio::signal::unix::signal(tokio::signal::unix::SignalKind::interrupt())
-                            .expect("Cannot establish SIGINT signal")
-                            .recv()
-                    ),
+    let handle = tokio::spawn(async move {
+        let stream = LifecycleStream::new(notebook_lifecycle);
+        Medium::new(
+            LIFECYCLE_TIME,
+            SIGTERM_FREQ,
+            db,
+            stream,
+            select(
+                pin!(
+                    tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate())
+                        .expect("Cannot establish SIGTERM signal")
+                        .recv()
                 ),
-            )
-            .await;
-        }))
-    } else {
-        None
-    };
+                pin!(
+                    tokio::signal::unix::signal(tokio::signal::unix::SignalKind::interrupt())
+                        .expect("Cannot establish SIGINT signal")
+                        .recv()
+                ),
+            ),
+        )
+        .await;
+    });
 
     let server = HttpServer::new(move || {
         let tera_data = Data::new(templating::start_template_eng());
@@ -180,12 +174,7 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
 
     // If the lock was acquired, release it
     #[cfg(all(feature = "notebook", feature = "lifecycle"))]
-    if let Some(handle) = handle {
-        handle.await?;
-        db.release_lock(AD_LOCK)
-            .await
-            .expect("Cannot release advisory lock");
-    }
+    handle.await?;
 
     Ok(())
 }

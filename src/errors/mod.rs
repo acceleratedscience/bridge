@@ -159,8 +159,10 @@ impl ResponseError for BridgeError {
 
             BridgeError::UserNotFound(_) => StatusCode::FORBIDDEN,
             BridgeError::UserNotAllowedOnPage(_) => StatusCode::FORBIDDEN,
+            #[cfg(feature = "notebook")]
             BridgeError::NotebookAccessError(_) => StatusCode::FORBIDDEN,
 
+            #[cfg(feature = "notebook")]
             BridgeError::NotebookExistsError(_) => StatusCode::CONFLICT,
         }
     }
