@@ -113,9 +113,11 @@ where
                 match this.fut.as_mut().poll(cx) {
                     Poll::Ready(r) => {
                         if r.is_ok() {
-                            println!("Look at me, I'm the captain now...");
+                            info!("Look at me, I'm the captain now...");
                             // lease acquired move to streaming
                             *this.leased = true;
+                            cx.waker().wake_by_ref();
+                            return Poll::Pending;
                         }
                     }
                     Poll::Pending => {
@@ -128,6 +130,10 @@ where
                 match this.stream.poll_next(cx) {
                     Poll::Ready(Some(_)) => {
                         info!("Notebook lifecycling has finished");
+                        // reset
+                        *this.expiration = OffsetDateTime::now_utc() + *this.exp_min;
+                        // lease expired
+                        *this.leased = false;
                     }
                     Poll::Ready(None) => {
                         return Poll::Ready(());
@@ -138,12 +144,6 @@ where
                 }
             }
         }
-
-        // reset
-        *this.expiration = OffsetDateTime::now_utc() + *this.exp_min;
-
-        // lease expired
-        *this.leased = false;
 
         this.sleep.reset(Instant::now() + *this.sleep_min);
         *this.slept = false;
