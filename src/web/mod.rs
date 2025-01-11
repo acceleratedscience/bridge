@@ -45,7 +45,7 @@ use self::helper::maintenance_watch;
 // One hour timeout for client requests
 const TIMEOUT: u64 = 3600;
 #[cfg(all(feature = "notebook", feature = "lifecycle"))]
-const LIFECYCLE_TIME: Duration = Duration::from_secs(10);
+const LIFECYCLE_TIME: Duration = Duration::from_secs(3600);
 #[cfg(all(feature = "notebook", feature = "lifecycle"))]
 const SIGTERM_FREQ: Duration = Duration::from_secs(5);
 
