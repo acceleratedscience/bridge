@@ -110,18 +110,16 @@ where
                 // try to get the advisory lock lease...
                 match this.fut.as_mut().poll(cx) {
                     Poll::Ready(r) => {
+                        *this.fut =
+                            Box::pin(this.db.get_lease(BG_LEASE, this.exp_min.as_secs() as i64));
                         if r.is_ok() {
                             info!("Look at me, I'm the captain now...");
                             // lease acquired move to streaming
                             *this.leased = true;
                             cx.waker().wake_by_ref();
                             return Poll::Pending;
-                        } else {
-                            *this.expiration = OffsetDateTime::now_utc() + *this.exp_min;
-                            *this.fut = Box::pin(
-                                this.db.get_lease(BG_LEASE, this.exp_min.as_secs() as i64),
-                            );
                         }
+                        *this.expiration = OffsetDateTime::now_utc() + *this.exp_min;
                     }
                     Poll::Pending => {
                         return Poll::Pending;
