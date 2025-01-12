@@ -70,7 +70,7 @@ impl<T, F> Medium<T, F> {
             slept: false,
             stream,
             sigterm,
-            fut: Box::pin(async { Ok(()) }),
+            fut: Box::pin(db.get_lease(BG_LEASE, exp_min.as_secs() as i64)),
             leased: false,
         }
     }
@@ -90,8 +90,6 @@ where
             match this.sleep.as_mut().poll(cx) {
                 Poll::Ready(_) => {
                     *this.slept = true;
-                    *this.fut =
-                        Box::pin(this.db.get_lease(BG_LEASE, this.exp_min.as_secs() as i64));
                 }
                 Poll::Pending => {
                     return Poll::Pending;
@@ -118,6 +116,11 @@ where
                             *this.leased = true;
                             cx.waker().wake_by_ref();
                             return Poll::Pending;
+                        } else {
+                            *this.expiration = OffsetDateTime::now_utc() + *this.exp_min;
+                            *this.fut = Box::pin(
+                                this.db.get_lease(BG_LEASE, this.exp_min.as_secs() as i64),
+                            );
                         }
                     }
                     Poll::Pending => {
@@ -147,7 +150,7 @@ where
 
         this.sleep.reset(Instant::now() + *this.sleep_min);
         *this.slept = false;
-
+        cx.waker().wake_by_ref();
         Poll::Pending
     }
 }
