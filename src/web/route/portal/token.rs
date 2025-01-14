@@ -86,7 +86,7 @@ pub async fn get_token_for_user(
             },
             doc! {"$set": doc! {
             "updated_at": bson(time::OffsetDateTime::now_utc())?,
-            "token": token.clone(),
+            "token": &token,
             "last_updated_by": user.email }},
             USER,
             PhantomData::<User>,
