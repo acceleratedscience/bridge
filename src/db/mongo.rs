@@ -32,7 +32,7 @@ impl ObjectID {
     }
 
     #[inline]
-    pub fn into_inner(self) -> ObjectId {
+    pub fn into_inner(&self) -> ObjectId {
         self.0
     }
 }
