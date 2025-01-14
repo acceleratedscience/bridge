@@ -1,5 +1,5 @@
 <div align="center">
-<img src="https://github.com/user-attachments/assets/0dc46b0f-1072-4b75-a3ec-d84d4733f775" width="300">
+<img src="https://github.com/user-attachments/assets/88867db6-2848-41a8-840b-4260d422bf28" width="300">
 
 # OpenBridge
 

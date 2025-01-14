@@ -26,13 +26,27 @@ impl NotebookSpec {
         volume_name: String,
         notebook_start_url: &mut Option<String>,
         max_idle_time: &mut Option<u64>,
+        env_to_add: Vec<(String, String)>,
     ) -> Self {
         let notebook_image = CONFIG.notebooks.get(notebook_image_name).unwrap();
-        let mut env = notebook_image.env.clone().unwrap_or_default();
-        env.push(format!(
+        let mut notebook_env = notebook_image.env.clone().unwrap_or_default();
+
+        notebook_env.push(format!(
             "--ServerApp.base_url='notebook/{}/{}'",
             NAMESPACE, name
         ));
+
+        let mut env = vec![EnvVar {
+            name: "NOTEBOOK_ARGS".to_string(),
+            value: notebook_env.join(" "),
+        }];
+
+        if !env_to_add.is_empty() {
+            env_to_add.into_iter().for_each(|(name, value)| {
+                env.push(EnvVar { name, value });
+            });
+        }
+
         *notebook_start_url = notebook_image.start_up_url.clone();
         *max_idle_time = notebook_image.max_idle_time;
 
@@ -60,10 +74,7 @@ impl NotebookSpec {
                         command: notebook_image.command.clone(),
                         args: notebook_image.args.clone(),
                         workingdir: notebook_image.working_dir.clone(),
-                        env: Some(vec![EnvVar {
-                            name: "NOTEBOOK_ARGS".to_string(),
-                            value: env.join(" "),
-                        }]),
+                        env: Some(env),
                     }],
                     image_pull_secrets: notebook_image
                         .secret

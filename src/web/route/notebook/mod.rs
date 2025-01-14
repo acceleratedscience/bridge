@@ -23,10 +23,11 @@ use tracing::{info, instrument, warn};
 use url::Url;
 
 use crate::{
-    auth::{NOTEBOOK_COOKIE_NAME, NOTEBOOK_STATUS_COOKIE_NAME},
+    auth::{jwt, NOTEBOOK_COOKIE_NAME, NOTEBOOK_STATUS_COOKIE_NAME},
+    config::{AUD, CONFIG},
     db::{
         models::{
-            Group, BridgeCookie, NotebookCookie, NotebookInfo, NotebookStatusCookie, User,
+            BridgeCookie, Group, NotebookCookie, NotebookInfo, NotebookStatusCookie, User,
             UserNotebook, GROUP, USER,
         },
         mongo::{ObjectID, DB},
@@ -42,6 +43,7 @@ use crate::{
 
 pub const NOTEBOOK_SUB_NAME: &str = NAMESPACE;
 const NOTEBOOK_PORT: &str = "8888";
+const NOTEBOOK_TOKEN_LIFETIME: usize = const { 60 * 60 * 24 * 30 };
 
 #[get("{name}/api/events/subscribe")]
 async fn notebook_ws_subscribe(
@@ -161,11 +163,22 @@ async fn notebook_create(
             ));
         }
 
+        let scp = if user.groups.is_empty() {
+            vec!["".to_string()]
+        } else {
+            group.subscriptions
+        };
+
+        let (notebook_token, _) = jwt::get_token_and_exp(
+            &CONFIG.encoder,
+            NOTEBOOK_TOKEN_LIFETIME,
+            &bridge_cookie.subject,
+            AUD[0],
+            scp,
+        )?;
+
         if user.notebook.is_some() {
-            warn!(
-                "Notebook already exists for user {}",
-                bridge_cookie.subject
-            );
+            warn!("Notebook already exists for user {}", bridge_cookie.subject);
             return Err(BridgeError::NotebookExistsError(
                 "Notebook already exists".to_string(),
             ));
@@ -207,6 +220,7 @@ async fn notebook_create(
                 pvc_name,
                 &mut start_up_url,
                 &mut max_idle_time,
+                vec![("PROXY_KEY".to_string(), notebook_token)],
             ),
         );
         helper::log_with_level!(KubeAPI::new(notebook).create().await, error)?;
@@ -247,10 +261,7 @@ async fn notebook_create(
             BridgeError::GeneralError(format!("Could not serialize notebook cookie: {}", e))
         })?;
         let notebook_status_json = serde_json::to_string(&notebook_status_cookie).map_err(|e| {
-            BridgeError::GeneralError(format!(
-                "Could not serialize notebook status cookie: {}",
-                e
-            ))
+            BridgeError::GeneralError(format!("Could not serialize notebook status cookie: {}", e))
         })?;
 
         // Create notebook cookies
@@ -328,8 +339,7 @@ async fn notebook_delete(
         })?
         .persist_pvc;
 
-    helper::utils::notebook_destroy(**db, &bridge_cookie.subject, persist_pvc, &user.email)
-        .await?;
+    helper::utils::notebook_destroy(**db, &bridge_cookie.subject, persist_pvc, &user.email).await?;
 
     // delete the cookies
     let mut notebook_cookie = Cookie::build(NOTEBOOK_COOKIE_NAME, "")
