@@ -38,7 +38,7 @@
 				<cds-tab target="panel-models" value="models">Available Models</cds-tab>
 				<cds-tab target="panel-token" value="token">Access Token</cds-tab>
 				{% if notebook %}
-					<cds-tab target="panel-notebook" value="notebook">Notebook</cds-tab>
+				<cds-tab target="panel-notebook" value="notebook">Notebook</cds-tab>
 				{% endif %}
 				{% block tabs %}
 				{% endblock tabs %}
@@ -55,7 +55,8 @@
 					{# DCH - subscriptions is returning a single string with commas instead of a list #}
 					{# DCH - can we add links to each model? #}
 					{% for model in subscriptions %}
-					<div class="list-table-item">{{model}}<div class="btn-wrap"><a href="">docs</a></div></div>
+					<div class="list-table-item">{{model}}<div class="btn-wrap"><a href="">docs</a></div>
+					</div>
 					{% endfor %}
 				</div>
 				{% endif %}

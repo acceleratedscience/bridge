@@ -23,11 +23,11 @@ use tracing::{info, instrument, warn};
 use url::Url;
 
 use crate::{
-    auth::{jwt, NOTEBOOK_COOKIE_NAME, NOTEBOOK_STATUS_COOKIE_NAME},
+    auth::{jwt, COOKIE_NAME, NOTEBOOK_COOKIE_NAME, NOTEBOOK_STATUS_COOKIE_NAME},
     config::{AUD, CONFIG},
     db::{
         models::{
-            BridgeCookie, Group, NotebookCookie, NotebookInfo, NotebookStatusCookie, User,
+            BridgeCookie, Config, Group, NotebookCookie, NotebookInfo, NotebookStatusCookie, User,
             UserNotebook, GROUP, USER,
         },
         mongo::{ObjectID, DB},
@@ -122,7 +122,7 @@ async fn notebook_create(
     data: Data<Tera>,
 ) -> Result<HttpResponse> {
     if let Some(_subject) = subject {
-        let bridge_cookie = _subject.into_inner();
+        let mut bridge_cookie = _subject.into_inner();
         let id = ObjectID::new(&bridge_cookie.subject);
 
         let mut persist_pvc = false;
@@ -130,6 +130,9 @@ async fn notebook_create(
         if String::from_utf8_lossy(&pl).eq("volume=on") {
             persist_pvc = true;
         }
+        bridge_cookie.config = Some(Config {
+            notebook_persist_pvc: persist_pvc,
+        });
 
         // check if the user can create a notebook
         let user: User = helper::log_with_level!(
@@ -248,6 +251,9 @@ async fn notebook_create(
         )
         .await?;
 
+        let bridge_cookie_json = serde_json::to_string(&bridge_cookie).map_err(|e| {
+            BridgeError::GeneralError(format!("Could not serialize bridge cookie: {}", e))
+        })?;
         let notebook_cookie = NotebookCookie {
             subject: bridge_cookie.subject,
             ip: String::new(),
@@ -280,6 +286,13 @@ async fn notebook_create(
                 .http_only(true)
                 .max_age(time::Duration::days(1))
                 .finish();
+        let bridge_cookie = Cookie::build(COOKIE_NAME, bridge_cookie_json)
+            .path("/")
+            .same_site(SameSite::Strict)
+            .secure(true)
+            .http_only(true)
+            .max_age(time::Duration::days(1))
+            .finish();
 
         let content = helper::log_with_level!(
             data.render("components/notebook/poll.html", &Context::new()),
@@ -289,6 +302,7 @@ async fn notebook_create(
         return Ok(HttpResponse::Ok()
             .cookie(notebook_cookie)
             .cookie(notebook_status_cookie)
+            .cookie(bridge_cookie)
             .content_type(ContentType::form_url_encoded())
             .body(content));
     }
@@ -357,8 +371,14 @@ async fn notebook_delete(
     notebook_cookie.make_removal();
     notebook_status_cookie.make_removal();
 
+    let mut ctx = Context::new();
+    #[cfg(feature = "notebook")]
+    if let Some(ref conf) = bridge_cookie.config {
+        ctx.insert("pvc", &conf.notebook_persist_pvc);
+    }
+
     let content = helper::log_with_level!(
-        data.render("components/notebook/start.html", &Context::new()),
+        data.render("components/notebook/start.html", &ctx),
         error
     )?;
 

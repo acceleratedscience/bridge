@@ -2,7 +2,7 @@
 
 <form class="cds-group">
 	<cds-checkbox-group legend-text="">
-		<cds-checkbox name="volume">Save work even after shutdown</cds-checkbox>
+		<cds-checkbox name="volume"{% if pvc %} checked{% endif %}>Save work even after shutdown</cds-checkbox>
 	</cds-checkbox-group>
 	<cds-button-set>
 		<cds-button hx-post="/notebook_manage/hx/create" hx-target="#notebook-wrapper" hx-swap="innerhtml">

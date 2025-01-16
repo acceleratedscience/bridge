@@ -11,7 +11,7 @@ use tracing::instrument;
 
 use crate::{
     db::{
-        models::{Group, BridgeCookie, NotebookStatusCookie, User, UserType, GROUP, USER},
+        models::{BridgeCookie, Group, NotebookStatusCookie, User, UserType, GROUP, USER},
         mongo::DB,
         Database,
     },
@@ -79,13 +79,17 @@ pub(super) async fn user(
         }
         let content = helper::log_with_level!(
             profile
-                .render(data, nsc, helper::add_token_exp_to_tera)
+                .render(data, nsc, bridge_cookie, helper::add_token_exp_to_tera)
                 .await,
             error
         )?;
 
-        if let Some([nc, nsc]) = content.1 {
-            return Ok(HttpResponse::Ok().cookie(nc).cookie(nsc).body(content.0));
+        if let Some([nc, nsc, bc]) = content.1 {
+            return Ok(HttpResponse::Ok()
+                .cookie(nc)
+                .cookie(nsc)
+                .cookie(bc)
+                .body(content.0));
         }
 
         return Ok(HttpResponse::Ok().body(content.0));

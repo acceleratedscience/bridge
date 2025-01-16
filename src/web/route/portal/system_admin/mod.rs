@@ -17,7 +17,7 @@ use tracing::instrument;
 use crate::{
     db::{
         models::{
-            AdminTab, AdminTabs, Group, GroupForm, BridgeCookie, NotebookStatusCookie, User,
+            AdminTab, AdminTabs, BridgeCookie, Group, GroupForm, NotebookStatusCookie, User,
             UserDeleteForm, UserForm, UserType, GROUP, USER,
         },
         mongo::DB,
@@ -94,17 +94,25 @@ pub(super) async fn system(
     if let Some(token) = &user.token {
         helper::add_token_exp_to_tera(&mut ctx, token);
     }
+    #[cfg(feature = "notebook")]
+    if let Some(ref conf) = bridge_cookie.config {
+        ctx.insert("pvc", &conf.notebook_persist_pvc);
+    }
 
     // add notebook tab if user has a notebook subscription
     #[cfg(feature = "notebook")]
-    let nb_cookies = notebook_bookkeeping(&user, nsc, &mut ctx, subs).await?;
+    let nb_cookies = notebook_bookkeeping(&user, nsc, bridge_cookie, &mut ctx, subs).await?;
 
     let content = helper::log_with_level!(data.render(USER_PAGE, &ctx), error)?;
 
     #[cfg(feature = "notebook")]
     // no bound checks here
-    if let Some([nc, nsc]) = nb_cookies {
-        return Ok(HttpResponse::Ok().cookie(nc).cookie(nsc).body(content));
+    if let Some([nc, nsc, bc]) = nb_cookies {
+        return Ok(HttpResponse::Ok()
+            .cookie(nc)
+            .cookie(nsc)
+            .cookie(bc)
+            .body(content));
     }
 
     return Ok(HttpResponse::Ok().body(content));
@@ -380,9 +388,7 @@ async fn system_tab_htmx(
                             }),
                         )?
                     }
-                    None => {
-                        return Err(BridgeError::GeneralError("No group provided".to_string()))
-                    }
+                    None => return Err(BridgeError::GeneralError("No group provided".to_string())),
                 },
                 _ => unreachable!(),
             }

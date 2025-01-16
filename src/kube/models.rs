@@ -220,6 +220,7 @@ mod test {
             volume_name,
             &mut start_url,
             &mut max_idle_time,
+            vec![],
         );
 
         let expected = json!({

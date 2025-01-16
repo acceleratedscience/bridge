@@ -1,7 +1,7 @@
 use std::{fmt::Debug, sync::OnceLock};
 
 use k8s_openapi::{
-    api::core::v1::{Namespace, Pod},
+    api::core::v1::{Namespace, PersistentVolumeClaim, Pod},
     NamespaceResourceScope,
 };
 use kube::{
@@ -115,6 +115,13 @@ where
             .as_ref()
             .map(|status| status.phase == Some("Running".to_string()))
             .unwrap_or(false))
+    }
+
+    pub async fn check_pvc_exists(name: &str) -> Result<bool> {
+        let pvcs =
+            Api::<PersistentVolumeClaim>::namespaced(Self::get_kube_client()?.clone(), NAMESPACE);
+        let pvc = pvcs.get(name).await;
+        Ok(pvc.is_ok())
     }
 
     pub async fn get_all_pods() -> Result<Vec<Pod>> {

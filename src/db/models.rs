@@ -136,6 +136,12 @@ pub enum ModifyUser {
 pub struct BridgeCookie {
     pub subject: String,
     pub user_type: UserType,
+    pub config: Option<Config>,
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct Config {
+    pub notebook_persist_pvc: bool,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]

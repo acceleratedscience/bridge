@@ -184,6 +184,7 @@ async fn code_to_response(
     let bridge_cookie_json = BridgeCookie {
         subject: id.to_string(),
         user_type,
+        config: None,
     };
 
     let content = serde_json::to_string(&bridge_cookie_json).map_err(|e| {
