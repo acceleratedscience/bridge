@@ -92,16 +92,14 @@ pub(super) async fn get_all_groups(db: &DB) -> Result<Vec<Group>> {
 pub(super) async fn notebook_bookkeeping<'c, C>(
     user: &User,
     nsc: Option<ReqData<NotebookStatusCookie>>,
-    mut bc: BridgeCookie,
+    bc: &mut BridgeCookie,
     ctx: &mut Context,
     subscription: Vec<C>,
-) -> Result<Option<[Cookie<'c>; 3]>>
+) -> Result<Option<[Cookie<'c>; 2]>>
 where
     C: Deref<Target = str>,
 {
     // Check is user is allowed to access the notebook
-
-    use crate::auth::COOKIE_NAME;
     if subscription
         .iter()
         .map(Deref::deref)
@@ -118,18 +116,18 @@ where
                 user_notebook.status = nsc.status;
             }
             None => {
+                let pvc = notebook_helper::make_notebook_volume_name(&user._id.to_string());
+                if let Ok(true) = KubeAPI::<Pod>::check_pvc_exists(&pvc).await {
+                    bc.config = Some(crate::db::models::Config {
+                        notebook_persist_pvc: true,
+                    })
+                }
                 // There may be a case where the user has no notebook status cookie... perhaps
                 // cleared the browser history while the notebook was still running. If the
                 // notebook_status_cookie is not present, there is a pretty high chance the
                 // notebook_cookie isn't there either...
                 if let Some(nb_start) = &user.notebook {
                     let sub = notebook_helper::make_notebook_name(&user._id.to_string());
-                    let pvc = notebook_helper::make_notebook_volume_name(&user._id.to_string());
-                    if (KubeAPI::<Pod>::check_pvc_exists(&pvc).await).is_ok() {
-                        bc.config = Some(crate::db::models::Config {
-                            notebook_persist_pvc: true,
-                        })
-                    }
                     match KubeAPI::<Pod>::check_pod_running(&(sub.clone() + "-0")).await {
                         Ok(running) => {
                             if running {
@@ -167,16 +165,7 @@ where
                                         .http_only(true)
                                         .max_age(time::Duration::days(1))
                                         .finish();
-                                let bcj = serde_json::to_string(&bc)?;
-                                let bc = Cookie::build(COOKIE_NAME, bcj)
-                                    .path("/")
-                                    .same_site(SameSite::Strict)
-                                    .secure(true)
-                                    .http_only(true)
-                                    .max_age(time::Duration::days(1))
-                                    .finish();
-
-                                return Ok(Some([nc_cookie, nsc_cookie, bc]));
+                                return Ok(Some([nc_cookie, nsc_cookie]));
                             }
                         }
                         Err(err) => return Err(err),

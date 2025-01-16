@@ -1,6 +1,7 @@
 use std::str::FromStr;
 
 use actix_web::{
+    cookie::{Cookie, SameSite},
     get,
     web::{Data, ReqData},
     HttpRequest, HttpResponse,
@@ -10,6 +11,7 @@ use tera::Tera;
 use tracing::instrument;
 
 use crate::{
+    auth::COOKIE_NAME,
     db::{
         models::{BridgeCookie, Group, NotebookStatusCookie, User, UserType, GROUP, USER},
         mongo::DB,
@@ -32,7 +34,7 @@ pub(super) async fn user(
 ) -> Result<HttpResponse> {
     // get the subject id from middleware
     if let Some(cookie_subject) = subject {
-        let bridge_cookie = cookie_subject.into_inner();
+        let mut bridge_cookie = cookie_subject.into_inner();
 
         let id = ObjectId::from_str(&bridge_cookie.subject)
             .map_err(|e| BridgeError::GeneralError(e.to_string()))?;
@@ -79,20 +81,25 @@ pub(super) async fn user(
         }
         let content = helper::log_with_level!(
             profile
-                .render(data, nsc, bridge_cookie, helper::add_token_exp_to_tera)
+                .render(data, nsc, &mut bridge_cookie, helper::add_token_exp_to_tera)
                 .await,
             error
         )?;
 
-        if let Some([nc, nsc, bc]) = content.1 {
-            return Ok(HttpResponse::Ok()
-                .cookie(nc)
-                .cookie(nsc)
-                .cookie(bc)
-                .body(content.0));
+        let bcj = serde_json::to_string(&bridge_cookie)?;
+        let bc = Cookie::build(COOKIE_NAME, bcj)
+            .path("/")
+            .same_site(SameSite::Strict)
+            .secure(true)
+            .http_only(true)
+            .max_age(time::Duration::days(1))
+            .finish();
+
+        if let Some([nc, nsc]) = content.1 {
+            return Ok(HttpResponse::Ok().cookie(nc).cookie(nsc).body(content.0));
         }
 
-        return Ok(HttpResponse::Ok().body(content.0));
+        return Ok(HttpResponse::Ok().cookie(bc).body(content.0));
     }
 
     helper::log_with_level!(

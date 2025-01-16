@@ -10,7 +10,6 @@ use actix_web::{
 };
 use mongodb::bson::{doc, oid::ObjectId};
 use tera::{Context, Tera};
-use tracing::warn;
 
 use crate::{
     auth::{COOKIE_NAME, NOTEBOOK_COOKIE_NAME, NOTEBOOK_STATUS_COOKIE_NAME},
@@ -145,7 +144,6 @@ async fn search_by_email(
         }
     }
 
-    warn!("SHIT");
     Err(BridgeError::UserNotAllowedOnPage(
         "User is not allowed to view this page".to_string(),
     ))

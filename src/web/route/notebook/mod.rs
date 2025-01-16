@@ -372,6 +372,7 @@ async fn notebook_delete(
     notebook_status_cookie.make_removal();
 
     let mut ctx = Context::new();
+    ctx.insert("cooloff", &true);
     #[cfg(feature = "notebook")]
     if let Some(ref conf) = bridge_cookie.config {
         ctx.insert("pvc", &conf.notebook_persist_pvc);

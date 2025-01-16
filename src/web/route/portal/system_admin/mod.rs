@@ -3,6 +3,7 @@ use std::{marker::PhantomData, str::FromStr};
 mod htmx;
 
 use actix_web::{
+    cookie::{Cookie, SameSite},
     delete, get,
     http::header::ContentType,
     patch, post,
@@ -15,6 +16,7 @@ use tera::Tera;
 use tracing::instrument;
 
 use crate::{
+    auth::COOKIE_NAME,
     db::{
         models::{
             AdminTab, AdminTabs, BridgeCookie, Group, GroupForm, NotebookStatusCookie, User,
@@ -51,7 +53,7 @@ pub(super) async fn system(
     db: Data<&DB>,
 ) -> Result<HttpResponse> {
     // get the subject id from middleware
-    let bridge_cookie = check_admin(subject, UserType::SystemAdmin)?;
+    let mut bridge_cookie = check_admin(subject, UserType::SystemAdmin)?;
 
     let id = ObjectId::from_str(&bridge_cookie.subject)
         .map_err(|e| BridgeError::GeneralError(e.to_string()))?;
@@ -94,20 +96,30 @@ pub(super) async fn system(
     if let Some(token) = &user.token {
         helper::add_token_exp_to_tera(&mut ctx, token);
     }
+
+    // add notebook tab if user has a notebook subscription
+    #[cfg(feature = "notebook")]
+    let nb_cookies = notebook_bookkeeping(&user, nsc, &mut bridge_cookie, &mut ctx, subs).await?;
+
     #[cfg(feature = "notebook")]
     if let Some(ref conf) = bridge_cookie.config {
         ctx.insert("pvc", &conf.notebook_persist_pvc);
     }
 
-    // add notebook tab if user has a notebook subscription
-    #[cfg(feature = "notebook")]
-    let nb_cookies = notebook_bookkeeping(&user, nsc, bridge_cookie, &mut ctx, subs).await?;
+    let bcj = serde_json::to_string(&bridge_cookie)?;
+    let bc = Cookie::build(COOKIE_NAME, bcj)
+        .path("/")
+        .same_site(SameSite::Strict)
+        .secure(true)
+        .http_only(true)
+        .max_age(time::Duration::days(1))
+        .finish();
 
     let content = helper::log_with_level!(data.render(USER_PAGE, &ctx), error)?;
 
     #[cfg(feature = "notebook")]
     // no bound checks here
-    if let Some([nc, nsc, bc]) = nb_cookies {
+    if let Some([nc, nsc]) = nb_cookies {
         return Ok(HttpResponse::Ok()
             .cookie(nc)
             .cookie(nsc)
@@ -115,7 +127,7 @@ pub(super) async fn system(
             .body(content));
     }
 
-    return Ok(HttpResponse::Ok().body(content));
+    return Ok(HttpResponse::Ok().cookie(bc).body(content));
 }
 
 #[instrument(skip(db, pl))]
