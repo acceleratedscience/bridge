@@ -1,4 +1,4 @@
-[&#8592; Back](../#guardian)
+[&#8592; Back](../#OpenBridge)
 
 # Architecture
 
@@ -7,11 +7,12 @@
 
 <br>
 
-### Technology powering Guardian
+### Technology powering OpenBridge
 
 -   Front-end:
     -   HTMX
-    -   JavaScript
+    -   TypeScript
+    -   Tailwind CSS
 -   Back-end:
     -   Rust
 -   Infrastructure:
@@ -23,6 +24,12 @@
 -   Database:
     -   MongoDB
     -   Redis / KeyDB (Optional)
+-   Dev Tooling:
+    -   rust-analyzer
+    -   bacon
+    -   tsc
+    -   typescript-language-serve (ts_ls)
+    -   tailwind cli
 
 <br>
 
@@ -33,7 +40,7 @@ flowchart LR
 	user["User"]
 	route["Route 53"]
 	elb["Elasitc Load Balancer"]
-	guardian["Guardian"]
+	ob["OpenBridge"]
 	model1["Model Service 1"]
 	model2["Model Service 2"]
 	model3["Model Service 3"]
@@ -42,13 +49,13 @@ flowchart LR
 
 	user --> route
 	subgraph "AWS"
-	route --> elb --> guardian
+	route --> elb --> ob
 	subgraph "Openshift"
-	guardian --> mongodb
-    guardian -- optional --> cache
-	guardian --> model1
-	guardian --> model2
-	guardian --> model3
+	ob --> mongodb
+    ob -- optional --> cache
+	ob --> model1
+	ob --> model2
+	ob --> model3
 	end
 	end
 ```
@@ -64,7 +71,7 @@ flowchart TD
 	elb["Elasitc Load Balancer"]
 	waf["Web Application Firewall"]
 	redis[("Redis")]
-	guardian["Guardian"]
+	ob["OpenBridge"]
 	model1["Model Service 1"]
 	model2["Model Service 2"]
 	model3["Model Service 3"]
@@ -72,13 +79,13 @@ flowchart TD
 
 	user --> route
 	subgraph "AWS"
-	route --> waf -- Security  Group --> elb -- Security Group --> guardian
+	route --> waf -- Security  Group --> elb -- Security Group --> ob
 	subgraph "Openshift"
-	guardian -- Security Group --> mongodb
-	guardian -- Security Group --> redis
-	guardian --> model1
-	guardian --> model2
-	guardian --> model3
+	ob -- Security Group --> mongodb
+	ob -- Security Group --> redis
+	ob --> model1
+	ob --> model2
+	ob --> model3
 	end
 	end
 ```

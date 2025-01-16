@@ -27,7 +27,7 @@ use crate::{
     templating,
 };
 
-mod guardian_middleware;
+mod bridge_middleware;
 mod helper;
 mod route;
 mod tls;
@@ -48,15 +48,13 @@ const TIMEOUT: u64 = 3600;
 const LIFECYCLE_TIME: Duration = Duration::from_secs(3600);
 #[cfg(all(feature = "notebook", feature = "lifecycle"))]
 const SIGTERM_FREQ: Duration = Duration::from_secs(5);
-#[cfg(all(feature = "notebook", feature = "lifecycle"))]
-const AD_LOCK: &str = "guardian-lock";
 
-/// Starts the Guardian server either with or without TLS. If with TLS, please ensure you have the
+/// Starts the OpenBridge server either with or without TLS. If with TLS, please ensure you have the
 /// appropriate certs in the `certs` directory.
 ///
 /// # Example
 /// ```ignore
-/// use guardian::web::start_server;
+/// use bridge::web::start_server;
 /// let tls = true;
 /// let result = start_server(tls).await;
 ///
@@ -103,36 +101,31 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
 
     // Lifecycle with "advisory lock"
     #[cfg(all(feature = "notebook", feature = "lifecycle"))]
-    let handle = if (db.get_lock(AD_LOCK).await).is_ok() {
-        tracing::info!("Look at me, I'm the captain now...");
-        Some(tokio::spawn(async move {
-            let stream = LifecycleStream::new(notebook_lifecycle);
-            Medium::new(
-                LIFECYCLE_TIME,
-                SIGTERM_FREQ,
-                stream,
-                select(
-                    pin!(
-                        tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate())
-                            .expect("Cannot establish SIGTERM signal")
-                            .recv()
-                    ),
-                    pin!(
-                        tokio::signal::unix::signal(tokio::signal::unix::SignalKind::interrupt())
-                            .expect("Cannot establish SIGINT signal")
-                            .recv()
-                    ),
+    let handle = tokio::spawn(async move {
+        let stream = LifecycleStream::new(notebook_lifecycle);
+        Medium::new(
+            LIFECYCLE_TIME,
+            SIGTERM_FREQ,
+            db,
+            stream,
+            select(
+                pin!(
+                    tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate())
+                        .expect("Cannot establish SIGTERM signal")
+                        .recv()
                 ),
-            )
-            .await;
-        }))
-    } else {
-        None
-    };
+                pin!(
+                    tokio::signal::unix::signal(tokio::signal::unix::SignalKind::interrupt())
+                        .expect("Cannot establish SIGINT signal")
+                        .recv()
+                ),
+            ),
+        )
+        .await;
+    });
 
     let server = HttpServer::new(move || {
-        let tera = templating::start_template_eng();
-        let tera_data = Data::new(tera);
+        let tera_data = Data::new(templating::start_template_eng());
         let client_data = Data::new(
             reqwest::Client::builder()
                 .timeout(Duration::from_secs(TIMEOUT))
@@ -143,21 +136,21 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
         let cache = Data::new(CACHEDB.get());
 
         let app = App::new()
-            // .wrap(guardian_middleware::HttpRedirect)
+            // .wrap(bridge_middleware::HttpRedirect)
             .app_data(tera_data.clone())
             .app_data(client_data)
             .app_data(db)
             .app_data(cache)
-            .wrap(guardian_middleware::custom_code_handle(tera_data))
+            .wrap(bridge_middleware::custom_code_handle(tera_data))
             .wrap(middleware::NormalizePath::trim())
             .wrap(middleware::Compress::default())
-            .wrap(guardian_middleware::Maintainence)
+            .wrap(bridge_middleware::Maintainence)
             .service(actix_files::Files::new("/static", "static"));
         #[cfg(feature = "notebook")]
         let app = app.configure(route::notebook::config_notebook);
         app.service(
             web::scope("")
-                .wrap(guardian_middleware::SecurityHeader)
+                .wrap(bridge_middleware::SecurityHeader)
                 .configure(route::auth::config_auth)
                 .configure(route::health::config_status)
                 .configure(route::proxy::config_proxy)
@@ -181,12 +174,7 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
 
     // If the lock was acquired, release it
     #[cfg(all(feature = "notebook", feature = "lifecycle"))]
-    if let Some(handle) = handle {
-        handle.await?;
-        db.release_lock(AD_LOCK)
-            .await
-            .expect("Cannot release advisory lock");
-    }
+    handle.await?;
 
     Ok(())
 }

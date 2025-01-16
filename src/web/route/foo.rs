@@ -8,19 +8,19 @@ use tera::Tera;
 use tracing::instrument;
 
 use crate::{
-    errors::{GuardianError, Result},
+    errors::{BridgeError, Result},
     web::helper,
 };
 
 #[get("")]
 #[instrument]
 async fn foo(data: Data<Tera>) -> Result<HttpResponse> {
-    helper::log_with_level!(Err(GuardianError::GeneralError("Foo!".to_string())), error)?
+    helper::log_with_level!(Err(BridgeError::GeneralError("Foo!".to_string())), error)?
 }
 
 #[get("/bar")]
 async fn bar(data: Data<Tera>) -> Result<HttpResponse> {
-    let content = data.render("portal_beta.html", &tera::Context::new())?;
+    let content = data.render("foundation.html", &tera::Context::new())?;
     Ok(HttpResponse::Ok()
         .content_type(ContentType::html())
         .body(content))

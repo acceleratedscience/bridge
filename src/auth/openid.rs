@@ -12,7 +12,7 @@ use openidconnect::{
 use tracing::error;
 use url::Url;
 
-use crate::errors::{GuardianError, Result};
+use crate::errors::{BridgeError, Result};
 
 #[allow(clippy::upper_case_acronyms)]
 // LMFAO
@@ -88,7 +88,7 @@ pub fn get_openid_provider(provider: OpenIDProvider) -> Result<&'static OpenID> 
         OpenIDProvider::IbmId => OPENID_IBM.get(),
         OpenIDProvider::None => None,
     }
-    .ok_or_else(|| GuardianError::AuthorizationServerNotSupported)
+    .ok_or_else(|| BridgeError::AuthorizationServerNotSupported)
 }
 
 pub struct OpenID {
@@ -105,40 +105,40 @@ impl OpenID {
         )?)?)?;
         let openid_table = table
             .get(table_name.into())
-            .ok_or_else(|| GuardianError::TomlLookupError)?;
+            .ok_or_else(|| BridgeError::TomlLookupError)?;
 
         let url = openid_table
             .get("url")
-            .ok_or_else(|| GuardianError::TomlLookupError)?
+            .ok_or_else(|| BridgeError::TomlLookupError)?
             .as_str()
-            .ok_or_else(|| GuardianError::StringConversionError)?;
+            .ok_or_else(|| BridgeError::StringConversionError)?;
         let redirect = openid_table
             .get("redirect_url")
-            .ok_or_else(|| GuardianError::TomlLookupError)?
+            .ok_or_else(|| BridgeError::TomlLookupError)?
             .as_str()
-            .ok_or_else(|| GuardianError::StringConversionError)?;
+            .ok_or_else(|| BridgeError::StringConversionError)?;
 
         let client = openid_table
             .get("client")
-            .ok_or_else(|| GuardianError::TomlLookupError)?;
+            .ok_or_else(|| BridgeError::TomlLookupError)?;
 
         let client_id = client
             .get("client_id")
-            .ok_or_else(|| GuardianError::TomlLookupError)?
+            .ok_or_else(|| BridgeError::TomlLookupError)?
             .as_str()
-            .ok_or_else(|| GuardianError::StringConversionError)?;
+            .ok_or_else(|| BridgeError::StringConversionError)?;
         let client_secret = client
             .get("client_secret")
-            .ok_or_else(|| GuardianError::TomlLookupError)?
+            .ok_or_else(|| BridgeError::TomlLookupError)?
             .as_str()
-            .ok_or_else(|| GuardianError::StringConversionError)?;
+            .ok_or_else(|| BridgeError::StringConversionError)?;
 
         let provider_metadata = core::CoreProviderMetadata::discover_async(
             IssuerUrl::new(url.to_owned())?,
             reqwest::async_http_client,
         )
         .await
-        .map_err(|e| GuardianError::GeneralError(e.to_string()))?;
+        .map_err(|e| BridgeError::GeneralError(e.to_string()))?;
 
         let client = CoreClient::from_provider_metadata(
             provider_metadata,
@@ -147,7 +147,7 @@ impl OpenID {
         )
         .set_redirect_uri(
             RedirectUrl::new(redirect.to_string())
-                .map_err(|e| GuardianError::GeneralError(e.to_string()))?,
+                .map_err(|e| BridgeError::GeneralError(e.to_string()))?,
         );
 
         Ok(OpenID { client })
@@ -174,7 +174,7 @@ impl OpenID {
             .exchange_code(AuthorizationCode::new(code))
             .request_async(reqwest::async_http_client)
             .await
-            .map_err(|e| GuardianError::TokenRequestError(e.to_string()))?;
+            .map_err(|e| BridgeError::TokenRequestError(e.to_string()))?;
         Ok(token)
     }
 

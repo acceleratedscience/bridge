@@ -1,6 +1,7 @@
 use std::str::FromStr;
 
 use actix_web::{
+    cookie::{Cookie, SameSite},
     get,
     web::{Data, ReqData},
     HttpRequest, HttpResponse,
@@ -10,12 +11,13 @@ use tera::Tera;
 use tracing::instrument;
 
 use crate::{
+    auth::COOKIE_NAME,
     db::{
-        models::{Group, GuardianCookie, NotebookStatusCookie, User, UserType, GROUP, USER},
+        models::{BridgeCookie, Group, NotebookStatusCookie, User, UserType, GROUP, USER},
         mongo::DB,
         Database,
     },
-    errors::{GuardianError, Result},
+    errors::{BridgeError, Result},
     web::{helper, route::portal::user_htmx::Profile},
 };
 
@@ -26,16 +28,16 @@ const USER_PAGE: &str = "pages/portal_user.html";
 pub(super) async fn user(
     data: Data<Tera>,
     req: HttpRequest,
-    subject: Option<ReqData<GuardianCookie>>,
+    subject: Option<ReqData<BridgeCookie>>,
     nsc: Option<ReqData<NotebookStatusCookie>>,
     db: Data<&DB>,
 ) -> Result<HttpResponse> {
     // get the subject id from middleware
     if let Some(cookie_subject) = subject {
-        let guardian_cookie = cookie_subject.into_inner();
+        let mut bridge_cookie = cookie_subject.into_inner();
 
-        let id = ObjectId::from_str(&guardian_cookie.subject)
-            .map_err(|e| GuardianError::GeneralError(e.to_string()))?;
+        let id = ObjectId::from_str(&bridge_cookie.subject)
+            .map_err(|e| BridgeError::GeneralError(e.to_string()))?;
 
         // check the db using objectid and get info on user
         let result: Result<User> = db
@@ -55,7 +57,7 @@ pub(super) async fn user(
         match user.user_type {
             UserType::User => {}
             _ => {
-                return Err(GuardianError::UserNotAllowedOnPage(USER_PAGE.to_string()));
+                return Err(BridgeError::UserNotAllowedOnPage(USER_PAGE.to_string()));
             }
         }
 
@@ -79,20 +81,29 @@ pub(super) async fn user(
         }
         let content = helper::log_with_level!(
             profile
-                .render(data, nsc, helper::add_token_exp_to_tera)
+                .render(data, nsc, &mut bridge_cookie, helper::add_token_exp_to_tera)
                 .await,
             error
         )?;
+
+        let bcj = serde_json::to_string(&bridge_cookie)?;
+        let bc = Cookie::build(COOKIE_NAME, bcj)
+            .path("/")
+            .same_site(SameSite::Strict)
+            .secure(true)
+            .http_only(true)
+            .max_age(time::Duration::days(1))
+            .finish();
 
         if let Some([nc, nsc]) = content.1 {
             return Ok(HttpResponse::Ok().cookie(nc).cookie(nsc).body(content.0));
         }
 
-        return Ok(HttpResponse::Ok().body(content.0));
+        return Ok(HttpResponse::Ok().cookie(bc).body(content.0));
     }
 
     helper::log_with_level!(
-        Err(GuardianError::UserNotFound(
+        Err(BridgeError::UserNotFound(
             "subject not passed from middleware".to_string(),
         )),
         error

@@ -17,11 +17,11 @@ use crate::{
         COOKIE_NAME,
     },
     db::{
-        models::{GuardianCookie, User, UserType, USER},
+        models::{BridgeCookie, User, UserType, USER},
         mongo::DB,
         Database,
     },
-    errors::{GuardianError, Result},
+    errors::{BridgeError, Result},
     web::helper::{self},
 };
 
@@ -74,7 +74,7 @@ async fn callback(
     let openid_kind = Into::<OpenIDProvider>::into(path.into_inner().as_str());
     if let OpenIDProvider::None = openid_kind {
         return helper::log_with_level!(
-            Err(GuardianError::GeneralError(
+            Err(BridgeError::GeneralError(
                 "Invalid Open id connect provider".to_string()
             )),
             error
@@ -99,7 +99,7 @@ async fn code_to_response(
     // get nonce cookie from client
     let nonce = helper::log_with_level!(
         req.cookie(NONCE_COOKIE)
-            .ok_or_else(|| GuardianError::NonceCookieNotFound),
+            .ok_or_else(|| BridgeError::NonceCookieNotFound),
         error
     )?;
     let nonce = Nonce::new(nonce.value().to_string());
@@ -110,7 +110,7 @@ async fn code_to_response(
         token
             .extra_fields()
             .id_token()
-            .ok_or_else(|| GuardianError::GeneralError("No ID Token".to_string()))?
+            .ok_or_else(|| BridgeError::GeneralError("No ID Token".to_string()))?
             .claims(&verifier, &nonce),
         error
     )?;
@@ -126,10 +126,10 @@ async fn code_to_response(
         || -> Result<String> {
             let name = claims
                 .given_name()
-                .ok_or_else(|| GuardianError::GeneralError("No name in claims".to_string()))?;
+                .ok_or_else(|| BridgeError::GeneralError("No name in claims".to_string()))?;
             Ok(name
                 .get(None)
-                .ok_or_else(|| GuardianError::GeneralError("locale error".to_string()))?
+                .ok_or_else(|| BridgeError::GeneralError("locale error".to_string()))?
                 .to_string())
         }(),
         error
@@ -174,20 +174,21 @@ async fn code_to_response(
             )?;
             (
                 r.as_object_id().ok_or_else(|| {
-                    GuardianError::GeneralError("Could not convert BSON to objectid".to_string())
+                    BridgeError::GeneralError("Could not convert BSON to objectid".to_string())
                 })?,
                 UserType::User,
             )
         }
     };
 
-    let guardian_cookie_json = GuardianCookie {
+    let bridge_cookie_json = BridgeCookie {
         subject: id.to_string(),
         user_type,
+        config: None,
     };
 
-    let content = serde_json::to_string(&guardian_cookie_json).map_err(|e| {
-        GuardianError::GeneralError(format!("Could not serialize guardian cookie: {}", e))
+    let content = serde_json::to_string(&bridge_cookie_json).map_err(|e| {
+        BridgeError::GeneralError(format!("Could not serialize bridge cookie: {}", e))
     })?;
 
     // create cookie for all routes for this user

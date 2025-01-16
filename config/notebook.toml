@@ -1,6 +1,6 @@
 [open_ad_workbench]
 name = "OpenAD Workbench"
-url = "quay.io/ibmdpdev/openad_workbench:test"
+url = "quay.io/ibmdpdev/openad_workbench_stage:latest"
 pull_policy = "Always"
 working_dir = "/opt/app-root/src"
 volume_mnt_path = "/opt/app-root/src"
@@ -12,9 +12,9 @@ env = [
 	"--LabApp.default_url='/lab/tree/start_menu.ipynb'",
 	"--ServerApp.default_url='/lab/tree/start_menu.ipynb'",
 	"--ServerApp.trust_xheaders=True",
-	# base-url is taken care by guardian
+	# base-url is taken care by bridge
 ]
-secret = "quay-notebook-secret"
+secret = "ibmdpdev-openad-pull-secret"
 start_up_url = "lab/tree/start_menu.ipynb"
 max_idle_time = 86400
 
@@ -31,6 +31,6 @@ env = [
 	"--ServerApp.quit_button=False",
 	"--ServerApp.disable_check_xsrf=True",
 	"--ServerApp.allow_origin='*'",
-	# base-url is taken care by guardian
+	# base-url is taken care by bridge
 ]
 max_idle_time = 86400

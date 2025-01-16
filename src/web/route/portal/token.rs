@@ -13,11 +13,11 @@ use crate::{
     auth::jwt,
     config::{AUD, CONFIG},
     db::{
-        models::{Group, GuardianCookie, User, GROUP, USER},
+        models::{Group, BridgeCookie, User, GROUP, USER},
         mongo::DB,
         Database,
     },
-    errors::{GuardianError, Result},
+    errors::{BridgeError, Result},
     web::helper::{self, bson},
 };
 
@@ -25,7 +25,7 @@ const TOKEN_LIFETIME: usize = const { 60 * 60 * 24 * 30 };
 
 #[get("token")]
 pub async fn get_token_for_user(
-    subject: Option<ReqData<GuardianCookie>>,
+    subject: Option<ReqData<BridgeCookie>>,
     data: Data<Tera>,
     db: Data<&DB>,
 ) -> Result<HttpResponse> {
@@ -33,7 +33,7 @@ pub async fn get_token_for_user(
         Some(cookie_subject) => cookie_subject.into_inner(),
         None => {
             return helper::log_with_level!(
-                Err(GuardianError::UserNotFound(
+                Err(BridgeError::UserNotFound(
                     "subject not passed from middleware".to_string(),
                 )),
                 error
@@ -41,7 +41,7 @@ pub async fn get_token_for_user(
         }
     };
     let id =
-        ObjectId::from_str(&gc.subject).map_err(|e| GuardianError::GeneralError(e.to_string()))?;
+        ObjectId::from_str(&gc.subject).map_err(|e| BridgeError::GeneralError(e.to_string()))?;
 
     // get information about user
     let user: User = helper::log_with_level!(
@@ -72,7 +72,7 @@ pub async fn get_token_for_user(
         group.subscriptions
     };
 
-    // Generate guardian token
+    // Generate bridge token
     let (token, exp) = helper::log_with_level!(
         jwt::get_token_and_exp(&CONFIG.encoder, TOKEN_LIFETIME, &gc.subject, AUD[0], scp),
         error
@@ -86,7 +86,7 @@ pub async fn get_token_for_user(
             },
             doc! {"$set": doc! {
             "updated_at": bson(time::OffsetDateTime::now_utc())?,
-            "token": token.clone(),
+            "token": &token,
             "last_updated_by": user.email }},
             USER,
             PhantomData::<User>,
@@ -97,7 +97,7 @@ pub async fn get_token_for_user(
 
     if r.ne(&1) {
         return helper::log_with_level!(
-            Err(GuardianError::GeneralError("Token not updated".to_string())),
+            Err(BridgeError::GeneralError("Token not updated".to_string())),
             error
         );
     }

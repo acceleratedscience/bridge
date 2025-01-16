@@ -1,6 +1,6 @@
 use std::io::Result;
 
-use guardian::web::start_server;
+use openbridge::web::start_server;
 
 #[tokio::main]
 async fn main() -> Result<()> {

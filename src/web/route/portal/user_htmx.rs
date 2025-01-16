@@ -5,7 +5,7 @@ use actix_web::{
 use tera::{Context, Tera};
 
 use crate::{
-    db::models::{NotebookStatusCookie, User},
+    db::models::{BridgeCookie, NotebookStatusCookie, User},
     errors::Result,
 };
 
@@ -42,6 +42,7 @@ impl<'p> Profile<'p> {
         &self,
         tera: Data<Tera>,
         nsc: Option<ReqData<NotebookStatusCookie>>,
+        bc: &mut BridgeCookie,
         t_exp: impl FnOnce(&mut Context, &str),
     ) -> Result<(String, Option<[Cookie; 2]>)> {
         let mut context = tera::Context::new();
@@ -49,7 +50,6 @@ impl<'p> Profile<'p> {
         context.insert("subscriptions", &self.subscriptions);
         context.insert("name", &self.user.user_name);
         context.insert("token", &self.user.token);
-
         // add in the expiration time if token is present
         if let Some(t) = &self.user.token {
             t_exp(&mut context, t);
@@ -57,7 +57,13 @@ impl<'p> Profile<'p> {
 
         #[cfg(feature = "notebook")]
         let nb_cookies =
-            notebook_bookkeeping(self.user, nsc, &mut context, self.subscriptions.clone()).await?;
+            notebook_bookkeeping(self.user, nsc, bc, &mut context, self.subscriptions.clone())
+                .await?;
+
+        #[cfg(feature = "notebook")]
+        if let Some(ref conf) = bc.config {
+            context.insert("pvc", &conf.notebook_persist_pvc);
+        }
 
         #[cfg(feature = "notebook")]
         return Ok((tera.render(PROFILE, &context)?, nb_cookies));

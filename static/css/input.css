@@ -1,0 +1,7 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+.menu_selected {
+	@apply bg-[#c6c6c6] dark:bg-[#4d5358] border-l-2 border-[#4589ff];
+}

@@ -9,7 +9,7 @@ use url::Url;
 
 use crate::{
     db::keydb::CacheDB,
-    errors::{GuardianError, Result},
+    errors::{BridgeError, Result},
 };
 
 pub struct InferenceServicesHealth<'a> {
@@ -68,7 +68,7 @@ impl<'a> InferenceServicesHealth<'a> {
 
                 let fut = client.get(url.as_str()).send();
                 let response = timeout(Duration::from_secs(1), fut).await.map_err(|_| {
-                    GuardianError::GeneralError("Call to inference service timed out".to_string())
+                    BridgeError::GeneralError("Call to inference service timed out".to_string())
                 })??;
 
                 let elapsed = now.elapsed();

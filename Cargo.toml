@@ -1,10 +1,10 @@
 [package]
-name = "guardian"
-version = "0.3.10"
+name = "openbridge"
+version = "0.1.0"
 edition = "2021"
 
 [[bin]]
-name = "guardian"
+name = "openbridge"
 path = "./src/main.rs"
 
 [workspace]
@@ -57,7 +57,7 @@ serde_urlencoded = "0.7.1"
 thiserror = "2"
 # DB
 mongodb = "~3.1"
-redis = { version = "0.27", features = ["tokio-comp", "num-bigint"] }
+redis = { version = "0.28", features = ["tokio-comp", "num-bigint"] }
 #macro
 utils = { path = "utils" }
 # Kubernetes

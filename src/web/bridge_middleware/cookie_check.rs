@@ -10,7 +10,7 @@ use tracing::warn;
 
 use crate::{
     auth::{COOKIE_NAME, NOTEBOOK_STATUS_COOKIE_NAME},
-    db::models::{GuardianCookie, NotebookStatusCookie},
+    db::models::{BridgeCookie, NotebookStatusCookie},
 };
 
 pub struct CookieCheck;
@@ -51,8 +51,8 @@ where
     fn call(&self, req: ServiceRequest) -> Self::Future {
         match req.cookie(COOKIE_NAME).map(|c| c.value().to_string()) {
             Some(v) => {
-                let guardian_cookie_result = serde_json::from_str::<GuardianCookie>(&v);
-                match guardian_cookie_result {
+                let bridge_cookie_result = serde_json::from_str::<BridgeCookie>(&v);
+                match bridge_cookie_result {
                     Ok(gcs) => {
                         // also insert notebook_status_cookie if available
                         if let Some(ncs) = req.cookie(NOTEBOOK_STATUS_COOKIE_NAME) {
@@ -69,7 +69,7 @@ where
                             .boxed_local()
                     }
                     Err(e) => {
-                        warn!("Guardian cookie deserialization error: {:?}", e);
+                        warn!("Bridge cookie deserialization error: {:?}", e);
                         let res = HttpResponse::InternalServerError()
                             .finish()
                             .map_into_right_body();
@@ -78,7 +78,11 @@ where
                 }
             }
             None => {
-                warn!("Guardian cookie not found from ip {:?}", req.peer_addr());
+                // Make sure "X-Forwarded-For" is present in the header
+                warn!(
+                    "Bridge cookie not found from ip {:?}",
+                    req.connection_info().realip_remote_addr()
+                );
                 let res = HttpResponse::Forbidden().finish().map_into_right_body();
                 Box::pin(async { Ok(req.into_response(res)) })
             }

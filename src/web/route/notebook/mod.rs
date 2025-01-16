@@ -23,25 +23,27 @@ use tracing::{info, instrument, warn};
 use url::Url;
 
 use crate::{
-    auth::{NOTEBOOK_COOKIE_NAME, NOTEBOOK_STATUS_COOKIE_NAME},
+    auth::{jwt, COOKIE_NAME, NOTEBOOK_COOKIE_NAME, NOTEBOOK_STATUS_COOKIE_NAME},
+    config::{AUD, CONFIG},
     db::{
         models::{
-            Group, GuardianCookie, NotebookCookie, NotebookInfo, NotebookStatusCookie, User,
+            BridgeCookie, Config, Group, NotebookCookie, NotebookInfo, NotebookStatusCookie, User,
             UserNotebook, GROUP, USER,
         },
         mongo::{ObjectID, DB},
         Database,
     },
-    errors::{GuardianError, Result},
+    errors::{BridgeError, Result},
     kube::{KubeAPI, Notebook, NotebookSpec, PVCSpec, NAMESPACE},
     web::{
-        guardian_middleware::{CookieCheck, Htmx, NotebookCookieCheck},
+        bridge_middleware::{CookieCheck, Htmx, NotebookCookieCheck},
         helper::{self, bson},
     },
 };
 
 pub const NOTEBOOK_SUB_NAME: &str = NAMESPACE;
 const NOTEBOOK_PORT: &str = "8888";
+const NOTEBOOK_TOKEN_LIFETIME: usize = const { 60 * 60 * 24 * 30 };
 
 #[get("{name}/api/events/subscribe")]
 async fn notebook_ws_subscribe(
@@ -53,7 +55,7 @@ async fn notebook_ws_subscribe(
         Some(cookie) => cookie.into_inner(),
         None => {
             return helper::log_with_level!(
-                Err(GuardianError::NotebookAccessError(
+                Err(BridgeError::NotebookAccessError(
                     "Notebook cookie not found".to_string(),
                 )),
                 error
@@ -87,7 +89,7 @@ async fn notebook_ws_session(
         Some(cookie) => cookie.into_inner(),
         None => {
             return helper::log_with_level!(
-                Err(GuardianError::NotebookAccessError(
+                Err(BridgeError::NotebookAccessError(
                     "Notebook cookie not found".to_string(),
                 )),
                 error
@@ -114,20 +116,23 @@ async fn notebook_ws_session(
 
 #[post("/create")]
 async fn notebook_create(
-    subject: Option<ReqData<GuardianCookie>>,
+    subject: Option<ReqData<BridgeCookie>>,
     payload: web::Payload,
     db: Data<&DB>,
     data: Data<Tera>,
 ) -> Result<HttpResponse> {
     if let Some(_subject) = subject {
-        let guardian_cookie = _subject.into_inner();
-        let id = ObjectID::new(&guardian_cookie.subject);
+        let mut bridge_cookie = _subject.into_inner();
+        let id = ObjectID::new(&bridge_cookie.subject);
 
         let mut persist_pvc = false;
         let pl = payload.to_bytes().await?;
         if String::from_utf8_lossy(&pl).eq("volume=on") {
             persist_pvc = true;
         }
+        bridge_cookie.config = Some(Config {
+            notebook_persist_pvc: persist_pvc,
+        });
 
         // check if the user can create a notebook
         let user: User = helper::log_with_level!(
@@ -154,19 +159,30 @@ async fn notebook_create(
         if !group.subscriptions.contains(&NOTEBOOK_SUB_NAME.to_string()) {
             warn!(
                 "User {} does not have permission to create a notebook",
-                guardian_cookie.subject
+                bridge_cookie.subject
             );
-            return Err(GuardianError::NotebookAccessError(
+            return Err(BridgeError::NotebookAccessError(
                 "User does not have permission to create a notebook".to_string(),
             ));
         }
 
+        let scp = if user.groups.is_empty() {
+            vec!["".to_string()]
+        } else {
+            group.subscriptions
+        };
+
+        let (notebook_token, _) = jwt::get_token_and_exp(
+            &CONFIG.encoder,
+            NOTEBOOK_TOKEN_LIFETIME,
+            &bridge_cookie.subject,
+            AUD[0],
+            scp,
+        )?;
+
         if user.notebook.is_some() {
-            warn!(
-                "Notebook already exists for user {}",
-                guardian_cookie.subject
-            );
-            return Err(GuardianError::NotebookExistsError(
+            warn!("Notebook already exists for user {}", bridge_cookie.subject);
+            return Err(BridgeError::NotebookExistsError(
                 "Notebook already exists".to_string(),
             ));
         };
@@ -184,11 +200,11 @@ async fn notebook_create(
 
         // User is allowed to create a notebook, but notebook does not exist... so create one
         // Create a PVC at 1Gi
-        let pvc_name = notebook_helper::make_notebook_volume_name(&guardian_cookie.subject);
+        let pvc_name = notebook_helper::make_notebook_volume_name(&bridge_cookie.subject);
         let pvc = PVCSpec::new(pvc_name.clone(), 1);
         if let Err(e) = KubeAPI::new(pvc.spec).create().await {
             match e {
-                GuardianError::NotebookExistsError(_) => info!(
+                BridgeError::NotebookExistsError(_) => info!(
                     "PVC {} already exists, most likely persisted from last session, reusing",
                     pvc_name
                 ),
@@ -196,7 +212,7 @@ async fn notebook_create(
             }
         }
         // Create a notebook
-        let name = notebook_helper::make_notebook_name(&guardian_cookie.subject);
+        let name = notebook_helper::make_notebook_name(&bridge_cookie.subject);
         let mut start_up_url = None;
         let mut max_idle_time = None;
         let notebook = Notebook::new(
@@ -207,6 +223,7 @@ async fn notebook_create(
                 pvc_name,
                 &mut start_up_url,
                 &mut max_idle_time,
+                vec![("PROXY_KEY".to_string(), notebook_token)],
             ),
         );
         helper::log_with_level!(KubeAPI::new(notebook).create().await, error)?;
@@ -234,8 +251,11 @@ async fn notebook_create(
         )
         .await?;
 
+        let bridge_cookie_json = serde_json::to_string(&bridge_cookie).map_err(|e| {
+            BridgeError::GeneralError(format!("Could not serialize bridge cookie: {}", e))
+        })?;
         let notebook_cookie = NotebookCookie {
-            subject: guardian_cookie.subject,
+            subject: bridge_cookie.subject,
             ip: String::new(),
         };
         let notebook_status_cookie = NotebookStatusCookie {
@@ -244,13 +264,10 @@ async fn notebook_create(
             start_url: start_up_url,
         };
         let notebook_json = serde_json::to_string(&notebook_cookie).map_err(|e| {
-            GuardianError::GeneralError(format!("Could not serialize notebook cookie: {}", e))
+            BridgeError::GeneralError(format!("Could not serialize notebook cookie: {}", e))
         })?;
         let notebook_status_json = serde_json::to_string(&notebook_status_cookie).map_err(|e| {
-            GuardianError::GeneralError(format!(
-                "Could not serialize notebook status cookie: {}",
-                e
-            ))
+            BridgeError::GeneralError(format!("Could not serialize notebook status cookie: {}", e))
         })?;
 
         // Create notebook cookies
@@ -269,6 +286,13 @@ async fn notebook_create(
                 .http_only(true)
                 .max_age(time::Duration::days(1))
                 .finish();
+        let bridge_cookie = Cookie::build(COOKIE_NAME, bridge_cookie_json)
+            .path("/")
+            .same_site(SameSite::Strict)
+            .secure(true)
+            .http_only(true)
+            .max_age(time::Duration::days(1))
+            .finish();
 
         let content = helper::log_with_level!(
             data.render("components/notebook/poll.html", &Context::new()),
@@ -278,12 +302,13 @@ async fn notebook_create(
         return Ok(HttpResponse::Ok()
             .cookie(notebook_cookie)
             .cookie(notebook_status_cookie)
+            .cookie(bridge_cookie)
             .content_type(ContentType::form_url_encoded())
             .body(content));
     }
 
     helper::log_with_level!(
-        Err(GuardianError::UserNotFound(
+        Err(BridgeError::UserNotFound(
             "subject not passed from middleware".to_string(),
         )),
         error
@@ -292,16 +317,16 @@ async fn notebook_create(
 
 #[delete("/delete")]
 async fn notebook_delete(
-    subject: Option<ReqData<GuardianCookie>>,
+    subject: Option<ReqData<BridgeCookie>>,
     data: Data<Tera>,
     db: Data<&DB>,
 ) -> Result<HttpResponse> {
     // get the notebook cookie
-    let guardian_cookie = match subject {
+    let bridge_cookie = match subject {
         Some(cookie) => cookie.into_inner(),
         None => {
             return helper::log_with_level!(
-                Err(GuardianError::NotebookAccessError(
+                Err(BridgeError::NotebookAccessError(
                     "Notebook cookie not found".to_string(),
                 )),
                 error
@@ -310,11 +335,11 @@ async fn notebook_delete(
     };
 
     // get user data
-    // TODO: we should swap guardian_cookie.subject with email, and not do this db call
+    // TODO: we should swap bridge_cookie.subject with email, and not do this db call
     let user: User = helper::log_with_level!(
         db.find(
             doc! {
-                "_id": ObjectID::new(&guardian_cookie.subject).into_inner(),
+                "_id": ObjectID::new(&bridge_cookie.subject).into_inner(),
             },
             USER,
         )
@@ -324,12 +349,11 @@ async fn notebook_delete(
     let persist_pvc = user
         .notebook
         .ok_or_else(|| {
-            GuardianError::NotebookExistsError("Notebook entry not found in DB".to_string())
+            BridgeError::NotebookExistsError("Notebook entry not found in DB".to_string())
         })?
         .persist_pvc;
 
-    helper::utils::notebook_destroy(**db, &guardian_cookie.subject, persist_pvc, &user.email)
-        .await?;
+    helper::utils::notebook_destroy(**db, &bridge_cookie.subject, persist_pvc, &user.email).await?;
 
     // delete the cookies
     let mut notebook_cookie = Cookie::build(NOTEBOOK_COOKIE_NAME, "")
@@ -347,8 +371,15 @@ async fn notebook_delete(
     notebook_cookie.make_removal();
     notebook_status_cookie.make_removal();
 
+    let mut ctx = Context::new();
+    ctx.insert("cooloff", &true);
+    #[cfg(feature = "notebook")]
+    if let Some(ref conf) = bridge_cookie.config {
+        ctx.insert("pvc", &conf.notebook_persist_pvc);
+    }
+
     let content = helper::log_with_level!(
-        data.render("components/notebook/start.html", &Context::new()),
+        data.render("components/notebook/start.html", &ctx),
         error
     )?;
 
@@ -363,15 +394,15 @@ async fn notebook_delete(
 async fn notebook_status(
     data: Data<Tera>,
     client: Data<reqwest::Client>,
-    subject: Option<ReqData<GuardianCookie>>,
+    subject: Option<ReqData<BridgeCookie>>,
     nsc: Option<ReqData<NotebookStatusCookie>>,
 ) -> Result<HttpResponse> {
-    let (guardian_cookie, nsc) = match (subject, nsc) {
+    let (bridge_cookie, nsc) = match (subject, nsc) {
         (Some(gc), Some(ncs)) => (gc.into_inner(), ncs.into_inner()),
         _ => {
             return helper::log_with_level!(
-                Err(GuardianError::NotebookAccessError(
-                    "Guardian cookie and or notebook_status_cookie not found".to_string(),
+                Err(BridgeError::NotebookAccessError(
+                    "Bridge cookie and or notebook_status_cookie not found".to_string(),
                 )),
                 error
             )
@@ -380,20 +411,20 @@ async fn notebook_status(
 
     // check status on k8s
     let ready = KubeAPI::<Pod>::check_pod_running(
-        &(notebook_helper::make_notebook_name(&guardian_cookie.subject) + "-0"),
+        &(notebook_helper::make_notebook_name(&bridge_cookie.subject) + "-0"),
     )
     .await?;
 
     if ready {
         let ip = KubeAPI::<Pod>::get_pod_ip(
-            &(notebook_helper::make_notebook_name(&guardian_cookie.subject) + "-0"),
+            &(notebook_helper::make_notebook_name(&bridge_cookie.subject) + "-0"),
         )
         .await?;
 
         // ping the notebook for 200 status, that way we only serve notebook when it is ready
         let url = notebook_helper::make_forward_url(
             &ip,
-            &notebook_helper::make_notebook_name(&guardian_cookie.subject),
+            &notebook_helper::make_notebook_name(&bridge_cookie.subject),
             "http",
             None,
         );
@@ -401,7 +432,7 @@ async fn notebook_status(
             .get(url)
             .send()
             .await
-            .map_err(|e| GuardianError::GeneralError(e.to_string()))?;
+            .map_err(|e| BridgeError::GeneralError(e.to_string()))?;
         if !resp.status().is_success() {
             return Ok(HttpResponse::ServiceUnavailable().finish());
         }
@@ -413,19 +444,19 @@ async fn notebook_status(
             start_url: nsc.start_url,
         };
         let notebook_cookie = NotebookCookie {
-            subject: guardian_cookie.subject.clone(),
+            subject: bridge_cookie.subject.clone(),
             ip,
         };
 
         let notebook_status_json =
             serde_json::to_string(&notebook_status_cookie).map_err(|er| {
-                GuardianError::GeneralError(format!(
+                BridgeError::GeneralError(format!(
                     "Could not serialize notebook status cookie: {}",
                     er
                 ))
             })?;
         let notebook_cookie_json = serde_json::to_string(&notebook_cookie).map_err(|er| {
-            GuardianError::GeneralError(format!("Could not serialize notebook cookie: {}", er))
+            BridgeError::GeneralError(format!("Could not serialize notebook cookie: {}", er))
         })?;
 
         // TODO: We are leveraing cookies to avoid DB calls... but look into not doing this anymore
@@ -445,7 +476,7 @@ async fn notebook_status(
             .max_age(time::Duration::days(1))
             .finish();
 
-        let notebook = Into::<UserNotebook>::into((guardian_cookie, notebook_status_cookie));
+        let notebook = Into::<UserNotebook>::into((bridge_cookie, notebook_status_cookie));
         let mut ctx = Context::new();
         ctx.insert("notebook", &notebook);
         let content =
@@ -465,19 +496,19 @@ async fn notebook_status(
 
 #[post("enter")]
 async fn notebook_enter(
-    guardian_cookie: Option<ReqData<GuardianCookie>>,
+    bridge_cookie: Option<ReqData<BridgeCookie>>,
     nsc: Option<ReqData<NotebookStatusCookie>>,
     db: Data<&DB>,
     data: Data<Tera>,
 ) -> Result<HttpResponse> {
     let nsc = nsc
-        .ok_or(GuardianError::NotebookAccessError(
+        .ok_or(BridgeError::NotebookAccessError(
             "Notebook status cookie not found".to_string(),
         ))?
         .into_inner();
-    let guardian_cookie = guardian_cookie
-        .ok_or(GuardianError::NotebookAccessError(
-            "Guardian cookie not found".to_string(),
+    let bridge_cookie = bridge_cookie
+        .ok_or(BridgeError::NotebookAccessError(
+            "Bridge cookie not found".to_string(),
         ))?
         .into_inner();
 
@@ -490,7 +521,7 @@ async fn notebook_enter(
     let user: User = db
         .find(
             doc! {
-                "_id": ObjectID::new(&guardian_cookie.subject).into_inner(),
+                "_id": ObjectID::new(&bridge_cookie.subject).into_inner(),
             },
             USER,
         )
@@ -500,7 +531,7 @@ async fn notebook_enter(
     // update last_active to now
     db.update(
         doc! {
-            "_id": ObjectID::new(&guardian_cookie.subject).into_inner(),
+            "_id": ObjectID::new(&bridge_cookie.subject).into_inner(),
         },
         doc! {
             "$set": doc! {
@@ -516,7 +547,7 @@ async fn notebook_enter(
 
     // update notebook status cookie
     let notebook_status_json =
-        serde_json::to_string(&new_nsc).map_err(|e| GuardianError::GeneralError(e.to_string()))?;
+        serde_json::to_string(&new_nsc).map_err(|e| BridgeError::GeneralError(e.to_string()))?;
     let notebook_status_cookie = Cookie::build(NOTEBOOK_STATUS_COOKIE_NAME, &notebook_status_json)
         .path("/")
         .same_site(SameSite::Strict)
@@ -525,13 +556,13 @@ async fn notebook_enter(
         .max_age(time::Duration::days(1))
         .finish();
 
-    let user_notebook = Into::<UserNotebook>::into((guardian_cookie, new_nsc));
+    let user_notebook = Into::<UserNotebook>::into((bridge_cookie, new_nsc));
     let mut ctx = Context::new();
     ctx.insert("notebook", &user_notebook);
 
     let content = data
         .render("components/notebook/ready.html", &ctx)
-        .map_err(|e| GuardianError::GeneralError(e.to_string()))?;
+        .map_err(|e| BridgeError::GeneralError(e.to_string()))?;
 
     Ok(HttpResponse::Ok()
         .content_type(ContentType::form_url_encoded())
@@ -560,7 +591,7 @@ async fn notebook_forward(
         Some(cookie) => cookie.into_inner(),
         None => {
             return helper::log_with_level!(
-                Err(GuardianError::NotebookAccessError(
+                Err(BridgeError::NotebookAccessError(
                     "Notebook cookie not found".to_string(),
                 )),
                 error
@@ -582,7 +613,7 @@ async fn notebook_forward(
 
 pub mod notebook_helper {
     use crate::{
-        db::models::{GuardianCookie, NotebookInfo, NotebookStatusCookie, User, UserNotebook},
+        db::models::{BridgeCookie, NotebookInfo, NotebookStatusCookie, User, UserNotebook},
         kube::NAMESPACE,
         web::route::notebook::NOTEBOOK_PORT,
     };
@@ -667,14 +698,14 @@ pub mod notebook_helper {
         }
     }
 
-    /// Consume the guardian cookie and notebook status cookie to create a UserNotebook
-    impl From<(GuardianCookie, NotebookStatusCookie)> for UserNotebook {
+    /// Consume the bridge cookie and notebook status cookie to create a UserNotebook
+    impl From<(BridgeCookie, NotebookStatusCookie)> for UserNotebook {
         fn from(
-            (guardian_cookie, notebook_status_cookie): (GuardianCookie, NotebookStatusCookie),
+            (bridge_cookie, notebook_status_cookie): (BridgeCookie, NotebookStatusCookie),
         ) -> Self {
             UserNotebook {
-                url: make_path(&make_notebook_name(&guardian_cookie.subject), None),
-                name: guardian_cookie.subject,
+                url: make_path(&make_notebook_name(&bridge_cookie.subject), None),
+                name: bridge_cookie.subject,
                 start_time: notebook_status_cookie.start_time,
                 status: notebook_status_cookie.status,
                 start_up_url: notebook_status_cookie.start_url,

@@ -19,10 +19,10 @@ use tracing::info;
 use crate::{
     db::{
         models::{NotebookInfo, User, USER},
-        mongo::{ObjectID, DBCONN},
+        mongo::{ObjectID, DB, DBCONN},
         Database,
     },
-    errors::{GuardianError, Result},
+    errors::{BridgeError, Result},
     kube::KubeAPI,
     web::{
         notebook_helper::{make_forward_url, make_notebook_name},
@@ -32,6 +32,7 @@ use crate::{
 
 // TODO: move this to notebook.toml... max_idle_time already exists
 const MAX_IDLE_TIME: u64 = 60 * 60 * 24;
+const BG_LEASE: &str = "bridge-lease";
 
 #[pin_project]
 pub struct Medium<T, F> {
@@ -41,24 +42,36 @@ pub struct Medium<T, F> {
     slept: bool,
     sleep_min: Duration,
     exp_min: Duration,
+    db: &'static DB,
     #[pin]
     stream: T,
     #[pin]
     sigterm: F,
+    fut: Pin<Box<dyn Future<Output = Result<()>> + Send>>,
+    leased: bool,
 }
 
 impl<T, F> Medium<T, F> {
     /// Create a new Medium instance
-    pub fn new(exp_min: Duration, sleep_min: Duration, stream: T, sigterm: F) -> Self {
+    pub fn new(
+        exp_min: Duration,
+        sleep_min: Duration,
+        db: &'static DB,
+        stream: T,
+        sigterm: F,
+    ) -> Self {
         let expiration = OffsetDateTime::now_utc() + exp_min;
         Self {
             expiration,
             sleep: sleep(sleep_min),
             sleep_min,
             exp_min,
+            db,
             slept: false,
             stream,
             sigterm,
+            fut: Box::pin(db.get_lease(BG_LEASE, exp_min.as_secs() as i64)),
+            leased: false,
         }
     }
 }
@@ -93,23 +106,47 @@ where
         let now = OffsetDateTime::now_utc();
 
         if now >= *this.expiration {
-            match this.stream.poll_next(cx) {
-                Poll::Ready(Some(_)) => {
-                    info!("Notebook lifecycling has finished");
-                    *this.expiration = OffsetDateTime::now_utc() + *this.exp_min;
+            if !*this.leased {
+                // try to get the advisory lock lease...
+                match this.fut.as_mut().poll(cx) {
+                    Poll::Ready(r) => {
+                        *this.fut =
+                            Box::pin(this.db.get_lease(BG_LEASE, this.exp_min.as_secs() as i64));
+                        if r.is_ok() {
+                            info!("Look at me, I'm the captain now...");
+                            // lease acquired move to streaming
+                            *this.leased = true;
+                        }
+                        *this.expiration = OffsetDateTime::now_utc() + *this.exp_min;
+                    }
+                    Poll::Pending => {
+                        return Poll::Pending;
+                    }
                 }
-                Poll::Ready(None) => {
-                    return Poll::Ready(());
-                }
-                Poll::Pending => {
-                    return Poll::Pending;
+            }
+
+            if *this.leased {
+                match this.stream.poll_next(cx) {
+                    Poll::Ready(Some(_)) => {
+                        info!("Notebook lifecycling has finished");
+                        // reset
+                        *this.expiration = OffsetDateTime::now_utc() + *this.exp_min;
+                        // lease expired
+                        *this.leased = false;
+                    }
+                    Poll::Ready(None) => {
+                        return Poll::Ready(());
+                    }
+                    Poll::Pending => {
+                        return Poll::Pending;
+                    }
                 }
             }
         }
 
-        // reset the sleep timer and timer
         this.sleep.reset(Instant::now() + *this.sleep_min);
         *this.slept = false;
+        cx.waker().wake_by_ref();
         Poll::Pending
     }
 }
@@ -179,6 +216,7 @@ impl From<&Kernel> for OffsetDateTime {
     fn from(value: &Kernel) -> Self {
         let format = time::macros::format_description!(
             version = 1,
+            // yo time be hard... please don't break
             "[year]-[month]-[day]T[hour]:[minute]:[second].[subsecond digits:6]Z"
         );
         let last_activity = &value.last_activity;
@@ -193,9 +231,13 @@ pub async fn notebook_lifecycle(client: Client) -> Result<()> {
 
     let db = DBCONN
         .get()
-        .ok_or(GuardianError::GeneralError("DB connection failed".into()))?;
+        .ok_or(BridgeError::GeneralError("DB connection failed".into()))?;
 
     let pods = KubeAPI::<Pod>::get_all_pods().await?;
+    if pods.is_empty() {
+        info!("No running notebooks found");
+        return Ok(());
+    }
 
     // get the subject id and corresponding ip of all the notebooks
     let pods_detail: Vec<(String, String)> = pods
@@ -276,8 +318,8 @@ pub async fn notebook_lifecycle(client: Client) -> Result<()> {
             {
                 if (now - t) >= Duration::from_secs(MAX_IDLE_TIME) {
                     notebook_to_shutdown.push((id, user));
-                    continue;
                 }
+                continue;
             }
 
             // One or more not present: kernel, notebook, start_time. In these situation, mark for
@@ -332,6 +374,7 @@ mod tests {
     async fn test(client: Client) -> Result<()> {
         // ping postman echo
         let resp = client.get("https://postman-echo.com/get").send().await?;
+        println!("{:?}", resp);
         assert!(resp.status().is_success());
         Ok(())
     }
@@ -401,7 +444,9 @@ mod tests {
         let sleep_min = Duration::from_secs(1);
         let fut = LifecycleStream::new(test);
         let sigterm = sleep(Duration::from_secs(5));
-        let lifecycle = Medium::new(exp_min, sleep_min, fut, sigterm);
+        DB::init_once("guardian").await.unwrap();
+        let db = DBCONN.get().unwrap();
+        let lifecycle = Medium::new(exp_min, sleep_min, db, fut, sigterm);
 
         timeout(Duration::from_secs(10), lifecycle).await.unwrap();
     }

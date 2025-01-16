@@ -1,8 +1,8 @@
-use std::{marker::PhantomData, str::FromStr, sync::OnceLock};
+use std::{marker::PhantomData, str::FromStr, sync::OnceLock, time::Duration};
 
 use futures::{StreamExt, TryStreamExt};
 use mongodb::{
-    bson::{doc, oid::ObjectId, Bson, Document, Regex},
+    bson::{doc, oid::ObjectId, Bson, DateTime, Document, Regex},
     options::IndexOptions,
     Client, Collection, Database as MongoDatabase, IndexModel,
 };
@@ -10,7 +10,7 @@ use serde::{de::DeserializeOwned, Serialize};
 
 use crate::{
     config::CONFIG,
-    errors::{GuardianError, Result},
+    errors::{BridgeError, Result},
 };
 
 use super::{
@@ -32,7 +32,7 @@ impl ObjectID {
     }
 
     #[inline]
-    pub fn into_inner(self) -> ObjectId {
+    pub fn into_inner(&self) -> ObjectId {
         self.0
     }
 }
@@ -56,19 +56,38 @@ impl DB {
 
         let dbs = Self { mongo_database };
         // create the unique indexes if they do not exist
-        Self::create_index::<User, _>(&dbs, USER, "email", 1).await?;
-        Self::create_index::<Group, _>(&dbs, GROUP, "name", "text").await?;
-        Self::create_index::<Locks, _>(&dbs, LOCKS, "name", "text").await?;
+        fn unique(f: impl Into<Bson> + ToString) -> IndexOptions {
+            IndexOptions::builder()
+                .name(Some(f.to_string()))
+                .unique(true)
+                .build()
+        }
+        Self::create_index::<User, _>(&dbs, USER, "email", 1, unique).await?;
+        Self::create_index::<Group, _>(&dbs, GROUP, "name", "text", unique).await?;
+        Self::create_index::<Locks, _>(&dbs, LOCKS, "expireSoonAfter", 1, |f| {
+            IndexOptions::builder()
+                .name(Some(f.to_string()))
+                .expire_after(Duration::from_secs(0)) // 1 hour
+                .build()
+        })
+        .await?;
+        Self::create_index::<Locks, _>(&dbs, LOCKS, "leaseName", "text", unique).await?;
 
         DBCONN.get_or_init(|| dbs);
 
         Ok(())
     }
 
-    async fn create_index<Z, T>(db: &DB, collection: &str, field: &str, index_type: T) -> Result<()>
+    async fn create_index<'a, Z, T>(
+        db: &DB,
+        collection: &str,
+        field: &'a str,
+        index_type: T,
+        index_opt: impl Fn(&'a str) -> IndexOptions,
+    ) -> Result<()>
     where
         Z: Send + Sync + Serialize + DeserializeOwned,
-        T: Into<Bson>,
+        T: Into<Bson> + Copy,
     {
         let col = Self::get_collection::<Z>(db, collection);
         let mut indexes = col.list_indexes().await?;
@@ -81,12 +100,7 @@ impl DB {
         // create index
         let index_model = IndexModel::builder()
             .keys(doc! {field: index_type})
-            .options(
-                IndexOptions::builder()
-                    .name(Some(field.to_string()))
-                    .unique(true)
-                    .build(),
-            )
+            .options(index_opt(field))
             .build();
         col.create_index(index_model).await?;
 
@@ -101,14 +115,35 @@ impl DB {
         d.mongo_database.collection::<Z>(collection)
     }
 
-    pub async fn get_lock(&self, name: &str) -> Result<()> {
-        let _ = self.insert(doc! {"name": name}, LOCKS).await?;
+    pub async fn get_lease(&self, name: &str, duration_sec: i64) -> Result<()> {
+        // one hour from now
+        let hour_from_now = (time::OffsetDateTime::now_utc()
+            + time::Duration::seconds(duration_sec))
+        .unix_timestamp_nanos()
+            / 1_000_000;
+
+        let mongo_now = DateTime::from_millis(hour_from_now as i64);
+        let _ = self
+            .insert(
+                doc! {"leaseName": name,
+                    "expireSoonAfter": mongo_now,
+                },
+                LOCKS,
+            )
+            .await?;
         Ok(())
     }
 
+    #[deprecated(note = "Use get_lease instead")]
+    pub async fn get_lock(&self, name: &str) -> Result<()> {
+        let _ = self.insert(doc! {"leaseName": name}, LOCKS).await?;
+        Ok(())
+    }
+
+    #[deprecated(note = "Use get_lease instead")]
     pub async fn release_lock(&self, name: &str) -> Result<()> {
         let _ = self
-            .delete(doc! {"name": name}, LOCKS, PhantomData::<Locks>)
+            .delete(doc! {"leaseName": name}, LOCKS, PhantomData::<Locks>)
             .await?;
         Ok(())
     }
@@ -129,7 +164,7 @@ where
         let col = Self::get_collection(self, collection);
         col.find_one(query)
             .await?
-            .ok_or_else(|| GuardianError::GeneralError("Could not find any document".to_string()))
+            .ok_or_else(|| BridgeError::GeneralError("Could not find any document".to_string()))
     }
 
     async fn find_one_update(
@@ -141,7 +176,7 @@ where
         let col = Self::get_collection(self, collection);
         col.find_one_and_update(query, update)
             .await?
-            .ok_or_else(|| GuardianError::GeneralError("Could not find any document".to_string()))
+            .ok_or_else(|| BridgeError::GeneralError("Could not find any document".to_string()))
     }
 
     async fn find_many(&self, query: Document, collection: Self::C) -> Result<Vec<R1>> {
@@ -154,7 +189,7 @@ where
         }
 
         if docs.is_empty() {
-            return Err(GuardianError::GeneralError(
+            return Err(BridgeError::GeneralError(
                 "Could not find any documents".to_string(),
             ));
         }
@@ -247,7 +282,7 @@ where
         }
 
         if docs.is_empty() {
-            return Err(GuardianError::RecordSearchError(
+            return Err(BridgeError::RecordSearchError(
                 "Could not find any documents".to_string(),
             ));
         }

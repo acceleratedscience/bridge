@@ -3,15 +3,15 @@ use actix_web_httpauth::middleware::HttpAuthentication;
 use tracing::{error, instrument, warn};
 
 use crate::{
-    errors::{GuardianError, Result},
-    web::{guardian_middleware::validator, helper},
+    errors::{BridgeError, Result},
+    web::{bridge_middleware::validator, helper},
 };
 
 use self::services::CATALOG;
 
 pub mod services;
 
-const GUARDIAN_PREFIX: &str = "/proxy";
+const BRIDGE_PREFIX: &str = "/proxy";
 pub static INFERENCE_HEADER: &str = "Inference-Service";
 
 #[instrument(skip(payload))]
@@ -25,7 +25,7 @@ async fn forward(
     let path = req
         .uri()
         .path()
-        .strip_prefix(GUARDIAN_PREFIX)
+        .strip_prefix(BRIDGE_PREFIX)
         .unwrap_or(req.uri().path());
 
     // get header for which infernce service to forward to
@@ -34,12 +34,12 @@ async fn forward(
         .get(INFERENCE_HEADER)
         .ok_or_else(|| {
             warn!("Inference-Service header not found in request");
-            GuardianError::InferenceServiceHeaderNotFound
+            BridgeError::InferenceServiceHeaderNotFound
         })?
         .to_str()
         .map_err(|e| {
             error!("{:?}", e);
-            GuardianError::InferenceServiceHeaderNotFound
+            BridgeError::InferenceServiceHeaderNotFound
         })?;
 
     // look up service and get url
