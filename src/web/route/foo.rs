@@ -4,7 +4,7 @@ use actix_web::{
     web::{self, Data},
     HttpResponse,
 };
-use tera::Tera;
+use tera::{Context, Tera};
 use tracing::instrument;
 
 use crate::{
@@ -20,7 +20,9 @@ async fn foo(data: Data<Tera>) -> Result<HttpResponse> {
 
 #[get("/bar")]
 async fn bar(data: Data<Tera>) -> Result<HttpResponse> {
-    let content = data.render("foundation.html", &tera::Context::new())?;
+    let mut context = Context::new();
+    context.insert("main_page_title", "Open AD");
+    let content = data.render("foundation.html", &context)?;
     Ok(HttpResponse::Ok()
         .content_type(ContentType::html())
         .body(content))
