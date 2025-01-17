@@ -116,8 +116,9 @@ where
                             info!("Look at me, I'm the captain now...");
                             // lease acquired move to streaming
                             *this.leased = true;
+                        } else {
+                            *this.expiration = OffsetDateTime::now_utc() + *this.exp_min;
                         }
-                        *this.expiration = OffsetDateTime::now_utc() + *this.exp_min;
                     }
                     Poll::Pending => {
                         return Poll::Pending;
