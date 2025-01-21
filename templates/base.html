@@ -19,17 +19,23 @@
 	{% endblock head %}
 </head>
 
-<body class="min-h-screen bg-[#ffffff] dark:bg-[#21272a] text-slate-900 dark:text-slate-200">
+<body class="flex flex-col min-h-screen bg-[#ffffff] dark:bg-[#21272a] text-slate-900 dark:text-slate-200">
+	{% block nav %}
+	{% endblock nav %}
+
 	{% block body %}
 	{% endblock body %}
+
+	{% block footer %}
+	<footer>
+		<div class="flex justify-center items-center h-14 border-t dark:border-[#4d5358] border-[#e0e0e0]">
+			<a class="text-sm" href="https://accelerate.science" target="_blank" rel="noopener noreferrer">Accelerated Discovery</a>
+		</div>
+	</footer>
+	{% endblock footer %}
 
 	{% block script %}
 	{% endblock script %}
 </body>
-
-<footer>
-	<div class="flex justify-center items-center h-16 bg-[#f4f4f4] dark:bg-[#343a3f]">
-		<p class="text-sm">© 2021 IBM Corporation</p>
-</footer>
 
 </html>

@@ -21,6 +21,7 @@ pub struct Configuration {
     pub notebooks: HashMap<String, Notebook>,
     pub app_name: String,
     pub app_discription: String,
+    pub company: String,
     pub oidc: HashMap<String, OIDC>,
 }
 
@@ -127,6 +128,7 @@ pub fn init_once() -> Configuration {
     let app_conf = conf_table["app-config"].as_table().unwrap();
     let app_name = app_conf["name"].as_str().unwrap().to_string();
     let app_discription = app_conf["description"].as_str().unwrap().to_string();
+    let company = app_conf["company"].as_str().unwrap().to_string();
 
     let notebooks: HashMap<String, Notebook> = toml::from_str(
         &read_to_string(PathBuf::from_str("config/notebook.toml").unwrap()).unwrap(),
@@ -143,6 +145,7 @@ pub fn init_once() -> Configuration {
         notebooks,
         app_name,
         app_discription,
+        company,
         oidc: oidc_map,
     }
 }

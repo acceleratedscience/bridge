@@ -7,7 +7,25 @@
 }
 
 .cb_button {
-	@apply bg-[#0050e6] hover:bg-blue-700 text-white
-		hover:cursor-pointer focus:ring focus:outline-none
-		active:bg-[#002d9c] focus:ring-white
+	@apply bg-[#0050e6] hover:bg-blue-700 text-slate-200
+		focus:ring dark:focus:outline-none active:bg-[#002d9c]
+		dark:focus:ring-white focus:ring-[#0050e6];
+}
+
+.cb_button_secondary {
+	@apply bg-[#ffffff] hover:bg-blue-700 hover:text-slate-200 text-slate-900
+		focus:ring dark:focus:outline-none active:bg-[#002d9c] active:text-[#ffffff]
+		dark:focus:ring-white focus:ring-[#0050e6];
+}
+
+.htmx-indicator {
+	opacity:0;
+}
+.htmx-request .htmx-indicator {
+	opacity:1;
+	transition: opacity 200ms ease-in;
+}
+.htmx-request.htmx-indicator {
+	opacity:1;
+	transition: opacity 200ms ease-in;
 }

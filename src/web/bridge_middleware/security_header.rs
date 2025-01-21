@@ -49,7 +49,7 @@ where
             let mut res = response.await?;
             res.headers_mut().insert(
              header::CONTENT_SECURITY_POLICY,
-             HeaderValue::from_str("default-src 'self'; font-src 1.www.s81c.com; img-src *; style-src 'self'; script-src 'self' https://unpkg.com;")?,
+             HeaderValue::from_str("default-src 'self'; img-src *; style-src 'self' https://unpkg.com; script-src 'self' https://unpkg.com;")?,
             );
             Ok(res)
         })

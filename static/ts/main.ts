@@ -1,3 +1,5 @@
+const currentPath = window.location.pathname;
+
 interface menuLabels {
 	button: string;
 	big: string,
@@ -62,16 +64,21 @@ class Menu {
 	}
 }
 
-window.addEventListener("DOMContentLoaded", () => {
+if (currentPath !== "/") {
+	window.addEventListener("DOMContentLoaded", () => {
 
-	const menu_labels: menuLabels = {
-		button: "menu_button",
-		big: "menu_big",
-		menu: "menu",
-		open: "menu_open",
-		close: "menu_close",
-		menu_selected: "menu_selected"
-	};
+		const menu_labels: menuLabels = {
+			button: "menu_button",
+			big: "menu_big",
+			menu: "menu",
+			open: "menu_open",
+			close: "menu_close",
+			menu_selected: "menu_selected"
+		};
 
-	const menu: Menu = new Menu(menu_labels);
-});
+		const menu: Menu = new Menu(menu_labels);
+	});
+}
+
+// @ts-ignore
+htmx.config.includeIndicatorStyles = false;
