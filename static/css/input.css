@@ -5,3 +5,9 @@
 .menu_selected {
 	@apply bg-[#c6c6c6] dark:bg-[#4d5358] border-l-2 border-[#4589ff];
 }
+
+.cb_button {
+	@apply bg-[#0050e6] hover:bg-blue-700 text-white
+		hover:cursor-pointer focus:ring focus:outline-none
+		active:bg-[#002d9c] focus:ring-white
+}
