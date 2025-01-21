@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 
-use std::{fs::read_to_string, path::PathBuf, str::FromStr, sync::OnceLock};
+use std::sync::OnceLock;
 
 use openidconnect::{
     core::{self, CoreClient, CoreResponseType},
@@ -12,7 +12,10 @@ use openidconnect::{
 use tracing::error;
 use url::Url;
 
-use crate::errors::{BridgeError, Result};
+use crate::{
+    config::CONFIG,
+    errors::{BridgeError, Result},
+};
 
 #[allow(clippy::upper_case_acronyms)]
 // LMFAO
@@ -101,11 +104,10 @@ pub static OPENID_IBM: OnceLock<OpenID> = OnceLock::new();
 
 impl OpenID {
     async fn new(table_name: OpenIDProvider) -> Result<Self> {
-        let table = toml::from_str::<toml::Table>(&read_to_string(PathBuf::from_str(
-            "config/configurations.toml",
-        )?)?)?;
-        let openid_table = table
-            .get(table_name.into())
+        let table_name: &str = table_name.into();
+        let oidc = CONFIG
+            .oidc
+            .get(table_name)
             .ok_or_else(|| BridgeError::TomlLookupError)?;
 
         let url = openid_table
@@ -145,11 +147,11 @@ impl OpenID {
 
         let client = CoreClient::from_provider_metadata(
             provider_metadata,
-            ClientId::new(client_id.to_string()),
-            Some(ClientSecret::new(client_secret.to_string())),
+            ClientId::new(oidc.client_id.to_string()),
+            Some(ClientSecret::new(oidc.client_secret.to_string())),
         )
         .set_redirect_uri(
-            RedirectUrl::new(redirect.to_string())
+            RedirectUrl::new(oidc.redirect_url.to_string())
                 .map_err(|e| BridgeError::GeneralError(e.to_string()))?,
         );
 

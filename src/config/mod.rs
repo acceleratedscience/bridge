@@ -9,6 +9,8 @@ use std::{
 use jsonwebtoken::{Algorithm, DecodingKey, EncodingKey, Validation};
 use serde::Deserialize;
 
+use crate::auth::openid::OpenIDProvider;
+
 pub struct Configuration {
     pub encoder: EncodingKey,
     pub decoder: DecodingKey,
@@ -17,6 +19,8 @@ pub struct Configuration {
     pub db: Database,
     pub cache: CacheDB,
     pub notebooks: HashMap<String, Notebook>,
+    pub app_name: String,
+    pub oidc: HashMap<String, OIDC>,
 }
 
 pub struct Database {
@@ -41,6 +45,15 @@ pub struct Notebook {
     pub max_idle_time: Option<u64>,
 }
 
+const OIDC_PROVIDER: [OpenIDProvider; 2] = [OpenIDProvider::W3, OpenIDProvider::IbmId];
+pub struct OIDC {
+    pub client: String,
+    pub url: String,
+    pub redirect_url: String,
+    pub client_id: String,
+    pub client_secret: String,
+}
+
 pub static CONFIG: LazyLock<Configuration> = LazyLock::new(init_once);
 
 pub static AUD: [&str; 1] = ["openad-user"];
@@ -59,6 +72,11 @@ pub fn init_once() -> Configuration {
     let mut validation = Validation::new(Algorithm::ES256);
     validation.set_audience(&AUD);
     validation.leeway = 0;
+
+    let conf_table: toml::Table = toml::from_str(
+        &read_to_string(PathBuf::from_str("config/configurations.toml").unwrap()).unwrap(),
+    )
+    .unwrap();
 
     let db_table: toml::Table = toml::from_str(
         &read_to_string(PathBuf::from_str("config/database.toml").unwrap()).unwrap(),
@@ -83,6 +101,31 @@ pub fn init_once() -> Configuration {
         },
     };
 
+    let mut oidc_map: HashMap<String, OIDC> = HashMap::with_capacity(2);
+    OIDC_PROVIDER.into_iter().for_each(|provider| {
+        let provider: &str = provider.into();
+        let openid_table = conf_table[provider].as_table().unwrap();
+        let client = openid_table["client"].as_table().unwrap();
+
+        let url = openid_table["url"].as_str().unwrap().to_string();
+        let redirect_url = openid_table["redirect_url"].as_str().unwrap().to_string();
+
+        let client_id = client["client_id"].as_str().unwrap().to_string();
+        let client_secret = client["client_secret"].as_str().unwrap().to_string();
+        let oidc = OIDC {
+            client: provider.into(),
+            url,
+            redirect_url,
+            client_id,
+            client_secret,
+        };
+
+        oidc_map.insert(provider.into(), oidc);
+    });
+
+    let app_conf = conf_table["app-config"].as_table().unwrap();
+    let app_name = app_conf["name"].as_str().unwrap().to_string();
+
     let notebooks: HashMap<String, Notebook> = toml::from_str(
         &read_to_string(PathBuf::from_str("config/notebook.toml").unwrap()).unwrap(),
     )
@@ -96,6 +139,8 @@ pub fn init_once() -> Configuration {
         db,
         cache,
         notebooks,
+        app_name,
+        oidc: oidc_map,
     }
 }
 

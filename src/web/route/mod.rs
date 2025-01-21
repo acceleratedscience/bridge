@@ -7,9 +7,7 @@ use actix_web::{
 use tera::{Context, Tera};
 
 use crate::{
-    auth::COOKIE_NAME,
-    errors::Result,
-    web::helper::{self},
+    auth::COOKIE_NAME, config::CONFIG, errors::Result, web::helper::{self}
 };
 
 pub mod auth;
@@ -33,6 +31,7 @@ async fn index(data: Data<Tera>, req: HttpRequest) -> Result<HttpResponse> {
 
     let mut ctx = Context::new();
     ctx.insert("version", APP_VERSION);
+    ctx.insert("app_name", &CONFIG.app_name);
     let rendered = helper::log_with_level!(data.render("pages/login.html", &ctx), error)?;
 
     Ok(HttpResponse::Ok().body(rendered))
