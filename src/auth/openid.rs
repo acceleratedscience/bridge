@@ -4,9 +4,9 @@ use std::{fs::read_to_string, path::PathBuf, str::FromStr, sync::OnceLock};
 
 use openidconnect::{
     core::{self, CoreClient, CoreResponseType},
-    reqwest, AuthenticationFlow, AuthorizationCode, Client, ClientId, ClientSecret, CsrfToken,
-    EmptyAdditionalClaims, EmptyExtraTokenFields, IdTokenFields, IssuerUrl, Nonce, RedirectUrl,
-    RevocationErrorResponseType, Scope, StandardErrorResponse, StandardTokenIntrospectionResponse,
+    AuthenticationFlow, AuthorizationCode, Client, ClientId, ClientSecret, CsrfToken,
+    EmptyAdditionalClaims, EmptyExtraTokenFields, EndpointMaybeSet, EndpointNotSet, EndpointSet,
+    IdTokenFields, IssuerUrl, Nonce, RedirectUrl, Scope, StandardErrorResponse,
     StandardTokenResponse,
 };
 use tracing::error;
@@ -21,9 +21,6 @@ type OIDC = Client<
     core::CoreAuthDisplay,
     core::CoreGenderClaim,
     core::CoreJweContentEncryptionAlgorithm,
-    core::CoreJwsSigningAlgorithm,
-    core::CoreJsonWebKeyType,
-    core::CoreJsonWebKeyUse,
     core::CoreJsonWebKey,
     core::CoreAuthPrompt,
     StandardErrorResponse<core::CoreErrorResponseType>,
@@ -34,14 +31,18 @@ type OIDC = Client<
             core::CoreGenderClaim,
             core::CoreJweContentEncryptionAlgorithm,
             core::CoreJwsSigningAlgorithm,
-            core::CoreJsonWebKeyType,
         >,
         core::CoreTokenType,
     >,
-    core::CoreTokenType,
-    StandardTokenIntrospectionResponse<EmptyExtraTokenFields, core::CoreTokenType>,
+    openidconnect::StandardTokenIntrospectionResponse<EmptyExtraTokenFields, core::CoreTokenType>,
     core::CoreRevocableToken,
-    StandardErrorResponse<RevocationErrorResponseType>,
+    StandardErrorResponse<openidconnect::RevocationErrorResponseType>,
+    EndpointSet,
+    EndpointNotSet,
+    EndpointNotSet,
+    EndpointNotSet,
+    EndpointMaybeSet,
+    EndpointMaybeSet,
 >;
 
 type Token = StandardTokenResponse<
@@ -51,7 +52,6 @@ type Token = StandardTokenResponse<
         core::CoreGenderClaim,
         core::CoreJweContentEncryptionAlgorithm,
         core::CoreJwsSigningAlgorithm,
-        core::CoreJsonWebKeyType,
     >,
     core::CoreTokenType,
 >;
@@ -93,6 +93,7 @@ pub fn get_openid_provider(provider: OpenIDProvider) -> Result<&'static OpenID> 
 
 pub struct OpenID {
     client: OIDC,
+    reqwest_client: reqwest::Client,
 }
 
 pub static OPENID_W3: OnceLock<OpenID> = OnceLock::new();
@@ -133,9 +134,11 @@ impl OpenID {
             .as_str()
             .ok_or_else(|| BridgeError::StringConversionError)?;
 
+        let reqwest_client = reqwest::Client::new();
+
         let provider_metadata = core::CoreProviderMetadata::discover_async(
             IssuerUrl::new(url.to_owned())?,
-            reqwest::async_http_client,
+            &reqwest_client,
         )
         .await
         .map_err(|e| BridgeError::GeneralError(e.to_string()))?;
@@ -150,7 +153,10 @@ impl OpenID {
                 .map_err(|e| BridgeError::GeneralError(e.to_string()))?,
         );
 
-        Ok(OpenID { client })
+        Ok(OpenID {
+            client,
+            reqwest_client,
+        })
     }
 
     pub fn get_client_resources(&self) -> (Url, CsrfToken, Nonce) {
@@ -171,21 +177,14 @@ impl OpenID {
     pub async fn get_token(&self, code: String) -> Result<Token> {
         let token = self
             .client
-            .exchange_code(AuthorizationCode::new(code))
-            .request_async(reqwest::async_http_client)
+            .exchange_code(AuthorizationCode::new(code))?
+            .request_async(&self.reqwest_client)
             .await
             .map_err(|e| BridgeError::TokenRequestError(e.to_string()))?;
         Ok(token)
     }
 
-    pub fn get_verifier(
-        &self,
-    ) -> openidconnect::IdTokenVerifier<
-        core::CoreJwsSigningAlgorithm,
-        core::CoreJsonWebKeyType,
-        core::CoreJsonWebKeyUse,
-        core::CoreJsonWebKey,
-    > {
+    pub fn get_verifier(&self) -> openidconnect::IdTokenVerifier<core::CoreJsonWebKey> {
         self.client.id_token_verifier()
     }
 }
