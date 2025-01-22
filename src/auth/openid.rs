@@ -110,36 +110,10 @@ impl OpenID {
             .get(table_name)
             .ok_or_else(|| BridgeError::TomlLookupError)?;
 
-        let url = openid_table
-            .get("url")
-            .ok_or_else(|| BridgeError::TomlLookupError)?
-            .as_str()
-            .ok_or_else(|| BridgeError::StringConversionError)?;
-        let redirect = openid_table
-            .get("redirect_url")
-            .ok_or_else(|| BridgeError::TomlLookupError)?
-            .as_str()
-            .ok_or_else(|| BridgeError::StringConversionError)?;
-
-        let client = openid_table
-            .get("client")
-            .ok_or_else(|| BridgeError::TomlLookupError)?;
-
-        let client_id = client
-            .get("client_id")
-            .ok_or_else(|| BridgeError::TomlLookupError)?
-            .as_str()
-            .ok_or_else(|| BridgeError::StringConversionError)?;
-        let client_secret = client
-            .get("client_secret")
-            .ok_or_else(|| BridgeError::TomlLookupError)?
-            .as_str()
-            .ok_or_else(|| BridgeError::StringConversionError)?;
-
         let reqwest_client = reqwest::Client::new();
 
         let provider_metadata = core::CoreProviderMetadata::discover_async(
-            IssuerUrl::new(url.to_owned())?,
+            IssuerUrl::new((&oidc.url).to_owned())?,
             &reqwest_client,
         )
         .await
