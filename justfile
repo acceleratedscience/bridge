@@ -44,6 +44,9 @@ watch-tailwind:
 watch-rust:
 	bacon run-long --watch . --features "notebook lifecycle"
 
+watch:
+	bacon --features "notebook lifecycle"
+
 certs:
 	mkdir certs
 	@openssl req -x509 -newkey rsa:2048 -nodes -keyout certs/key.pem -out certs/cert.pem -days 365 -subj '/CN=open.accelerator.cafe'

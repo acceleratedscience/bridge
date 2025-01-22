@@ -1,0 +1,17 @@
+{% extends "base_user.html" %}
+
+{% block body %}
+
+<div>
+	<p class="soft-text">Welcome, {{name}}</p>
+	<p>Thank you for registering. Your account is pending to be added to a group.</p>
+</div>
+
+{% block tabbed %}
+{% block tabselection %}
+{% endblock tabselection %}
+{% block tabcontents %}
+{% endblock tabcontents %}
+{% endblock tabbed %}
+
+{% endblock body %}
