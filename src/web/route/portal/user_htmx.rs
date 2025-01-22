@@ -19,6 +19,7 @@ pub struct Profile<'p> {
 }
 
 pub(super) static PROFILE: &str = "pages/portal_user.html";
+pub(super) static EMPTY_PROFILE: &str = "pages/pending_user.html";
 
 impl<'p> Profile<'p> {
     pub fn new(user: &'p User) -> Self {
@@ -46,9 +47,14 @@ impl<'p> Profile<'p> {
         t_exp: impl FnOnce(&mut Context, &str),
     ) -> Result<(String, Option<[Cookie; 2]>)> {
         let mut context = tera::Context::new();
+        context.insert("name", &self.user.user_name);
+
+        if self.groups.is_empty() {
+            return Ok((tera.render(EMPTY_PROFILE, &context)?, None));
+        }
+
         context.insert("group", &self.groups.join(", "));
         context.insert("subscriptions", &self.subscriptions);
-        context.insert("name", &self.user.user_name);
         context.insert("token", &self.user.token);
         // add in the expiration time if token is present
         if let Some(t) = &self.user.token {
