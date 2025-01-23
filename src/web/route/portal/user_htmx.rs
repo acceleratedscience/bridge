@@ -5,7 +5,9 @@ use actix_web::{
 use tera::{Context, Tera};
 
 use crate::{
-    config::CONFIG, db::models::{BridgeCookie, NotebookStatusCookie, User}, errors::Result
+    config::CONFIG,
+    db::models::{BridgeCookie, NotebookStatusCookie, User},
+    errors::Result,
 };
 
 #[cfg(feature = "notebook")]
@@ -47,6 +49,7 @@ impl<'p> Profile<'p> {
     ) -> Result<(String, Option<[Cookie; 2]>)> {
         let mut context = tera::Context::new();
         context.insert("name", &self.user.user_name);
+        context.insert("app_name", &CONFIG.app_name);
 
         if self.groups.is_empty() {
             return Ok((tera.render(EMPTY_PROFILE, &context)?, None));
@@ -55,7 +58,6 @@ impl<'p> Profile<'p> {
         context.insert("group", &self.groups.join(", "));
         context.insert("subscriptions", &self.subscriptions);
         context.insert("token", &self.user.token);
-        context.insert("app_name", &CONFIG.app_name);
         // add in the expiration time if token is present
         if let Some(t) = &self.user.token {
             t_exp(&mut context, t);

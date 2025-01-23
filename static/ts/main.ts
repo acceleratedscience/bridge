@@ -7,12 +7,14 @@ interface menuLabels {
 	open: string;
 	close: string;
 	menu_selected: string;
+	mobile_menu_selected: string;
 }
 
 class Menu {
 	menu_button: HTMLElement;
 	menu_big: NodeListOf<ChildNode>;
 	menu: HTMLElement;
+	menu_mobile: NodeListOf<ChildNode>;
 	menu_open: HTMLElement;
 	menu_close: HTMLElement;
 
@@ -20,10 +22,11 @@ class Menu {
 		this.menu_button = document.getElementById(menu_labels.button);
 		this.menu_big = document.getElementById(menu_labels.big).childNodes;
 		this.menu = document.getElementById(menu_labels.menu);
+		this.menu_mobile = document.getElementById(menu_labels.menu).childNodes;
 		this.menu_open = document.getElementById(menu_labels.open);
 		this.menu_close = document.getElementById(menu_labels.close);
 
-		// Menu item selection styling
+		// Big menu item selection styling
 		this.menu_big.forEach((node) => {
 			node.addEventListener("click", () => {
 				this.menu_big.forEach((node) => {
@@ -31,8 +34,36 @@ class Menu {
 						node.classList.remove(menu_labels.menu_selected);
 					}
 				});
+				this.menu_mobile.forEach((node) => {
+					if (node instanceof HTMLElement) {
+						node.classList.remove(menu_labels.mobile_menu_selected);
+					}
+				});
 				if (node instanceof HTMLElement) {
 					node.classList.add(menu_labels.menu_selected);
+					let mobile_target = node.id.replace("big_", "mobile_");
+					document.getElementById(mobile_target).classList.add(menu_labels.mobile_menu_selected);
+				}
+			});
+		});
+
+		// mobile menu item selection styling
+		this.menu_mobile.forEach((node) => {
+			node.addEventListener("click", () => {
+				this.menu_mobile.forEach((node) => {
+					if (node instanceof HTMLElement) {
+						node.classList.remove(menu_labels.mobile_menu_selected);
+					}
+				});
+				this.menu_big.forEach((node) => {
+					if (node instanceof HTMLElement) {
+						node.classList.remove(menu_labels.menu_selected);
+					}
+				});
+				if (node instanceof HTMLElement) {
+					node.classList.add(menu_labels.mobile_menu_selected);
+					let big_target = node.id.replace("mobile_", "big_");
+					document.getElementById(big_target).classList.add(menu_labels.menu_selected);
 				}
 			});
 		});
@@ -73,10 +104,11 @@ if (currentPath !== "/") {
 			menu: "menu",
 			open: "menu_open",
 			close: "menu_close",
-			menu_selected: "menu_selected"
+			menu_selected: "menu_selected",
+			mobile_menu_selected: "mobile_menu_selected"
 		};
 
-		const menu: Menu = new Menu(menu_labels);
+		new Menu(menu_labels);
 	});
 }
 
