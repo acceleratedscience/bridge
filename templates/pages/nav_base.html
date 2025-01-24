@@ -59,7 +59,7 @@
 </nav>
 
 <div class="flex flex-1 grid-cols-2 mx-auto min-w-full px-2 sm:px-6 lg:px-8 relative">
-	<div class="flex-none fixed w-56 pt-4 dark:bg-[#343a3f] md:block hidden">
+	<div class="flex-none fixed w-64 pt-4 dark:bg-[#343a3f] md:block hidden">
 		<div class="flex flex-col grid-cols-1 grid-rows-2 min-h-[calc(100vh-3rem)]">
 			<div id="menu_big" class="flex-none">
 				<a href="#" id="big_profile"
@@ -77,6 +77,7 @@
 						<p class="self-center grow pl-4">Profile</p>
 					</div>
 				</a>
+				{% if user != "pending" %}
 				<a href="#" id="big_models" class="block py-2 px-4 dark:hover:bg-[#4d5358] hover:bg-[#c6c6c6]">
 					<div class="flex">
 						<svg preserveAspectRatio="xMidYMid meet" fill="currentColor" width="32" height="32"
@@ -101,6 +102,7 @@
 						<p class="self-center grow pl-4">Token</p>
 					</div>
 				</a>
+				{% if notebook %}
 				<a href="#" id="big_notebook" class="block py-2 px-4 dark:hover:bg-[#4d5358] hover:bg-[#c6c6c6]">
 					<div class="flex">
 						<svg preserveAspectRatio="xMidYMid meet" fill="currentColor" width="32" height="32"
@@ -113,6 +115,8 @@
 						<p class="self-center grow pl-4">Notebook</p>
 					</div>
 				</a>
+				{% endif %}
+				{% if user == "system_admin" %}
 				<a href="#" id="big_groups" class="block py-2 px-4 dark:hover:bg-[#4d5358] hover:bg-[#c6c6c6]">
 					<div class="flex">
 						<svg preserveAspectRatio="xMidYMid meet" fill="currentColor" width="32" height="32"
@@ -139,6 +143,24 @@
 						<p class="self-center grow pl-4">User Management</p>
 					</div>
 				</a>
+				{% endif %}
+				{% if user == "group_admin" %}
+				<a href="#" id="big_members" class="block py-2 px-4 dark:hover:bg-[#4d5358] hover:bg-[#c6c6c6]">
+					<div class="flex">
+						<svg preserveAspectRatio="xMidYMid meet" fill="currentColor" width="32" height="32"
+							viewBox="0 0 32 32" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+							<path
+								d="M8 19H6V17a3.0033 3.0033 0 013-3h5v2H9a1.0011 1.0011 0 00-1 1zM12 13a4 4 0 114-4A4.0045 4.0045 0 0112 13zm0-6a2 2 0 102 2A2.0021 2.0021 0 0012 7zM20 20a4 4 0 114-4A4.0045 4.0045 0 0120 20zm0-6a2 2 0 102 2A2.0021 2.0021 0 0020 14zM26 26H24V24a1.0011 1.0011 0 00-1-1H17a1.0011 1.0011 0 00-1 1v2H14V24a3.0033 3.0033 0 013-3h6a3.0033 3.0033 0 013 3z">
+							</path>
+							<path
+								d="M8 30H4a2.0021 2.0021 0 01-2-2V4A2.0021 2.0021 0 014 2H8V4H4V28H8zM28 30H24V28h4V4H24V2h4a2.0021 2.0021 0 012 2V28A2.0021 2.0021 0 0128 30z">
+							</path>
+						</svg>
+						<p class="self-center grow pl-4">Member Management</p>
+					</div>
+				</a>
+				{% endif %}
+				{% endif %}
 			</div>
 			<div class="flex flex-col grow justify-end items-center">
 				<p class="pb-4 text-xs">Powered by OpenBridge v0.1.0</p>
@@ -146,7 +168,7 @@
 		</div>
 	</div>
 
-	<div class="flex-1 pl-2 md:pl-56 pt-4">
+	<div class="flex-1 pl-2 md:pl-64 pt-4">
 		<div class="px-3">
 			{% block main %}{% endblock main %}
 		</div>
@@ -156,13 +178,17 @@
 	class="fixed flex-col left-0 top-12 bg-[#f4f4f4]/70 dark:bg-[#121619]/70 min-h-96 min-w-52 rounded-br-md backdrop-blur-sm drop-shadow-md hidden md:hidden">
 	<a href="#" id="mobile_profile"
 		class="block py-3 px-4 mobile_menu_selected dark:hover:bg-[#4d5358] hover:bg-[#c6c6c6]">Profile</a>
-	<a href="#" id="mobile-models" class="block py-3 px-4 dark:hover:bg-[#4d5358] hover:bg-[#c6c6c6]">Available
+	{% if user != "pending" %}
+	<a href="#" id="mobile_models" class="block py-3 px-4 dark:hover:bg-[#4d5358] hover:bg-[#c6c6c6]">Available
 		Models</a>
 	<a href="#" id="mobile_token" class="block py-3 px-4 dark:hover:bg-[#4d5358] hover:bg-[#c6c6c6]">Token</a>
 	<a href="#" id="mobile_notebook" class="block py-3 px-4 dark:hover:bg-[#4d5358] hover:bg-[#c6c6c6]">Notebook</a>
 	<a href="#" id="mobile_groups" class="block py-3 px-4 dark:hover:bg-[#4d5358] hover:bg-[#c6c6c6]">Group
 		Management</a>
+	<a href="#" id="mobile_members" class="block py-3 px-4 dark:hover:bg-[#4d5358] hover:bg-[#c6c6c6]">Member
+		Management</a>
 	<a href="#" id="mobile_users" class="block py-3 px-4 dark:hover:bg-[#4d5358] hover:bg-[#c6c6c6]">User Management</a>
+	{% endif %}
 	<div class="grow flex flex-col justify-end">
 		<p class="text-xs self-center pb-0.5">Powered by OpenBridge v0.1.0</p>
 	</div>

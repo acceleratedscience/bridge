@@ -79,8 +79,9 @@ class Menu {
         });
     }
 }
-if (currentPath !== "/") {
-    window.addEventListener("DOMContentLoaded", () => {
+// only for path other than "/" and starting with "/callback"
+if (currentPath !== "/" && !currentPath.startsWith("/callback")) {
+    window.addEventListener("load", () => {
         const menu_labels = {
             button: "menu_button",
             big: "menu_big",

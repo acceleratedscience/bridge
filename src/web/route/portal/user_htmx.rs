@@ -52,9 +52,11 @@ impl<'p> Profile<'p> {
         context.insert("app_name", &CONFIG.app_name);
 
         if self.groups.is_empty() {
+            context.insert("user", "pending");
             return Ok((tera.render(EMPTY_PROFILE, &context)?, None));
         }
 
+        context.insert("user", "user");
         context.insert("group", &self.groups.join(", "));
         context.insert("subscriptions", &self.subscriptions);
         context.insert("token", &self.user.token);

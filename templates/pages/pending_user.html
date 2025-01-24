@@ -1,10 +1,13 @@
 {% extends 'pages/nav_base.html' %}
 
-{% block title %}Account pending{% endblock title %}
+{% block title %}Pending Account{% endblock title %}
 
 {% block main %}
-<p class="">Welcome, {{name}}</p>
-<p class="t">Thank you for registering. Your account is pending to be added to a group.</p>
+<div class="container">
+	<p class="font-mono text-lg mb-4">{{ name }},</p>
+	<p>Thank you for registering! Your account is currently in the pending state. An admin will need to approve and pull
+		you into a group.
+</div>
 {% endblock main %}
 
 {% block footer %}
