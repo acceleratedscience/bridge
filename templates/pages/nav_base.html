@@ -4,7 +4,7 @@
 <nav id="navigation" class="bg-[#f4f4f4] dark:bg-[#121619] sticky top-0 w-full z-10 drop-shadow-md flex-none">
 	<div class="mx-auto min-w-full px-2 sm:px-6 lg:px-8">
 		<div class="relative flex h-12 items-center justify-between">
-			<div class="absolute inset-y-0 left-0 flex items-center md:hidden">
+			<div class="flex items-center md:hidden">
 				{# Mobile menu button #}
 				<button id="menu_button" type="button"
 					class="relative inline-flex items-center justify-center rounded-md p-2 text-gray-400 hover:bg-gray-700 hover:text-white focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
@@ -182,12 +182,18 @@
 	<a href="#" id="mobile_models" class="block py-3 px-4 dark:hover:bg-[#4d5358] hover:bg-[#c6c6c6]">Available
 		Models</a>
 	<a href="#" id="mobile_token" class="block py-3 px-4 dark:hover:bg-[#4d5358] hover:bg-[#c6c6c6]">Token</a>
+	{% if notebook %}
 	<a href="#" id="mobile_notebook" class="block py-3 px-4 dark:hover:bg-[#4d5358] hover:bg-[#c6c6c6]">Notebook</a>
+	{% endif %}
+	{% if user == "system_admin" %}
 	<a href="#" id="mobile_groups" class="block py-3 px-4 dark:hover:bg-[#4d5358] hover:bg-[#c6c6c6]">Group
 		Management</a>
+	<a href="#" id="mobile_users" class="block py-3 px-4 dark:hover:bg-[#4d5358] hover:bg-[#c6c6c6]">User Management</a>
+	{% endif %}
+	{% if user == "group_admin" %}
 	<a href="#" id="mobile_members" class="block py-3 px-4 dark:hover:bg-[#4d5358] hover:bg-[#c6c6c6]">Member
 		Management</a>
-	<a href="#" id="mobile_users" class="block py-3 px-4 dark:hover:bg-[#4d5358] hover:bg-[#c6c6c6]">User Management</a>
+	{% endif %}
 	{% endif %}
 	<div class="grow flex flex-col justify-end">
 		<p class="text-xs self-center pb-0.5">Powered by OpenBridge v0.1.0</p>
