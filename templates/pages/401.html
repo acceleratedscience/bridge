@@ -1,8 +1,9 @@
 {% extends "base.html" %}
 {% block title %}401: Unauthorized{% endblock title %}
-{% block htmx %}{% endblock htmx %}
 
 {% block body %}
-<h1>Error 401</h1>
-<p>Unauthorized</p>
+<div hx-trigger="load delay:3s" hx-post="hx/logout">
+	<h1>Error 401</h1>
+	<p>Unauthorized</p>
+</div>
 {% endblock body %}

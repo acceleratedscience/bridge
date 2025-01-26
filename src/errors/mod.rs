@@ -154,14 +154,14 @@ impl ResponseError for BridgeError {
             #[cfg(feature = "notebook")]
             BridgeError::KubeClientError(_) => StatusCode::INTERNAL_SERVER_ERROR,
 
-            BridgeError::NotAdmin => StatusCode::UNAUTHORIZED,
             BridgeError::Unauthorized(_) => StatusCode::UNAUTHORIZED,
             BridgeError::ClaimsVerificationError(_) => StatusCode::UNAUTHORIZED,
             BridgeError::NonceCookieNotFound => StatusCode::UNAUTHORIZED,
             BridgeError::TokenRequestError(_) => StatusCode::UNAUTHORIZED,
+            BridgeError::UserNotAllowedOnPage(_) => StatusCode::UNAUTHORIZED,
 
             BridgeError::UserNotFound(_) => StatusCode::FORBIDDEN,
-            BridgeError::UserNotAllowedOnPage(_) => StatusCode::FORBIDDEN,
+            BridgeError::NotAdmin => StatusCode::FORBIDDEN,
             #[cfg(feature = "notebook")]
             BridgeError::NotebookAccessError(_) => StatusCode::FORBIDDEN,
 

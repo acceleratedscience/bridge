@@ -83,7 +83,7 @@ where
                     "Bridge cookie not found from ip {:?}",
                     req.connection_info().realip_remote_addr()
                 );
-                let res = HttpResponse::Forbidden().finish().map_into_right_body();
+                let res = HttpResponse::Unauthorized().finish().map_into_right_body();
                 Box::pin(async { Ok(req.into_response(res)) })
             }
         }
