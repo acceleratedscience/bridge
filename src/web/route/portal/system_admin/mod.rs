@@ -442,6 +442,7 @@ async fn system_tab_htmx(
             }
         }
         AdminTab::Profile => r#"<br><p>Profile tab</p>"#.to_string(),
+        _ => unreachable!(),
     };
 
     Ok(HttpResponse::Ok()

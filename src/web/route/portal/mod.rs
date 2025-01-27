@@ -40,20 +40,20 @@ async fn index(data: Option<ReqData<BridgeCookie>>) -> Result<HttpResponse> {
         Some(r) => {
             let bridge_cookie = r.into_inner();
             match bridge_cookie.user_type {
-                UserType::User => Ok(HttpResponse::TemporaryRedirect()
+                UserType::User => Ok(HttpResponse::SeeOther()
                     .append_header((header::LOCATION, "/portal/user"))
                     .finish()),
-                UserType::GroupAdmin => Ok(HttpResponse::TemporaryRedirect()
+                UserType::GroupAdmin => Ok(HttpResponse::SeeOther()
                     .append_header((header::LOCATION, "/portal/group_admin"))
                     .finish()),
-                UserType::SystemAdmin => Ok(HttpResponse::TemporaryRedirect()
+                UserType::SystemAdmin => Ok(HttpResponse::SeeOther()
                     .append_header((header::LOCATION, "/portal/system_admin"))
                     .finish()),
             }
         }
         None => {
             // no cookie, go back to login
-            Ok(HttpResponse::TemporaryRedirect()
+            Ok(HttpResponse::SeeOther()
                 .append_header((header::LOCATION, "/"))
                 .finish())
         }
@@ -94,8 +94,12 @@ async fn search_by_email(
                     .append_header((HTMX_ERROR_RES, "Invalid query string"))
                     .finish());
             };
+            let email = urlencoding::decode(email).map_err(|e| {
+                tracing::error!("{}", e);
+                BridgeError::GeneralError(format!("Error parsing query string: {}", e))
+            })?;
 
-            let res = match db.search_users(email, USER, PhantomData::<User>).await {
+            let res = match db.search_users(&email, USER, PhantomData::<User>).await {
                 Ok(documents) => documents,
                 Err(e) => match e {
                     BridgeError::RecordSearchError(_) => {

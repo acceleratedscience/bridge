@@ -1,11 +1,21 @@
 {# Template for group admin to search users to add #}
 
-<div hx-ext="response-targets">
-	<cds-form-group class="cds-group">
-		<cds-text-input label="Email" name="email" helper-text="partial match allowed" hx-trigger="input delay:1s" hx-get="hx/search_by_email" hx-target="#search-response" hx-swap="innerhtml" hx-target-400="#search-response" _="on input from me set innerHTML of #search-response to '' end
-			on htmx:beforeRequest if my value is empty set innerHTML of #search-response to 'Value is required' then halt the event end" required></cds-text-input>
-	</cds-form-group>
-
-	<br><br>
-	<div id="search-response"></div>
+<div id="response-targets-wrap">
+	<div hx-ext="response-targets">
+		<cds-form-group class="cds-group">
+			<cds-text-input label="Email" name="email" helper-text="partial match allowed" hx-trigger="input delay:1s"
+				hx-get="hx/search_by_email" hx-target="#search-response" hx-swap="innerhtml"
+				hx-target-400="#search-response"
+				_="on input from me set innerHTML of #search-response to '' end
+			on htmx:beforeRequest if my value is empty set innerHTML of #search-response to 'Value is required' then halt the event end"
+				required></cds-text-input>
+		</cds-form-group>
+		<br>
+		<div id="search-response"></div>
+	</div>
+	<br>
+	<div class="btn-wrap">
+		<cds-button size="sm" hx-get="group_admin/hx/tab?tab=Main" hx-target="#response-targets-wrap"
+			hx-swap="outerhtml">Back</cds-button>
+	</div>
 </div>

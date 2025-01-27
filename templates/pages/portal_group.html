@@ -17,8 +17,5 @@ Group Admin
 
 {% block panels %}
 <!-- Members -->
-<div id="panel-members" role="tabpanel" aria-labelledby="tab-members">
-	<cds-button size="sm" hx-get="group_admin/hx/tab?tab=UserModify" hx-target="#panel-members" hx-swap="innerhtml">Add member</cds-button>
-	<cds-button size="sm" hx-get="group_admin/hx/tab?tab=GroupView" hx-target="#panel-members" hx-swap="innerhtml">View members</cds-button>
-</div>
+{%include "components/group_member_tab.html" %}
 {% endblock panels %}
