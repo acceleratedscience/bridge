@@ -167,6 +167,7 @@ pub enum AdminTab {
     UserView,
     UserModify,
     UserDelete,
+    Main,
 }
 
 #[derive(Debug, Deserialize, Clone)]

@@ -118,10 +118,7 @@ pub(super) async fn group(
     #[cfg(feature = "notebook")]
     // no bound checks here
     if let Some([nc, nsc]) = nb_cookies {
-        return Ok(HttpResponse::Ok()
-            .cookie(nc)
-            .cookie(nsc)
-            .body(content));
+        return Ok(HttpResponse::Ok().cookie(nc).cookie(nsc).body(content));
     }
 
     return Ok(HttpResponse::Ok().cookie(bc).body(content));
@@ -287,6 +284,10 @@ async fn group_tab_htmx(
 
             helper::log_with_level!(data.render("components/member_view.html", &context), error)?
         }
+        AdminTab::Main => helper::log_with_level!(
+            data.render("components/group_member_tab.html", &tera::Context::new()),
+            error
+        )?,
         _ => {
             return Ok(HttpResponse::BadRequest()
                 .append_header((HTMX_ERROR_RES, format!("Tab {:?} not found", tab.tab)))
