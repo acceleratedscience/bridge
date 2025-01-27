@@ -52,7 +52,7 @@ async fn login(req: HttpRequest) -> Result<HttpResponse> {
         .finish();
 
     // redirect to auth server
-    Ok(HttpResponse::TemporaryRedirect()
+    Ok(HttpResponse::SeeOther()
         .append_header((header::LOCATION, url.0.to_string()))
         .cookie(cookie)
         .finish())

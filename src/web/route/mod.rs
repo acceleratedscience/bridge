@@ -26,7 +26,7 @@ static APP_VERSION: &str = env!("CARGO_PKG_VERSION");
 async fn index(data: Data<Tera>, req: HttpRequest) -> Result<HttpResponse> {
     // if cookie exists, redirect to portal
     if req.cookie(COOKIE_NAME).is_some() {
-        return Ok(HttpResponse::TemporaryRedirect()
+        return Ok(HttpResponse::SeeOther()
             .append_header((header::LOCATION, "/portal"))
             .finish());
     }
