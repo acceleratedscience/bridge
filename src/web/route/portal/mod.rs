@@ -94,8 +94,12 @@ async fn search_by_email(
                     .append_header((HTMX_ERROR_RES, "Invalid query string"))
                     .finish());
             };
+            let email = urlencoding::decode(email).map_err(|e| {
+                tracing::error!("{}", e);
+                BridgeError::GeneralError(format!("Error parsing query string: {}", e))
+            })?;
 
-            let res = match db.search_users(email, USER, PhantomData::<User>).await {
+            let res = match db.search_users(&email, USER, PhantomData::<User>).await {
                 Ok(documents) => documents,
                 Err(e) => match e {
                     BridgeError::RecordSearchError(_) => {
