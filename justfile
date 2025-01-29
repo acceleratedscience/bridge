@@ -19,13 +19,14 @@ local-mongo:
 	-e MONGODB_ROOT_PASSWORD="admin123456789" \
 	-e MONGODB_USERNAME="guardian-user" -e MONGODB_PASSWORD="admin123456789" -e MONGODB_DATABASE="guardian" \
 	-p 27017:27017 bitnami/mongodb:latest
+# mongo:latest
 
 local-mongo-arm:
 	podman run -d --rm --name mongodb \
 	-e MONGO_INITDB_ROOT_USERNAME="guardian-user" \
 	-e MONGO_INITDB_ROOT_PASSWORD="admin123456789" \
 	-e MONGO_INITDB_DATABASE="guardian" \
-	-p 27017:27017 mongodb/mongodb-community-server
+	-p 27019:27017 mongodb/mongodb-community-server
 
 local-keydb:
 	podman run -d --rm --name keydb \
@@ -49,7 +50,7 @@ watch:
 
 certs:
 	mkdir certs
-	@openssl req -x509 -newkey rsa:2048 -nodes -keyout certs/key.pem -out certs/cert.pem -days 365 -subj '/CN=open.accelerator.cafe'
+	@openssl req -x509 -newkey rsa:2048 -nodes -keyout certs/open.accelerator.cafe.key -out certs/fullchain.cer -days 365 -subj '/CN=open.accelerator.cafe'
 
 gen_curve:
 	@openssl ecparam -name prime256v1 -genkey -noout -out certs/private.ec.key

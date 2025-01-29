@@ -7,12 +7,17 @@
 ### Initiating OpenBridge locally
 
 1.  Clone the repository
-2.  Create the self-signed certificate and asymmetric key pairs
+2.  Install [Rust](https://www.rust-lang.org/tools/install) if needed
+3.  Install the just command runner if needed
+
+        cargo install just
+
+4.  Create the self-signed certificate and asymmetric key pairs
 
         just certs
-        just gen-curve
+        just gen_curve
 
-3.  Copy or rename the provided configuration files:
+5.  Copy or rename the provided configuration files:
 
     -   `config/configurations_sample.toml` &#8594; `config/configurations.toml`
     -   `config/database_sample.toml` &#8594; `config/database.toml`
