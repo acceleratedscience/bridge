@@ -17,6 +17,8 @@ pub enum BridgeError {
     SystemTimeError(#[from] std::time::SystemTimeError),
     #[error("{0}")]
     JsonWebTokenError(#[from] jsonwebtoken::errors::Error),
+    #[error("{0}")]
+    IntrospectionError(&'static str),
     #[error("The query could not be deserialized: {0}")]
     QueryDeserializeError(String),
     #[error("Not admin")]
@@ -94,6 +96,7 @@ impl ResponseError for BridgeError {
             BridgeError::GeneralError(_) => StatusCode::INTERNAL_SERVER_ERROR,
             BridgeError::TeraError(_) => StatusCode::INTERNAL_SERVER_ERROR,
             BridgeError::SystemTimeError(_) => StatusCode::INTERNAL_SERVER_ERROR,
+
             BridgeError::QueryDeserializeError(_) => StatusCode::BAD_REQUEST,
             BridgeError::InferenceServiceHeaderNotFound => StatusCode::BAD_REQUEST,
             BridgeError::ServiceDoesNotExist(_) => StatusCode::BAD_REQUEST,
@@ -101,6 +104,8 @@ impl ResponseError for BridgeError {
             BridgeError::AuthorizationServerNotSupported => StatusCode::BAD_REQUEST,
             BridgeError::FormDeserializeError(_) => StatusCode::BAD_REQUEST,
             BridgeError::RecordSearchError(_) => StatusCode::BAD_REQUEST,
+            BridgeError::IntrospectionError(_) => StatusCode::BAD_REQUEST,
+
             BridgeError::JsonWebTokenError(e) => {
                 match e.kind() {
                     // Unauthorized errors

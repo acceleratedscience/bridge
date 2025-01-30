@@ -1,3 +1,4 @@
+use mongodb::bson;
 use mongodb::bson::oid::ObjectId;
 use serde::{Deserialize, Serialize};
 use utils::EnumToArrayStr;
@@ -106,7 +107,18 @@ pub static LOCKS: &str = "locks";
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Locks {
     pub _id: ObjectId,
-    pub name: String,
+    #[serde(rename = "leaseName")]
+    pub lease_name: String,
+    #[serde(rename = "expireSoonAfter")]
+    pub expire_soon_after: bson::DateTime,
+}
+
+pub static APPS: &str = "applications";
+#[derive(Debug, Deserialize, Serialize)]
+pub struct Apps {
+    pub _id: ObjectId,
+    pub client_id: String,
+    pub client_secret: String,
 }
 
 /// This is the form verison of the Group struct

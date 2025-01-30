@@ -10,11 +10,12 @@ use serde::{de::DeserializeOwned, Serialize};
 
 use crate::{
     config::CONFIG,
+    db::models::Apps,
     errors::{BridgeError, Result},
 };
 
 use super::{
-    models::{Group, Locks, User, GROUP, LOCKS, USER},
+    models::{Group, Locks, User, APPS, GROUP, LOCKS, USER},
     Database,
 };
 
@@ -39,7 +40,7 @@ impl ObjectID {
 
 pub static DBCONN: OnceLock<DB> = OnceLock::new();
 
-static COLLECTIONS: [&str; 3] = [USER, GROUP, LOCKS];
+static COLLECTIONS: [&str; 4] = [USER, GROUP, LOCKS, APPS];
 
 impl DB {
     pub async fn init_once(database: &'static str) -> Result<()> {
@@ -72,6 +73,7 @@ impl DB {
         })
         .await?;
         Self::create_index::<Locks, _>(&dbs, LOCKS, "leaseName", "text", unique).await?;
+        Self::create_index::<Apps, _>(&dbs, APPS, "client_id", "text", unique).await?;
 
         DBCONN.get_or_init(|| dbs);
 

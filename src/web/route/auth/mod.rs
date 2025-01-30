@@ -25,9 +25,10 @@ use crate::{
     web::helper::{self},
 };
 
-use self::deserialize::CallBackResponse;
+use self::{deserialize::CallBackResponse, oauth::introspection};
 
 mod deserialize;
+mod oauth;
 
 const NONCE_COOKIE: &str = "nonce";
 
@@ -221,5 +222,10 @@ async fn code_to_response(
 }
 
 pub fn config_auth(cfg: &mut web::ServiceConfig) {
-    cfg.service(web::scope("/auth").service(login).service(callback));
+    cfg.service(
+        web::scope("/auth")
+            .service(login)
+            .service(callback)
+            .service(introspection),
+    );
 }
