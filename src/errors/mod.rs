@@ -81,6 +81,8 @@ pub enum BridgeError {
     RedisError(#[from] redis::RedisError),
     #[error("{0}")]
     OpenIDError(#[from] openidconnect::ConfigurationError),
+    #[error("{0}")]
+    Argon2Error(#[from] argon2::Error),
 }
 
 // Workaround for Infallible, which may get solved by rust-lang: https://github.com/rust-lang/rust/issues/64715
@@ -153,6 +155,7 @@ impl ResponseError for BridgeError {
             BridgeError::ReqwestError(_) => StatusCode::INTERNAL_SERVER_ERROR,
             BridgeError::RedisError(_) => StatusCode::INTERNAL_SERVER_ERROR,
             BridgeError::OpenIDError(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            BridgeError::Argon2Error(_) => StatusCode::INTERNAL_SERVER_ERROR,
 
             #[cfg(feature = "notebook")]
             BridgeError::KubeError(_) => StatusCode::INTERNAL_SERVER_ERROR,

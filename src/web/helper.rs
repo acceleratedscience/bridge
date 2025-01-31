@@ -1,5 +1,7 @@
 use actix_web::web;
+use base64::{prelude::BASE64_STANDARD, Engine};
 use mongodb::bson::{to_bson, Bson};
+use rand::{rng, Rng};
 use serde::Deserialize;
 use tera::Context;
 use tokio_stream::StreamExt;
@@ -151,6 +153,13 @@ pub fn maintenance_watch() -> Result<()> {
     });
 
     Ok(())
+}
+
+#[inline]
+pub fn generate_salt() -> String {
+    let mut rnd = rng();
+    let salt: Vec<u8> = (0..32).map(|_| rnd.random()).collect();
+    BASE64_STANDARD.encode(&salt)
 }
 
 /// http proxying utilities
