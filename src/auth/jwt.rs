@@ -27,6 +27,10 @@ where
             Err(_) => "Not a valid timestamp".to_string(),
         }
     }
+
+    pub fn get_sub(&self) -> &str {
+        self.sub.as_ref()
+    }
 }
 
 const ISSUER: &str = "openbridge";
