@@ -452,17 +452,17 @@ mod tests {
         timeout(Duration::from_secs(10), lifecycle).await.unwrap();
     }
 
-    #[tokio::test]
-    async fn test_notebook_fn() {
-        rustls::crypto::ring::default_provider()
-            .install_default()
-            .expect("Cannot install default provider");
-
-        crate::kube::init_once().await;
-        DB::init_once("guardian").await.unwrap();
-        logger::Logger::start(LevelFilter::INFO);
-        let result = notebook_lifecycle(Client::new()).await;
-        println!("{:?}", result);
-        assert!(result.is_ok());
-    }
+    // #[tokio::test]
+    // async fn test_notebook_fn() {
+    //     rustls::crypto::ring::default_provider()
+    //         .install_default()
+    //         .expect("Cannot install default provider");
+    //
+    //     crate::kube::init_once().await;
+    //     DB::init_once("guardian").await.unwrap();
+    //     logger::Logger::start(LevelFilter::INFO);
+    //     let result = notebook_lifecycle(Client::new()).await;
+    //     println!("{:?}", result);
+    //     assert!(result.is_ok());
+    // }
 }

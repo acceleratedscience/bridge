@@ -228,7 +228,7 @@ mod test {
                 "spec": {
                     "containers": [{
                             "name": "notebook",
-                            "image": "quay.io/ibmdpdev/openad_workbench:latest",
+                            "image": "quay.io/ibmdpdev/openad_workbench_stage:latest",
                             "resources": {
                                 "requests": {
                                     "cpu": "2",
@@ -240,7 +240,7 @@ mod test {
                                 }
                             },
                             "workingDir": "/opt/app-root/src",
-                            "imagePullPolicy": "IfNotPresent",
+                            "imagePullPolicy": "Always",
                             "volumeMounts": [
                                 {
                                     "name": "notebook-volume",
@@ -252,16 +252,10 @@ mod test {
                             "env": [
                                 {
                                     "name": "NOTEBOOK_ARGS",
-                                    "value": "--ServerApp.token='' --ServerApp.password='' --ServerApp.notebook_dir='/opt/app-root/src' --ServerApp.quit_button=False"
-                                },
-                                {
-                                    "name": "NOTEBOOK_BASE_URL",
-                                    "value": "notebook/notebook/notebook"
-                                }
-                            ]
-                    }],
+                                    "value": "--ServerApp.token='' --ServerApp.password='' --ServerApp.notebook_dir='/opt/app-root/src' --ServerApp.quit_button=False --ServerApp.default_url='/lab/tree/start_menu.ipynb' --ServerApp.trust_xheaders=True --ServerApp.base_url='notebook/notebook/notebook'",
+                                }]}],
                     "imagePullSecrets": [{
-                        "name": "quay-notebook-secret"
+                        "name": "ibmdpdev-openad-pull-secret"
                     }],
                     "volumes": [{
                         "name": "notebook-volume",
@@ -275,8 +269,8 @@ mod test {
 
         let actual = serde_json::to_value(&spec).unwrap();
         assert_eq!(actual, expected);
-        assert_eq!(start_url, Some("/lab/tree/start_menu.ipynb".to_string()));
-        assert_eq!(max_idle_time, Some(60));
+        assert_eq!(start_url, Some("lab/tree/start_menu.ipynb".to_string()));
+        assert_eq!(max_idle_time, Some(86400));
     }
 
     #[test]
@@ -290,7 +284,7 @@ mod test {
             "apiVersion": "v1",
             "kind": "PersistentVolumeClaim",
             "metadata": {
-                "name": "notebook-volume-pvc"
+                "name": "notebook-volume"
             },
             "spec": {
                 "accessModes": ["ReadWriteOnce"],
