@@ -28,7 +28,7 @@
 				<div class="absolute inset-y-0 left-0 flex items-center md:hidden">
 					{# Mobile menu button #}
 					<button id="menu_button" type="button"
-						class="relative inline-flex items-center justify-center rounded-md p-2 text-gray-400 hover:bg-gray-700 hover:text-white focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
+						class="relative inline-flex items-center justify-center rounded-md p-2 text-gray-400 hover:bg-gray-700 hover:text-white focus:outline-hidden focus:ring-2 focus:ring-inset focus:ring-white"
 						aria-controls="mobile-menu" aria-expanded="false">
 						<span class="absolute -inset-0.5"></span>
 						<span class="sr-only">Open main menu</span>
@@ -213,7 +213,7 @@
 		</div>
 	</div>
 	<div id="menu"
-		class="fixed flex-col left-0 top-12 bg-[#f4f4f4]/70 dark:bg-[#121619]/70 min-h-96 min-w-52 rounded-br-md backdrop-blur-sm drop-shadow-md hidden md:hidden">
+		class="fixed flex-col left-0 top-12 bg-[#f4f4f4]/70 dark:bg-[#121619]/70 min-h-96 min-w-52 rounded-br-md backdrop-blur-xs drop-shadow-md hidden md:hidden">
 		<div><a href="#" id="mobile-models"
 				class="block py-3 px-4 border-l-4 border-[#4589ff] dark:hover:bg-[#4d5358] hover:bg-[#c6c6c6]">Available
 				Models</a></div>
