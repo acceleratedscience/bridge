@@ -1,0 +1,62 @@
+name: OpenBridge Merge
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    services:
+      mongodb:
+        image: bitnami/mongodb:latest
+        env:
+          MONGODB_ROOT_PASSWORD: "admin123456789"
+          MONGODB_USERNAME: "guardian-user"
+          MONGODB_PASSWORD: "admin123456789"
+          MONGODB_DATABASE: "guardian"
+        ports:
+          - 27017:27017
+      keydb:
+        image: bitnami/keydb:latest
+        env:
+          KEYDB_PASSWORD: "admin123456789"
+        ports:
+          - 6379:6379
+
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/cache@v3
+      with:
+        path: |
+          ~/.cargo/bin/
+          ~/.cargo/registry/index/
+          ~/.cargo/registry/cache/
+          ~/.cargo/git/db/
+          target/
+        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+    - name: Check Rust Version
+      run: rustc --version
+
+    - name: Build
+      run: cargo build --verbose
+
+    - name: Run Lint
+      run: |
+        just certs
+        just gen_curve
+        cargo clippy --features notebook,lifecycle -- -D warnings
+
+    - name: Run tests
+      run: |
+        just local-mongo
+        just local-keydb
+        cargo test --verbose --features notebook,lifecycle
