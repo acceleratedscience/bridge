@@ -144,6 +144,9 @@ pub fn init_once() -> Configuration {
 
 #[cfg(test)]
 mod tests {
+
+    use crate::auth::jwt::{self};
+
     use super::*;
 
     #[test]
@@ -156,5 +159,29 @@ mod tests {
             workbench.start_up_url,
             Some("/lab/tree/start_menu.ipynb".to_string())
         );
+    }
+
+    #[test]
+    fn test_jwk() {
+        let config = init_once();
+
+        let jwt = jwt::get_token_and_exp(
+            &config.encoder,
+            86400,
+            "sub",
+            AUD[0],
+            vec!["role".to_string()],
+        )
+        .unwrap()
+        .0;
+
+        let jwk = serde_json::to_string(&config.jwk).unwrap();
+        let mut jwk = jsonwebkey::JsonWebKey::from_str(&jwk).unwrap();
+        assert!(jwk.set_algorithm(jsonwebkey::Algorithm::ES256).is_ok());
+
+        let pk = jwk.key.to_pem();
+        let decoder = DecodingKey::from_ec_pem(pk.as_bytes()).unwrap();
+
+        assert!(jwt::validate_token(&jwt, &decoder, &config.validation).is_ok());
     }
 }

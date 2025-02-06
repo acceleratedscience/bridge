@@ -60,7 +60,7 @@ pub fn get_token_and_exp(
     let mut header = Header::new(Algorithm::ES256);
     header.kid = Some(CONFIG.kid.clone());
 
-    let token = encode(&Header::new(Algorithm::ES256), &claims, key)?;
+    let token = encode(&header, &claims, key)?;
     Ok((token, claims.token_exp_as_string()))
 }
 
