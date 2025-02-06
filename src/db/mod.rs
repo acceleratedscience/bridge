@@ -3,8 +3,8 @@ use std::{future::Future, marker::PhantomData};
 use crate::errors::Result;
 
 pub mod deserialize;
-pub mod models;
 pub mod keydb;
+pub mod models;
 pub mod mongo;
 
 // Database interface
@@ -14,18 +14,16 @@ pub mod mongo;
 // R1 is a generic type that represents a model, such as User and Group
 // R2 is a generic type that represents some ID that is linked to some record in the DB
 // R3 is a generic type that represents the number of records affected
+// R4 is a generic type that represents the result of an aggregation
 pub trait Database<R1> {
     type Q;
     type N<'a>;
     type C;
     type R2;
     type R3;
+    type R4;
 
-    fn find(
-        &self,
-        query: Self::Q,
-        collection: Self::C,
-    ) -> impl Future<Output = Result<R1>>;
+    fn find(&self, query: Self::Q, collection: Self::C) -> impl Future<Output = Result<R1>>;
     fn find_one_update(
         &self,
         query: Self::Q,
@@ -38,11 +36,7 @@ pub trait Database<R1> {
         collection: Self::C,
     ) -> impl Future<Output = Result<Vec<R1>>>;
 
-    fn insert(
-        &self,
-        query: R1,
-        collection: Self::C,
-    ) -> impl Future<Output = Result<Self::R2>>;
+    fn insert(&self, query: R1, collection: Self::C) -> impl Future<Output = Result<Self::R2>>;
     fn insert_many(
         &self,
         query: Vec<R1>,
@@ -84,4 +78,11 @@ pub trait Database<R1> {
         collection: Self::C,
         _model: PhantomData<R1>,
     ) -> impl Future<Output = Result<Vec<R1>>>;
+
+    fn aggregate(
+        &self,
+        query: Vec<Self::Q>,
+        collection: Self::C,
+        _model: PhantomData<R1>,
+    ) -> impl Future<Output = Result<Vec<Self::R4>>>;
 }

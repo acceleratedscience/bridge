@@ -161,6 +161,7 @@ where
     type C = &'static str;
     type R2 = Bson;
     type R3 = u64;
+    type R4 = Document;
 
     async fn find(&self, query: Document, collection: Self::C) -> Result<R1> {
         let col = Self::get_collection(self, collection);
@@ -290,6 +291,28 @@ where
         }
         Ok(docs)
     }
+
+    async fn aggregate(
+        &self,
+        query: Vec<Self::Q>,
+        collection: Self::C,
+        _model: PhantomData<R1>,
+    ) -> Result<Vec<Self::R4>> {
+        let mut docs = Vec::new();
+        let col = Self::get_collection::<R1>(self, collection);
+        let mut cursor = col.aggregate(query).await?;
+
+        while let Some(doc) = cursor.try_next().await? {
+            docs.push(doc);
+        }
+
+        if docs.is_empty() {
+            return Err(BridgeError::GeneralError(
+                "Could not find any documents".to_string(),
+            ));
+        }
+        Ok(docs)
+    }
 }
 
 #[cfg(test)]
@@ -312,6 +335,36 @@ mod tests {
 
         let db = DBCONN.get().unwrap();
         let time = time::OffsetDateTime::now_utc();
+
+        let _id = db
+            .insert(
+                Group {
+                    _id: ObjectId::new(),
+                    name: "ibm".to_string(),
+                    subscriptions: vec!["postman".to_string()],
+                    created_at: time,
+                    updated_at: time,
+                    last_updated_by: "system".to_string(),
+                },
+                GROUP,
+            )
+            .await
+            .unwrap();
+
+        let _id = db
+            .insert(
+                Group {
+                    _id: ObjectId::new(),
+                    name: "let's go".to_string(),
+                    subscriptions: vec!["postman".to_string()],
+                    created_at: time,
+                    updated_at: time,
+                    last_updated_by: "system".to_string(),
+                },
+                GROUP,
+            )
+            .await
+            .unwrap();
 
         let _id = db
             .insert(
@@ -369,12 +422,49 @@ mod tests {
         assert_eq!(result.email, "someone@gmail.com");
         assert_eq!(result.updated_at, new_time);
 
+        let pipeline = vec![
+            doc! { "$match": { "email": "someone@gmail.com" } },
+            doc! { "$lookup": {
+                "from": "groups",
+                // get the first entry in the groups array
+                "localField": "groups",
+                "foreignField": "name",
+                "as": "group_info"
+            }},
+            doc! { "$project": {
+                "_id": 1,
+                "name": 1,
+                "group_id": "$group_info._id",
+                "group_name": "$group_info.name",
+                // ... other fields you want to include
+            }},
+        ];
+
+        let agg = db
+            .aggregate(pipeline, USER, PhantomData::<User>)
+            .await
+            .unwrap();
+
+        println!("{:?}", agg);
+
         let n = db
             .delete(
                 doc! {"sub": "choi.mina@gmail.com"},
                 USER,
                 PhantomData::<User>,
             )
+            .await
+            .unwrap();
+        assert_eq!(n, 1);
+
+        let n = db
+            .delete(doc! {"name": "ibm"}, GROUP, PhantomData::<Group>)
+            .await
+            .unwrap();
+        assert_eq!(n, 1);
+
+        let n = db
+            .delete(doc! {"name": "let's go"}, GROUP, PhantomData::<Group>)
             .await
             .unwrap();
         assert_eq!(n, 1);

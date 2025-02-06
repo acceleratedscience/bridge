@@ -12,12 +12,19 @@ use p256::{elliptic_curve::JwkEcKey, pkcs8::DecodePublicKey, NistP256};
 use serde::{Deserialize, Serialize};
 use sha2::Digest;
 
+/// Singleton configuration object
 pub struct Configuration {
+    /// JWT encoder
     pub encoder: EncodingKey,
+    /// JWT decoder
     pub decoder: DecodingKey,
+    /// JWT validation
     pub validation: Validation,
+    /// JSON Web Key ID
     pub kid: String,
+    /// JSON Web Key
     pub jwk: JWK,
+    /// Argon2 configuration... currently default
     pub argon_config: argon2::Config<'static>,
     pub db: Database,
     pub cache: CacheDB,

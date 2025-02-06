@@ -48,13 +48,16 @@ pub async fn introspection(
     {
         // client is valid
         if let Some(token) = extract_token(&raw_token) {
-            if validate_token(&token, &CONFIG.decoder, &CONFIG.validation).is_ok() {
+            if let Ok(claims) = validate_token(&token, &CONFIG.decoder, &CONFIG.validation) {
                 return Ok(HttpResponse::Ok().json(json!({
                     "active": true,
+                    "sub": claims.get_sub(),
+                    "client_id": apps.client_id,
                 })));
             }
             return Ok(HttpResponse::Ok().json(json!({
                 "active": false,
+                "client_id": apps.client_id,
             })));
         }
     };
