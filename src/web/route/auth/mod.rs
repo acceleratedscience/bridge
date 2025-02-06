@@ -27,7 +27,7 @@ use crate::{
 
 use self::{
     deserialize::CallBackResponse,
-    oauth::{introspection, register_app},
+    oauth::{introspection, jwks, register_app},
 };
 
 mod deserialize;
@@ -230,6 +230,7 @@ pub fn config_auth(cfg: &mut web::ServiceConfig) {
             .service(login)
             .service(callback)
             .service(introspection)
-            .service(register_app),
+            .service(register_app)
+            .service(jwks),
     );
 }

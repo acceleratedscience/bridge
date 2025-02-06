@@ -3,6 +3,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use jsonwebtoken::{decode, encode, Algorithm, DecodingKey, EncodingKey, Header, Validation};
 use serde::{Deserialize, Serialize};
 
+use crate::config::CONFIG;
 use crate::errors::Result;
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -56,6 +57,9 @@ pub fn get_token_and_exp(
         aud,
         scp,
     };
+    let mut header = Header::new(Algorithm::ES256);
+    header.kid = Some(CONFIG.kid.clone());
+
     let token = encode(&Header::new(Algorithm::ES256), &claims, key)?;
     Ok((token, claims.token_exp_as_string()))
 }

@@ -1,4 +1,5 @@
 use actix_web::{
+    get,
     http::header::{ContentType, WWW_AUTHENTICATE},
     post,
     web::{self, Data},
@@ -63,6 +64,14 @@ pub async fn introspection(
         .json(json!({
             "error": "invalid_request",
         })))
+}
+
+#[get("/.well-known/jwks.json")]
+pub async fn jwks() -> Result<HttpResponse> {
+    let payload = json!({
+        "keys": vec![&CONFIG.jwk],
+    });
+    Ok(HttpResponse::Ok().json(payload))
 }
 
 #[post("register")]
