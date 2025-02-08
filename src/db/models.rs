@@ -103,6 +103,14 @@ pub struct Group {
     pub last_updated_by: String,
 }
 
+#[derive(Debug, Deserialize, Serialize)]
+pub struct GroupSubs {
+    pub _id: ObjectId,
+    pub group_id: Vec<ObjectId>,
+    pub group_name: Vec<String>,
+    pub group_subscriptions: Vec<Vec<String>>,
+}
+
 pub static LOCKS: &str = "locks";
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Locks {
@@ -154,11 +162,12 @@ pub struct BridgeCookie {
     pub subject: String,
     pub user_type: UserType,
     pub config: Option<Config>,
+    pub resources: Option<Vec<String>>,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct Config {
-    pub notebook_persist_pvc: bool,
+    pub notebook_persist_pvc: Option<bool>,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]

@@ -60,3 +60,15 @@
 	url = ""
 	readiness = ""
 	check = false
+
+[resources]
+
+	[resources.reddit]
+	url = "https://www.reddit.com"
+	readiness = "/r/rust"
+	check = true
+
+	[resources.fine-tuning]
+	url = "http://fine-tuning.openad-models.svc.cluster.local"
+	readiness = "/health"
+	check = true

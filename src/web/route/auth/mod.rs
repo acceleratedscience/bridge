@@ -189,6 +189,7 @@ async fn code_to_response(
         subject: id.to_string(),
         user_type,
         config: None,
+        resources: None,
     };
 
     let content = serde_json::to_string(&bridge_cookie_json).map_err(|e| {

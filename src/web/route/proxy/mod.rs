@@ -43,7 +43,7 @@ async fn forward(
         })?;
 
     // look up service and get url
-    let mut new_url = helper::log_with_level!(CATALOG.get(service), error)?;
+    let mut new_url = helper::log_with_level!(CATALOG.get_service(service), error)?;
     new_url.set_path(path);
     new_url.set_query(req.uri().query());
 

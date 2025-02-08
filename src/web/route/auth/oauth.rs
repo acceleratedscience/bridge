@@ -1,3 +1,5 @@
+use std::marker::PhantomData;
+
 use actix_web::{
     get,
     http::header::{ContentType, WWW_AUTHENTICATE},
@@ -49,11 +51,18 @@ pub async fn introspection(
         // client is valid
         if let Some(token) = extract_token(&raw_token) {
             if let Ok(claims) = validate_token(&token, &CONFIG.decoder, &CONFIG.validation) {
-                return Ok(HttpResponse::Ok().json(json!({
-                    "active": true,
-                    "sub": claims.get_sub(),
-                    "client_id": apps.client_id,
-                })));
+                let pipeline = db.get_user_group_pipeline(claims.get_sub());
+                let docs = db.aggregate(pipeline, USER, PhantomData::<User>).await?;
+                // TODO: we currently only support one group per user... so take the first element
+                // but in the future we will have handle this differently
+                if let Some(group_sub) = docs.first() {
+                    return Ok(HttpResponse::Ok().json(json!({
+                        "active": true,
+                        "sub": claims.get_sub(),
+                        "client_id": apps.client_id,
+                        "group_id": group_sub._id,
+                    })));
+                }
             }
             return Ok(HttpResponse::Ok().json(json!({
                 "active": false,

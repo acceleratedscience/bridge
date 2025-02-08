@@ -413,7 +413,7 @@ async fn system_tab_htmx(
                 .as_ref()
                 .ok_or(BridgeError::GeneralError("No user provided".to_string()))?;
 
-            get_all_groups(&db)
+            get_all_groups(**db)
                 .await
                 .unwrap_or(vec![])
                 .iter()

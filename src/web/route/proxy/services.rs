@@ -20,13 +20,14 @@ pub static CATALOG_URLS: LazyLock<Vec<(Url, String)>> =
     LazyLock::new(|| LazyLock::force(&CATALOG).into());
 
 impl Catalog {
-    pub fn get(&self, service_name: &str) -> Result<Url> {
-        let catalog = self.0.get("services").ok_or_else(|| {
+    #[inline]
+    fn get_inner(&self, type_: &str, name: &str) -> Result<Url> {
+        let catalog = self.0.get(type_).ok_or_else(|| {
             BridgeError::GeneralError("services definition not found in config".to_string())
         })?;
         let service = catalog
-            .get(service_name)
-            .ok_or_else(|| BridgeError::ServiceDoesNotExist(service_name.to_string()))?;
+            .get(name)
+            .ok_or_else(|| BridgeError::ServiceDoesNotExist(name.to_string()))?;
         let url = service.get("url").ok_or_else(|| {
             BridgeError::GeneralError("url not found in service definition".to_string())
         })?;
@@ -37,6 +38,14 @@ impl Catalog {
         )
         .map_err(|e| BridgeError::GeneralError(e.to_string()))
     }
+
+    pub fn get_service(&self, service_name: &str) -> Result<Url> {
+        self.get_inner("services", service_name)
+    }
+
+    pub fn get_resource(&self, resource_name: &str) -> Result<Url> {
+        self.get_inner("resources", resource_name)
+    }
 }
 
 impl From<&Catalog> for Vec<(Url, String)> {
@@ -45,7 +54,7 @@ impl From<&Catalog> for Vec<(Url, String)> {
             return map
                 .iter()
                 .filter_map(|(name, service)| {
-                    // In the service.toml, there are entries that are not services with health
+                    // In the services.toml, there are entries that are not services with health
                     // endpoints, such as notebooks. We need to filter them out.
                     if !service
                         .get("check")
@@ -80,10 +89,13 @@ mod test {
     #[test]
     fn test_catalog() {
         let catalog = &CATALOG;
-        let service = catalog.get("postman").unwrap();
+        let service = catalog.get_service("postman").unwrap();
         assert_eq!(service.as_str(), "https://postman-echo.com/");
 
-        let service = catalog.get("notebook");
+        let resource = catalog.get_resource("reddit").unwrap();
+        assert_eq!(resource.as_str(), "https://www.reddit.com/");
+
+        let service = catalog.get_service("notebook");
         assert!(service.is_err());
     }
 

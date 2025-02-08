@@ -131,7 +131,7 @@ async fn notebook_create(
             persist_pvc = true;
         }
         bridge_cookie.config = Some(Config {
-            notebook_persist_pvc: persist_pvc,
+            notebook_persist_pvc: Some(persist_pvc),
         });
 
         // check if the user can create a notebook
@@ -375,6 +375,7 @@ async fn notebook_delete(
     ctx.insert("cooloff", &true);
     #[cfg(feature = "notebook")]
     if let Some(ref conf) = bridge_cookie.config {
+        // TODO:: check if it's ok to pass in Option instead of bool
         ctx.insert("pvc", &conf.notebook_persist_pvc);
     }
 

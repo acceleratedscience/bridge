@@ -34,7 +34,7 @@ where
     }
 }
 
-const ISSUER: &str = "openbridge";
+const ISSUER: &str = "bridge";
 
 /// Generate a token with the given lifetime and uuid. This is an expensive operation, cache as
 /// much as possible

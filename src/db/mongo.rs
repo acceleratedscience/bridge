@@ -15,9 +15,11 @@ use crate::{
 };
 
 use super::{
-    models::{Group, Locks, User, APPS, GROUP, LOCKS, USER},
+    models::{Group, GroupSubs, Locks, User, APPS, GROUP, LOCKS, USER},
     Database,
 };
+
+type Pipeline = Vec<Document>;
 
 #[derive(Clone)]
 pub struct DB {
@@ -149,6 +151,24 @@ impl DB {
             .await?;
         Ok(())
     }
+
+    pub fn get_user_group_pipeline(&self, user_id: &str) -> Pipeline {
+        vec![
+            doc! { "$match": { "_id": ObjectID::new(user_id).into_inner() } },
+            doc! { "$lookup": {
+                "from": "groups",
+                "localField": "groups",
+                "foreignField": "name",
+                "as": "group_info"
+            }},
+            doc! { "$project": {
+                "_id": 1,
+                "name": 1,
+                "group_id": "$group_info._id",
+                "group_name": "$group_info.name",
+            }},
+        ]
+    }
 }
 
 // pub trait Database<'c, R1 = User, Q = Document, N = &'c str, C = &'c str, R2 = Bson, R3 = u64> {
@@ -161,7 +181,7 @@ where
     type C = &'static str;
     type R2 = Bson;
     type R3 = u64;
-    type R4 = Document;
+    type R4 = GroupSubs;
 
     async fn find(&self, query: Document, collection: Self::C) -> Result<R1> {
         let col = Self::get_collection(self, collection);
@@ -300,7 +320,7 @@ where
     ) -> Result<Vec<Self::R4>> {
         let mut docs = Vec::new();
         let col = Self::get_collection::<R1>(self, collection);
-        let mut cursor = col.aggregate(query).await?;
+        let mut cursor = col.aggregate(query).with_type::<Self::R4>().await?;
 
         while let Some(doc) = cursor.try_next().await? {
             docs.push(doc);
@@ -426,7 +446,6 @@ mod tests {
             doc! { "$match": { "email": "someone@gmail.com" } },
             doc! { "$lookup": {
                 "from": "groups",
-                // get the first entry in the groups array
                 "localField": "groups",
                 "foreignField": "name",
                 "as": "group_info"
@@ -436,7 +455,7 @@ mod tests {
                 "name": 1,
                 "group_id": "$group_info._id",
                 "group_name": "$group_info.name",
-                // ... other fields you want to include
+                "group_subscriptions": "$group_info.subscriptions",
             }},
         ];
 
