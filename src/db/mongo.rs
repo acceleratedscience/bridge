@@ -167,6 +167,7 @@ impl DB {
                 "name": 1,
                 "group_id": "$group_info._id",
                 "group_name": "$group_info.name",
+                "group_subscriptions": "$group_info.subscriptions",
             }},
         ]
     }
