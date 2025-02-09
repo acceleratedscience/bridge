@@ -152,6 +152,7 @@ impl DB {
         Ok(())
     }
 
+    #[inline]
     pub fn get_user_group_pipeline(&self, user_id: &str) -> Pipeline {
         vec![
             doc! { "$match": { "_id": ObjectID::new(user_id).into_inner() } },
@@ -464,7 +465,8 @@ mod tests {
             .await
             .unwrap();
 
-        println!("{:?}", agg);
+        let group = agg.first().unwrap();
+        assert_eq!(group.group_subscriptions, vec![vec!["postman".to_string()]]);
 
         let n = db
             .delete(

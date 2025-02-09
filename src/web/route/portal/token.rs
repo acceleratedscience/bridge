@@ -13,7 +13,7 @@ use crate::{
     auth::jwt,
     config::{AUD, CONFIG},
     db::{
-        models::{Group, BridgeCookie, User, GROUP, USER},
+        models::{BridgeCookie, Group, User, GROUP, USER},
         mongo::DB,
         Database,
     },

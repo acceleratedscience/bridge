@@ -379,10 +379,8 @@ async fn notebook_delete(
         ctx.insert("pvc", &conf.notebook_persist_pvc);
     }
 
-    let content = helper::log_with_level!(
-        data.render("components/notebook/start.html", &ctx),
-        error
-    )?;
+    let content =
+        helper::log_with_level!(data.render("components/notebook/start.html", &ctx), error)?;
 
     Ok(HttpResponse::Ok()
         .cookie(notebook_cookie)

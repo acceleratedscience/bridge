@@ -10,7 +10,7 @@ use actix_web::{
 use actix_web_httpauth::extractors::{basic::BasicAuth, bearer::BearerAuth};
 use mongodb::bson::doc;
 use regex::Regex;
-use serde_json::json;
+use serde_json::{json, Value};
 use tracing::error;
 
 use crate::{
@@ -55,14 +55,23 @@ pub async fn introspection(
                 let docs = db.aggregate(pipeline, USER, PhantomData::<User>).await?;
                 // TODO: we currently only support one group per user... so take the first element
                 // but in the future we will have handle this differently
+                let mut json = json!({
+                    "active": true,
+                    "sub": claims.get_sub(),
+                    "client_id": apps.client_id,
+                });
+
+                // Only insert the group_id if the user is in a group
                 if let Some(group_sub) = docs.first() {
-                    return Ok(HttpResponse::Ok().json(json!({
-                        "active": true,
-                        "sub": claims.get_sub(),
-                        "client_id": apps.client_id,
-                        "group_id": group_sub._id,
-                    })));
+                    if let Value::Object(map) = &mut json {
+                        map.insert(
+                            "group_id".to_string(),
+                            Value::String(group_sub._id.to_string()),
+                        );
+                    };
                 }
+
+                return Ok(HttpResponse::Ok().json(json));
             }
             return Ok(HttpResponse::Ok().json(json!({
                 "active": false,
