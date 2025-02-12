@@ -53,7 +53,10 @@ pub(super) async fn system(
     db: Data<&DB>,
 ) -> Result<HttpResponse> {
     // get the subject id from middleware
+    #[cfg(feature = "notebook")]
     let mut bridge_cookie = check_admin(subject, UserType::SystemAdmin)?;
+    #[cfg(not(feature = "notebook"))]
+    let bridge_cookie = check_admin(subject, UserType::SystemAdmin)?;
 
     let id = ObjectId::from_str(&bridge_cookie.subject)
         .map_err(|e| BridgeError::GeneralError(e.to_string()))?;
@@ -336,16 +339,10 @@ async fn system_tab_htmx(
         AdminTab::GroupModify | AdminTab::GroupView | AdminTab::GroupCreate => {
             let mut group_form = GroupContent::new();
 
-            CATALOG
-                .0
-                .get("services")
-                .and_then(|v| v.as_table())
-                .ok_or(BridgeError::GeneralError("No services found".to_string()))?
-                .iter()
-                .for_each(|(k, _)| {
-                    // TODO: remove this clone and use &'static str
-                    group_form.add(k.clone());
-                });
+            CATALOG.get_all_by_name().iter().for_each(|name| {
+                // TODO: remove this clone and use &'static str
+                group_form.add(name.clone());
+            });
 
             match tab.tab {
                 AdminTab::GroupView => {

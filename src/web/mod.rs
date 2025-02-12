@@ -72,7 +72,6 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
         Logger::start(LevelFilter::INFO);
     }
 
-    #[cfg(feature = "notebook")]
     rustls::crypto::ring::default_provider()
         .install_default()
         .expect("Cannot install default provider");

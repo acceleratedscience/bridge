@@ -50,7 +50,10 @@ pub(super) async fn group(
     subject: Option<ReqData<BridgeCookie>>,
 ) -> Result<HttpResponse> {
     // get the subject id from middleware
+    #[cfg(feature = "notebook")]
     let mut bridge_cookie = check_admin(subject, UserType::GroupAdmin)?;
+    #[cfg(not(feature = "notebook"))]
+    let bridge_cookie = check_admin(subject, UserType::GroupAdmin)?;
 
     let id = ObjectId::from_str(&bridge_cookie.subject)
         .map_err(|e| BridgeError::GeneralError(e.to_string()))?;

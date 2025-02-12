@@ -44,6 +44,9 @@ watch-tailwind:
 watch-rust:
 	bacon run-long --watch . --features "notebook lifecycle"
 
+watch-backend:
+	bacon . --features "notebook lifecycle"
+
 watch:
 	bacon --features "notebook lifecycle"
 
