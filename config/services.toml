@@ -68,7 +68,7 @@
 	readiness = "/r/rust"
 	check = true
 
-	[resources.fine-tuning]
-	url = "http://fine-tuning.openad-models.svc.cluster.local"
+	[resources.finetuning]
+	url = "http://finetuning.openad-models.svc.cluster.local"
 	readiness = "/health"
 	check = true

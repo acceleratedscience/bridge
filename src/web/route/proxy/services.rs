@@ -40,14 +40,14 @@ static CATALOG_ALL_NAMES: LazyLock<Vec<String>> = LazyLock::new(|| {
     );
     names
 });
-static ALL_RESOURCE_NAMES: LazyLock<Vec<String>> = LazyLock::new(|| {
+static ALL_RESOURCE_NAMES: LazyLock<Vec<&str>> = LazyLock::new(|| {
     LazyLock::force(&CATALOG)
         .0
         .get("resources")
         .and_then(|v| v.as_table())
         .expect("resources not found in config")
         .keys()
-        .map(|k| k.to_string())
+        .map(|k| k.as_ref())
         .collect()
 });
 
@@ -79,7 +79,7 @@ impl Catalog {
         self.get_inner("resources", resource_name)
     }
 
-    pub fn get_all_resources_by_name(&self) -> &'static Vec<String> {
+    pub fn get_all_resources_by_name(&self) -> &'static Vec<&str> {
         &ALL_RESOURCE_NAMES
     }
 
@@ -189,7 +189,6 @@ mod test {
     #[test]
     fn test_catalog_all_names() {
         let names = CATALOG.get_all_by_name();
-        assert!(resources.len().ge(&1));
         assert!(names.contains(&"postman".to_string()));
         assert!(names.contains(&"reddit".to_string()));
     }

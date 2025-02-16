@@ -219,6 +219,16 @@ mod tests {
     }
 
     #[test]
+    fn test_bridge_cookie_serde() {
+        let bridge_cookie = r#"{"subject":"test","user_type":"system","config":null,"resources":null}"#;
+        let bridge_cookie: super::BridgeCookie = serde_json::from_str(bridge_cookie).unwrap();
+        assert_eq!(bridge_cookie.subject, "test");
+        assert_eq!(bridge_cookie.user_type, UserType::SystemAdmin);
+        assert!(bridge_cookie.config.is_none());
+        assert!(bridge_cookie.resources.is_none());
+    }
+
+    #[test]
     fn test_enum_to_array() {
         let col = UserType::to_array_str();
         dbg!(&col);

@@ -607,7 +607,7 @@ async fn notebook_forward(
     new_url.set_path(path);
     new_url.set_query(req.uri().query());
 
-    helper::forwarding::forward(req, payload, method, peer_addr, client, new_url).await
+    helper::forwarding::forward(req, payload, method, peer_addr, client, new_url, None).await
 }
 
 pub mod notebook_helper {

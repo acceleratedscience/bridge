@@ -109,6 +109,10 @@ pub(super) async fn system(
         ctx.insert("pvc", &conf.notebook_persist_pvc);
     }
 
+    if let Some(ref resources) = bridge_cookie.resources {
+        ctx.insert("resources", resources);
+    }
+
     let bcj = serde_json::to_string(&bridge_cookie)?;
     let bc = Cookie::build(COOKIE_NAME, bcj)
         .path("/")

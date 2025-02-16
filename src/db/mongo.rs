@@ -41,6 +41,7 @@ impl ObjectID {
 }
 
 pub static DBCONN: OnceLock<DB> = OnceLock::new();
+pub static DBNAME: &str = "bridge";
 
 static COLLECTIONS: [&str; 4] = [USER, GROUP, LOCKS, APPS];
 
@@ -353,7 +354,7 @@ mod tests {
     // Look into the justfile for the command to run
     async fn test_mongo_connection_n_queries() {
         config::init_once();
-        DB::init_once("guardian").await.unwrap();
+        DB::init_once(DBNAME).await.unwrap();
 
         let db = DBCONN.get().unwrap();
         let time = time::OffsetDateTime::now_utc();

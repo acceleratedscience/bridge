@@ -43,29 +43,33 @@ async fn index(data: Option<ReqData<BridgeCookie>>, db: Data<&DB>) -> Result<Htt
 
             let pipeline = db.get_user_group_pipeline(&bridge_cookie.subject);
             let mut groups = db.aggregate(pipeline, USER, PhantomData::<User>).await?;
-            let all_resources = CATALOG.get_all_resources_by_name();
 
-            let group_sub = groups
-                .pop()
-                .map(|u| u.group_subscriptions)
-                .and_then(|mut g| g.pop())
-                .map(|g| {
-                    // only return resources that are in the catalog
-                    g.into_iter()
-                        .filter(|r| all_resources.contains(r))
-                        .collect::<Vec<_>>()
-                });
-
-            bridge_cookie.resources = group_sub;
-            let bridge_cookie_json = serde_json::to_string(&bridge_cookie)?;
-            let cookie = Cookie::build(COOKIE_NAME, bridge_cookie_json)
-                .same_site(SameSite::Strict)
-                .path("/")
-                .http_only(true)
-                .secure(true)
-                .finish();
             let mut resp = HttpResponse::SeeOther();
-            resp.cookie(cookie);
+
+            if !groups.is_empty() {
+                let all_resources = CATALOG.get_all_resources_by_name();
+
+                let group_sub = groups
+                    .pop()
+                    .map(|u| u.group_subscriptions)
+                    .and_then(|mut g| g.pop())
+                    .map(|g| {
+                        // only return resources that are in the catalog
+                        g.into_iter()
+                            .filter(|r| all_resources.contains(&r.as_str()))
+                            .collect::<Vec<_>>()
+                    });
+
+                bridge_cookie.resources = group_sub;
+                let bridge_cookie_json = serde_json::to_string(&bridge_cookie)?;
+                let cookie = Cookie::build(COOKIE_NAME, bridge_cookie_json)
+                    .same_site(SameSite::Strict)
+                    .path("/")
+                    .http_only(true)
+                    .secure(true)
+                    .finish();
+                resp.cookie(cookie);
+            }
 
             match bridge_cookie.user_type {
                 UserType::User => Ok(resp
