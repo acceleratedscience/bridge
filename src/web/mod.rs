@@ -149,7 +149,7 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
         let app = app.configure(route::notebook::config_notebook);
         app.service(
             web::scope("")
-                // .wrap(bridge_middleware::SecurityHeader)
+                .wrap(bridge_middleware::SecurityHeader)
                 .configure(route::auth::config_auth)
                 .configure(route::health::config_status)
                 .configure(route::proxy::config_proxy)
