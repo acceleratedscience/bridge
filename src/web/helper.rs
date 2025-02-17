@@ -195,6 +195,7 @@ pub mod forwarding {
         peer_addr: Option<PeerAddr>,
         client: web::Data<reqwest::Client>,
         new_url: T,
+        token: Option<&str>,
     ) -> Result<HttpResponse>
     where
         T: AsRef<str> + Send + Sync,
@@ -231,9 +232,13 @@ pub mod forwarding {
             }
         };
 
-        let forwarded_req = client
+        let mut forwarded_req = client
             .request(method, new_url.as_ref())
             .body(reqwest::Body::wrap_stream(ReceiverStream::new(rx)));
+
+        if let Some(token) = token {
+            forwarded_req = forwarded_req.bearer_auth(token);
+        };
 
         // TODO: This forwarded implementation is incomplete as it only handles the unofficial
         // X-Forwarded-For header but not the official Forwarded one.

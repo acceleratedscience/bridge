@@ -1,0 +1,19 @@
+[services]
+
+	[services.postman]
+	url = "https://postman-echo.com"
+	readiness = "/get"
+	check = true
+
+	# Not a service with a readiness check, see services.rs for more details
+	[services.notebook]
+	url = ""
+	readiness = ""
+	check = false
+
+[resources]
+
+	[resources.reddit]
+	url = "https://www.reddit.com"
+	readiness = "/r/rust"
+	check = true

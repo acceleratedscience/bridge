@@ -1,6 +1,4 @@
-use std::
-    future::{ready, Ready}
-;
+use std::future::{ready, Ready};
 
 use actix_web::{
     body::EitherBody,

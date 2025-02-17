@@ -61,6 +61,10 @@ impl<'p> Profile<'p> {
             t_exp(&mut context, t);
         }
 
+        if let Some(ref resources) = bc.resources {
+            context.insert("resources", resources);
+        }
+
         #[cfg(feature = "notebook")]
         let nb_cookies =
             notebook_bookkeeping(self.user, nsc, bc, &mut context, self.subscriptions.clone())

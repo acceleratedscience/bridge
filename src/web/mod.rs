@@ -21,7 +21,7 @@ use crate::{
     auth::openid,
     db::{
         keydb::{CacheDB, CACHEDB},
-        mongo::{DB, DBCONN},
+        mongo::{DB, DBCONN, DBNAME},
     },
     logger::Logger,
     templating,
@@ -72,14 +72,13 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
         Logger::start(LevelFilter::INFO);
     }
 
-    #[cfg(feature = "notebook")]
     rustls::crypto::ring::default_provider()
         .install_default()
         .expect("Cannot install default provider");
 
     // Singletons
     openid::init_once().await;
-    if let Err(e) = DB::init_once("guardian").await {
+    if let Err(e) = DB::init_once(DBNAME).await {
         error!("{e}");
         exit(1);
     }
@@ -156,6 +155,7 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
                 .configure(route::proxy::config_proxy)
                 .configure(route::config_index)
                 .configure(route::portal::config_portal)
+                .configure(route::resource::config_resource)
                 .configure(route::foo::config_foo),
         )
     });
@@ -164,7 +164,7 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
         server
             .bind_rustls_0_23(
                 ("0.0.0.0", 8080),
-                tls::load_certs("certs/fullchain.cer", "certs/open.accelerator.cafe.key"),
+                tls::load_certs("certs/fullchain.cer", "certs/open.accelerate.science.key"),
             )?
             .run()
             .await?;
