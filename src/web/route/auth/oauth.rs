@@ -1,4 +1,7 @@
+use std::marker::PhantomData;
+
 use actix_web::{
+    get,
     http::header::{ContentType, WWW_AUTHENTICATE},
     post,
     web::{self, Data},
@@ -7,19 +10,19 @@ use actix_web::{
 use actix_web_httpauth::extractors::{basic::BasicAuth, bearer::BearerAuth};
 use mongodb::bson::doc;
 use regex::Regex;
-use serde_json::json;
+use serde_json::{json, Value};
 use tracing::error;
 
 use crate::{
     auth::jwt::validate_token,
     config::CONFIG,
     db::{
-        models::{AppPayload, Apps, User, UserType, APPS, USER},
+        models::{AppPayload, Apps, GroupSubs, User, UserType, APPS, USER},
         mongo::{ObjectID, DB},
         Database,
     },
     errors::Result,
-    web::helper::generate_salt,
+    web::helper::{self, generate_salt},
 };
 
 #[post("introspection")]
@@ -47,13 +50,34 @@ pub async fn introspection(
     {
         // client is valid
         if let Some(token) = extract_token(&raw_token) {
-            if validate_token(&token, &CONFIG.decoder, &CONFIG.validation).is_ok() {
-                return Ok(HttpResponse::Ok().json(json!({
+            if let Ok(claims) = validate_token(&token, &CONFIG.decoder, &CONFIG.validation) {
+                let pipeline = db.get_user_group_pipeline(claims.get_sub());
+                let docs = helper::log_with_level!(
+                    db.aggregate(pipeline, USER, PhantomData::<User>).await,
+                    error
+                )?;
+                // TODO: we currently only support one group per user... so take the first element
+                // but in the future we will have handle this differently
+                let mut json = json!({
                     "active": true,
-                })));
+                    "sub": claims.get_sub(),
+                    "client_id": apps.client_id,
+                });
+
+                // Only insert the group_id if the user is in a group
+                if let Some(GroupSubs { group_id, .. }) = docs.first() {
+                    if let Some(group_id) = group_id.first() {
+                        if let Value::Object(map) = &mut json {
+                            map.insert("group_id".to_string(), Value::String(group_id.to_string()));
+                        };
+                    }
+                }
+
+                return Ok(HttpResponse::Ok().json(json));
             }
             return Ok(HttpResponse::Ok().json(json!({
                 "active": false,
+                "client_id": apps.client_id,
             })));
         }
     };
@@ -63,6 +87,14 @@ pub async fn introspection(
         .json(json!({
             "error": "invalid_request",
         })))
+}
+
+#[get("/.well-known/jwks.json")]
+pub async fn jwks() -> Result<HttpResponse> {
+    let payload = json!({
+        "keys": vec![&CONFIG.jwk],
+    });
+    Ok(HttpResponse::Ok().json(payload))
 }
 
 #[post("register")]

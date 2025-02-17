@@ -50,7 +50,10 @@ pub(super) async fn group(
     subject: Option<ReqData<BridgeCookie>>,
 ) -> Result<HttpResponse> {
     // get the subject id from middleware
+    #[cfg(feature = "notebook")]
     let mut bridge_cookie = check_admin(subject, UserType::GroupAdmin)?;
+    #[cfg(not(feature = "notebook"))]
+    let bridge_cookie = check_admin(subject, UserType::GroupAdmin)?;
 
     let id = ObjectId::from_str(&bridge_cookie.subject)
         .map_err(|e| BridgeError::GeneralError(e.to_string()))?;
@@ -102,6 +105,10 @@ pub(super) async fn group(
     #[cfg(feature = "notebook")]
     if let Some(ref conf) = bridge_cookie.config {
         ctx.insert("pvc", &conf.notebook_persist_pvc);
+    }
+
+    if let Some(ref resources) = bridge_cookie.resources {
+        ctx.insert("resources", resources);
     }
 
     let bcj = serde_json::to_string(&bridge_cookie)?;

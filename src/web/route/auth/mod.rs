@@ -27,7 +27,7 @@ use crate::{
 
 use self::{
     deserialize::CallBackResponse,
-    oauth::{introspection, register_app},
+    oauth::{introspection, jwks, register_app},
 };
 
 mod deserialize;
@@ -189,6 +189,7 @@ async fn code_to_response(
         subject: id.to_string(),
         user_type,
         config: None,
+        resources: None,
     };
 
     let content = serde_json::to_string(&bridge_cookie_json).map_err(|e| {
@@ -230,6 +231,7 @@ pub fn config_auth(cfg: &mut web::ServiceConfig) {
             .service(login)
             .service(callback)
             .service(introspection)
-            .service(register_app),
+            .service(register_app)
+            .service(jwks),
     );
 }

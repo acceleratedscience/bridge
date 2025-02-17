@@ -22,6 +22,7 @@ use crate::{
     web::{
         bridge_middleware::{CookieCheck, Htmx, HTMX_ERROR_RES},
         helper::log_with_level,
+        services::CATALOG,
     },
 };
 
@@ -34,19 +35,50 @@ mod user;
 mod user_htmx;
 
 #[get("")]
-async fn index(data: Option<ReqData<BridgeCookie>>) -> Result<HttpResponse> {
+async fn index(data: Option<ReqData<BridgeCookie>>, db: Data<&DB>) -> Result<HttpResponse> {
     // get cookie if it exists
     match data {
         Some(r) => {
-            let bridge_cookie = r.into_inner();
+            let mut bridge_cookie = r.into_inner();
+
+            let pipeline = db.get_user_group_pipeline(&bridge_cookie.subject);
+            let mut groups = db.aggregate(pipeline, USER, PhantomData::<User>).await?;
+
+            let mut resp = HttpResponse::SeeOther();
+
+            if !groups.is_empty() {
+                let all_resources = CATALOG.get_all_resources_by_name();
+
+                let group_sub = groups
+                    .pop()
+                    .map(|u| u.group_subscriptions)
+                    .and_then(|mut g| g.pop())
+                    .map(|g| {
+                        // only return resources that are in the catalog
+                        g.into_iter()
+                            .filter(|r| all_resources.contains(&r.as_str()))
+                            .collect::<Vec<_>>()
+                    });
+
+                bridge_cookie.resources = group_sub;
+                let bridge_cookie_json = serde_json::to_string(&bridge_cookie)?;
+                let cookie = Cookie::build(COOKIE_NAME, bridge_cookie_json)
+                    .same_site(SameSite::Strict)
+                    .path("/")
+                    .http_only(true)
+                    .secure(true)
+                    .finish();
+                resp.cookie(cookie);
+            }
+
             match bridge_cookie.user_type {
-                UserType::User => Ok(HttpResponse::SeeOther()
+                UserType::User => Ok(resp
                     .append_header((header::LOCATION, "/portal/user"))
                     .finish()),
-                UserType::GroupAdmin => Ok(HttpResponse::SeeOther()
+                UserType::GroupAdmin => Ok(resp
                     .append_header((header::LOCATION, "/portal/group_admin"))
                     .finish()),
-                UserType::SystemAdmin => Ok(HttpResponse::SeeOther()
+                UserType::SystemAdmin => Ok(resp
                     .append_header((header::LOCATION, "/portal/system_admin"))
                     .finish()),
             }

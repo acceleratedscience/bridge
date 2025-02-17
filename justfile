@@ -21,14 +21,14 @@ build-front:
 local-mongo:
 	podman run -d --rm --name mongodb \
 	-e MONGODB_ROOT_PASSWORD="admin123456789" \
-	-e MONGODB_USERNAME="guardian-user" -e MONGODB_PASSWORD="admin123456789" -e MONGODB_DATABASE="guardian" \
+	-e MONGODB_USERNAME="guardian-user" -e MONGODB_PASSWORD="admin123456789" -e MONGODB_DATABASE="bridge" \
 	-p 27017:27017 bitnami/mongodb:latest
 
 local-mongo-arm:
 	podman run -d --rm --name mongodb \
 	-e MONGO_INITDB_ROOT_USERNAME="guardian-user" \
 	-e MONGO_INITDB_ROOT_PASSWORD="admin123456789" \
-	-e MONGO_INITDB_DATABASE="guardian" \
+	-e MONGO_INITDB_DATABASE="bridge" \
 	-p 27017:27017 mongodb/mongodb-community-server
 
 local-keydb:
@@ -44,6 +44,9 @@ watch-tailwind:
 
 watch-rust:
 	bacon run-long --features "notebook lifecycle"
+
+watch-backend:
+	bacon . --features "notebook lifecycle"
 
 watch:
 	bacon --features "notebook lifecycle"

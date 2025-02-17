@@ -1,0 +1,107 @@
+{% extends "base_user.html" %}
+
+{% block head %}
+<link rel="stylesheet" href="/static/css/token.css" />
+{% endblock head %}
+{% block body %}
+<div class="text-center text-break">
+	<p class="soft-text">Welcome, {{name}}</p>
+	<br>
+	<div class="section-wrap">
+		<div class="section-wrap-h">
+
+			<!-- Group -->
+			<div class="display-item">
+				<div>Your group</div>
+				{% if group == "" %}
+				<div class="softer">-</div>
+				{% else %}
+				<div>{{group}}</div>
+				{% endif %}
+			</div>
+
+			<!-- Role -->
+			<div>
+				<div class="display-item">
+					<div>Your role</div>
+					<div>{% block usertype %}{% endblock usertype %}</div>
+				</div>
+			</div>
+
+		</div>
+
+
+
+		<div>
+			<!-- Tabs -->
+			<cds-tabs value="models">
+				<cds-tab target="panel-models" value="models">Your Subscriptions</cds-tab>
+				<cds-tab target="panel-token" value="token">Access Token</cds-tab>
+				{% if notebook %}
+				<cds-tab target="panel-notebook" value="notebook">Workbench</cds-tab>
+				{% endif %}
+
+				{% if resources %}
+				{% for resource in resources %}
+				<cds-tab target="panel-{{resource}}" value="{{resource}}">{{resource}}</cds-tab>
+				{% endfor %}
+				{% endif %}
+
+				{% block tabs %}
+				{% endblock tabs %}
+			</cds-tabs>
+			<br>
+
+			<!-- Panel: Models -->
+			<div id="panel-models" role="tabpanel" aria-labelledby="tab-models">
+				{% if group == "" %}
+				<p>No models available.</p>
+				<p class="small">You need to be member of a group in order to have access to any models.</p>
+				{% else %}
+				<div class="list-table">
+					{# DCH - subscriptions is returning a single string with commas instead of a list #}
+					{# DCH - can we add links to each model? #}
+					{% for model in subscriptions %}
+					<div class="list-table-item">{{model}}</div>
+					{% endfor %}
+				</div>
+				{% endif %}
+			</div>
+
+			<!-- Panel: Token -->
+			<div id="panel-token" role="tabpanel" aria-labelledby="tab-token">
+				{% include "components/token.html" %}
+			</div>
+
+			{% if notebook %}
+			<div id="panel-notebook" role="tabpanel" aria-labelledby="tab-notebook">
+				{% include "components/notebook/notebook.html" %}
+			</div>
+			{% endif %}
+
+			{% if resources %}
+			{% for resource in resources %}
+			<div id="panel-{{resource}}" role="tabpanel" aria-labelledby="tab-{{resource}}">
+				{# hyperlink #}
+				<cds-button href="/resource/{{ resource }}?token=true" target="_blank">
+					Open {{ resource }}
+				</cds-button>
+			</div>
+			{% endfor %}
+			{% endif %}
+
+			<!-- Panel: Others -->
+			{% block panels %}
+			{% endblock panels %}
+		</div>
+
+	</div>
+
+	{% block tabbed %}
+	{% block tabselection %}
+	{% endblock tabselection %}
+	{% block tabcontents %}
+	{% endblock tabcontents %}
+	{% endblock tabbed %}
+</div>
+{% endblock body %}

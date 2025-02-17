@@ -3,6 +3,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use jsonwebtoken::{decode, encode, Algorithm, DecodingKey, EncodingKey, Header, Validation};
 use serde::{Deserialize, Serialize};
 
+use crate::config::CONFIG;
 use crate::errors::Result;
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -33,7 +34,7 @@ where
     }
 }
 
-const ISSUER: &str = "openbridge";
+const ISSUER: &str = "bridge";
 
 /// Generate a token with the given lifetime and uuid. This is an expensive operation, cache as
 /// much as possible
@@ -56,7 +57,10 @@ pub fn get_token_and_exp(
         aud,
         scp,
     };
-    let token = encode(&Header::new(Algorithm::ES256), &claims, key)?;
+    let mut header = Header::new(Algorithm::ES256);
+    header.kid = Some(CONFIG.kid.clone());
+
+    let token = encode(&header, &claims, key)?;
     Ok((token, claims.token_exp_as_string()))
 }
 

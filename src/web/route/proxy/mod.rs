@@ -43,11 +43,11 @@ async fn forward(
         })?;
 
     // look up service and get url
-    let mut new_url = helper::log_with_level!(CATALOG.get(service), error)?;
+    let mut new_url = helper::log_with_level!(CATALOG.get_service(service), error)?;
     new_url.set_path(path);
     new_url.set_query(req.uri().query());
 
-    helper::forwarding::forward(req, payload, method, peer_addr, client, new_url).await
+    helper::forwarding::forward(req, payload, method, peer_addr, client, new_url, None).await
 }
 
 pub fn config_proxy(cfg: &mut web::ServiceConfig) {
