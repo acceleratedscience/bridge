@@ -1,5 +1,3 @@
-use std::marker::PhantomData;
-
 use actix_web::{
     cookie::{time, Cookie, SameSite},
     get,
@@ -24,10 +22,7 @@ use crate::{
         Database,
     },
     errors::{BridgeError, Result},
-    web::{
-        helper::{self},
-        services::CATALOG,
-    },
+    web::helper::{self},
 };
 
 use self::{

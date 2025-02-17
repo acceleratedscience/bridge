@@ -61,7 +61,6 @@ where
                                 .unwrap_or(req.uri().path());
                             let resource_requested =
                                 path.split("/").nth(1).unwrap_or("").to_string();
-                            warn!("Resource requested: {}", resource_requested);
 
                             if resource_allowed.contains(&resource_requested) {
                                 req.extensions_mut().insert((bc, resource_requested));

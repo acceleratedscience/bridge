@@ -69,6 +69,6 @@
 	check = true
 
 	[resources.finetuning]
-	url = "http://finetuning.openad-models.svc.cluster.local"
+	url = "http://openad-frontend.openad-portal.svc.cluster.local:8080"
 	readiness = "/health"
 	check = true

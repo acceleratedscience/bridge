@@ -41,7 +41,7 @@ use crate::{
     },
 };
 
-pub const NOTEBOOK_SUB_NAME: &str = NAMESPACE;
+pub const NOTEBOOK_SUB_NAME: &str = "notebook";
 const NOTEBOOK_PORT: &str = "8888";
 const NOTEBOOK_TOKEN_LIFETIME: usize = const { 60 * 60 * 24 * 30 };
 
