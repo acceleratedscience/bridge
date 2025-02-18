@@ -27,7 +27,7 @@ use crate::{
     web::{
         bridge_middleware::{Htmx, HTMX_ERROR_RES},
         helper::{self, bson},
-        route::portal::helper::check_admin,
+        route::portal::helper::check_admin, services::CATALOG,
     },
 };
 
@@ -108,7 +108,16 @@ pub(super) async fn group(
     }
 
     if let Some(ref resources) = bridge_cookie.resources {
-        ctx.insert("resources", resources);
+        let resources: Vec<(&String, bool)> = resources
+            .iter()
+            .map(|r| {
+                let show = CATALOG
+                    .get_details("resources", r, "show")
+                    .map(|v| v.as_bool().unwrap_or(false));
+                (r, show.unwrap_or(false))
+            })
+            .collect();
+        ctx.insert("resources", &resources);
     }
 
     let bcj = serde_json::to_string(&bridge_cookie)?;

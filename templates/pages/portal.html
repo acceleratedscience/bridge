@@ -43,7 +43,9 @@
 
 				{% if resources %}
 				{% for resource in resources %}
-				<cds-tab target="panel-{{resource}}" value="{{resource}}">{{resource}}</cds-tab>
+				{% if resource.1 %}
+				<cds-tab target="panel-{{resource.0}}" value="{{resource.0}}">{{resource.0}}</cds-tab>
+				{% endif %}
 				{% endfor %}
 				{% endif %}
 
@@ -81,12 +83,14 @@
 
 			{% if resources %}
 			{% for resource in resources %}
-			<div id="panel-{{resource}}" role="tabpanel" aria-labelledby="tab-{{resource}}">
+			{% if resource.1 %}
+			<div id="panel-{{resource.0}}" role="tabpanel" aria-labelledby="tab-{{resource.0}}">
 				{# hyperlink #}
-				<cds-button href="/resource/{{ resource }}?token=true" target="_blank">
-					Open {{ resource }}
+				<cds-button href="/resource/{{ resource.0 }}?token=true" target="_blank">
+					Open {{ resource.0 }}
 				</cds-button>
 			</div>
+			{% endif %}
 			{% endfor %}
 			{% endif %}
 

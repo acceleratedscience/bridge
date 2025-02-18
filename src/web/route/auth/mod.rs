@@ -190,6 +190,7 @@ async fn code_to_response(
         user_type,
         config: None,
         resources: None,
+        token: None,
     };
 
     let content = serde_json::to_string(&bridge_cookie_json).map_err(|e| {
