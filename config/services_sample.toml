@@ -13,7 +13,8 @@
 
 [resources]
 
-	[resources.reddit]
-	url = "https://www.reddit.com"
-	readiness = "/r/rust"
+	[resources.example]
+	url = "https://www.example.com"
+	readiness = "/"
 	check = true
+	show = true
