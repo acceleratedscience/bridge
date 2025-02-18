@@ -163,6 +163,7 @@ pub struct BridgeCookie {
     pub user_type: UserType,
     pub config: Option<Config>,
     pub resources: Option<Vec<String>>,
+    pub token: Option<String>,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]

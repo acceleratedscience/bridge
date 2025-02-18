@@ -1,6 +1,7 @@
 use std::marker::PhantomData;
 
 use actix_web::{
+    cookie::{Cookie, SameSite},
     dev::PeerAddr,
     http::Method,
     web::{self, Data, ReqData},
@@ -9,14 +10,14 @@ use actix_web::{
 use tracing::instrument;
 
 use crate::{
-    auth::jwt,
+    auth::{jwt, COOKIE_NAME},
     config::{AUD, CONFIG},
     db::{
         models::{BridgeCookie, User, USER},
         mongo::DB,
         Database,
     },
-    errors::Result,
+    errors::{BridgeError, Result},
     web::{bridge_middleware::ResourceCookieCheck, helper, services::CATALOG},
 };
 
@@ -32,7 +33,7 @@ async fn resource(
     peer_addr: Option<PeerAddr>,
     client: Data<reqwest::Client>,
 ) -> Result<HttpResponse> {
-    let (bridge_cookie, resource) = resource.into_inner();
+    let (mut bridge_cookie, resource) = resource.into_inner();
     let prefix = format!("/resource/{}", &resource);
     let path = req
         .uri()
@@ -40,7 +41,7 @@ async fn resource(
         .strip_prefix(&prefix)
         .unwrap_or(req.uri().path());
     // check query for token=true
-    let token = if req.uri().query().is_some_and(|q| q.contains("token=true")) {
+    let updated_cookie = if req.uri().query().is_some_and(|q| q.contains("token=true")) {
         let pipeline = db.get_user_group_pipeline(&bridge_cookie.subject);
         let groups = db.aggregate(pipeline, USER, PhantomData::<User>).await?;
         let scp = groups
@@ -57,7 +58,20 @@ async fn resource(
             AUD[0],
             scp,
         )?;
-        Some(token)
+
+        bridge_cookie.token = Some(token);
+        let content = serde_json::to_string(&bridge_cookie).map_err(|e| {
+            BridgeError::GeneralError(format!("Could not serialize bridge cookie: {}", e))
+        })?;
+        Some(
+            Cookie::build(COOKIE_NAME, content)
+                .same_site(SameSite::Strict)
+                .expires(time::OffsetDateTime::now_utc() + time::Duration::days(1))
+                .path("/")
+                .http_only(true)
+                .secure(true)
+                .finish(),
+        )
     } else {
         None
     };
@@ -73,7 +87,7 @@ async fn resource(
         peer_addr,
         client,
         new_url,
-        token.as_deref(),
+        updated_cookie,
     )
     .await
 }
