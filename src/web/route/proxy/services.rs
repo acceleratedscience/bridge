@@ -79,6 +79,10 @@ impl Catalog {
         self.get_inner("resources", resource_name)
     }
 
+    pub fn get_details(&self, type_: &str, name: &str, field: &str) -> Option<&Value> {
+        self.0.get(type_)?.get(name)?.get(field)
+    }
+
     pub fn get_all_resources_by_name(&self) -> &'static Vec<&str> {
         &ALL_RESOURCE_NAMES
     }
@@ -191,5 +195,15 @@ mod test {
         let names = CATALOG.get_all_by_name();
         assert!(names.contains(&"postman".to_string()));
         assert!(names.contains(&"reddit".to_string()));
+    }
+
+    #[test]
+    fn test_get_details() {
+        let catalog = &CATALOG;
+        let Value::Boolean(b) = *catalog.get_details("resources", "example", "show").unwrap()
+        else {
+            panic!("show not found");
+        };
+        assert!(b);
     }
 }

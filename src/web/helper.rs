@@ -167,12 +167,10 @@ pub mod forwarding {
     use std::str::FromStr;
 
     use actix_web::{
-        dev::PeerAddr,
-        http::{
+        cookie::Cookie, dev::PeerAddr, http::{
             header::{HeaderName, HeaderValue},
             Method,
-        },
-        web, HttpRequest, HttpResponse,
+        }, web, HttpRequest, HttpResponse
     };
     use futures::StreamExt;
     use reqwest::header::{
@@ -195,7 +193,7 @@ pub mod forwarding {
         peer_addr: Option<PeerAddr>,
         client: web::Data<reqwest::Client>,
         new_url: T,
-        token: Option<&str>,
+        updated_cookie: Option<Cookie<'_>>,
     ) -> Result<HttpResponse>
     where
         T: AsRef<str> + Send + Sync,
@@ -232,13 +230,9 @@ pub mod forwarding {
             }
         };
 
-        let mut forwarded_req = client
+        let forwarded_req = client
             .request(method, new_url.as_ref())
             .body(reqwest::Body::wrap_stream(ReceiverStream::new(rx)));
-
-        if let Some(token) = token {
-            forwarded_req = forwarded_req.bearer_auth(token);
-        };
 
         // TODO: This forwarded implementation is incomplete as it only handles the unofficial
         // X-Forwarded-For header but not the official Forwarded one.
@@ -274,6 +268,11 @@ pub mod forwarding {
             StatusCode::from_u16(status).map_err(|e| BridgeError::GeneralError(e.to_string()))?;
 
         let mut client_resp = HttpResponse::build(status);
+
+        if let Some(cookie) = updated_cookie {
+            client_resp.cookie(cookie);
+        };
+
         // Removing `Connection` and 'keep-alive' as per
         // https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Connection#Directives
         // Also removing "content-length" since we are streaming the response, and content-length
