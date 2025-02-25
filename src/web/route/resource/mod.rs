@@ -93,14 +93,14 @@ async fn resource(
     .await
 }
 
-#[instrument(skip(pl, resource))]
-#[get("/ws/{resource:.*}")]
+#[instrument(skip(pl))]
+#[get("{resource_name}/ws/{path:.*}")]
 async fn resource_ws(
     req: HttpRequest,
     pl: web::Payload,
-    resource: ReqData<(BridgeCookie, String)>,
+    webpath: web::Path<(String, String)>,
 ) -> Result<HttpResponse> {
-    let (_, resource) = resource.into_inner();
+    let (_, resource) = webpath.into_inner();
     let prefix = format!("/resource/{}", &resource);
     let path = req
         .uri()
@@ -108,6 +108,9 @@ async fn resource_ws(
         .strip_prefix(&prefix)
         .unwrap_or(req.uri().path());
     let mut new_url = helper::log_with_level!(CATALOG.get_resource(&resource), error)?;
+    new_url
+        .set_scheme("ws")
+        .map_err(|_| BridgeError::GeneralError("Could not set scheme to ws".to_string()))?;
     new_url.set_path(path);
     new_url.set_query(req.uri().query());
 
