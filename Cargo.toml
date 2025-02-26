@@ -58,7 +58,7 @@ regex = "~1.11"
 thiserror = "2"
 # DB
 mongodb = "~3.2"
-redis = { version = "0.28", features = ["tokio-comp", "num-bigint"] }
+redis = { version = "0.29", features = ["tokio-comp", "num-bigint"] }
 #macro
 utils = { path = "utils" }
 # Kubernetes
