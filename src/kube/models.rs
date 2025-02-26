@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::config::CONFIG;
 
-pub const NAMESPACE: &str = "notebook-openad";
+pub const NAMESPACE: &str = "notebook";
 
 // Define the Notebook CRD struct
 #[derive(CustomResource, Deserialize, Serialize, Clone, Debug, JsonSchema)]

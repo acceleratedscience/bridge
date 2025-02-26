@@ -41,7 +41,7 @@ impl ObjectID {
 }
 
 pub static DBCONN: OnceLock<DB> = OnceLock::new();
-pub static DBNAME: &str = "bridge";
+pub static DBNAME: &str = "guardian";
 
 static COLLECTIONS: [&str; 4] = [USER, GROUP, LOCKS, APPS];
 
