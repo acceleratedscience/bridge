@@ -21,7 +21,7 @@ use crate::{
     auth::openid,
     db::{
         keydb::{CacheDB, CACHEDB},
-        mongo::{DB, DBCONN},
+        mongo::{DB, DBCONN, DBNAME},
     },
     logger::Logger,
     templating,
@@ -72,14 +72,13 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
         Logger::start(LevelFilter::INFO);
     }
 
-    #[cfg(feature = "notebook")]
     rustls::crypto::ring::default_provider()
         .install_default()
         .expect("Cannot install default provider");
 
     // Singletons
     openid::init_once().await;
-    if let Err(e) = DB::init_once("guardian").await {
+    if let Err(e) = DB::init_once(DBNAME).await {
         error!("{e}");
         exit(1);
     }
@@ -150,12 +149,13 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
         let app = app.configure(route::notebook::config_notebook);
         app.service(
             web::scope("")
-                .wrap(bridge_middleware::SecurityHeader)
+                .wrap(bridge_middleware::SecurityCacheHeader)
                 .configure(route::auth::config_auth)
                 .configure(route::health::config_status)
                 .configure(route::proxy::config_proxy)
                 .configure(route::config_index)
                 .configure(route::portal::config_portal)
+                .configure(route::resource::config_resource)
                 .configure(route::foo::config_foo),
         )
     });

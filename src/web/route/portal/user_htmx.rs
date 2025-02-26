@@ -6,7 +6,7 @@ use tera::{Context, Tera};
 
 use crate::{
     db::models::{BridgeCookie, NotebookStatusCookie, User},
-    errors::Result,
+    errors::Result, web::services::CATALOG,
 };
 
 #[cfg(feature = "notebook")]
@@ -59,6 +59,19 @@ impl<'p> Profile<'p> {
         // add in the expiration time if token is present
         if let Some(t) = &self.user.token {
             t_exp(&mut context, t);
+        }
+
+        if let Some(ref resources) = bc.resources {
+            let resources: Vec<(&String, bool)> = resources
+                .iter()
+                .map(|r| {
+                    let show = CATALOG
+                        .get_details("resources", r, "show")
+                        .map(|v| v.as_bool().unwrap_or(false));
+                    (r, show.unwrap_or(false))
+                })
+                .collect();
+            context.insert("resources", &resources);
         }
 
         #[cfg(feature = "notebook")]

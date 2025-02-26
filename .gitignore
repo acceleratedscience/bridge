@@ -2,4 +2,6 @@
 /certs
 /config/configurations.toml
 /config/database.toml
+/config/services.toml
 node_modules
+

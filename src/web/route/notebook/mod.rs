@@ -41,7 +41,7 @@ use crate::{
     },
 };
 
-pub const NOTEBOOK_SUB_NAME: &str = NAMESPACE;
+pub const NOTEBOOK_SUB_NAME: &str = "notebook";
 const NOTEBOOK_PORT: &str = "8888";
 const NOTEBOOK_TOKEN_LIFETIME: usize = const { 60 * 60 * 24 * 30 };
 
@@ -131,7 +131,7 @@ async fn notebook_create(
             persist_pvc = true;
         }
         bridge_cookie.config = Some(Config {
-            notebook_persist_pvc: persist_pvc,
+            notebook_persist_pvc: Some(persist_pvc),
         });
 
         // check if the user can create a notebook
@@ -375,13 +375,12 @@ async fn notebook_delete(
     ctx.insert("cooloff", &true);
     #[cfg(feature = "notebook")]
     if let Some(ref conf) = bridge_cookie.config {
+        // TODO:: check if it's ok to pass in Option instead of bool
         ctx.insert("pvc", &conf.notebook_persist_pvc);
     }
 
-    let content = helper::log_with_level!(
-        data.render("components/notebook/start.html", &ctx),
-        error
-    )?;
+    let content =
+        helper::log_with_level!(data.render("components/notebook/start.html", &ctx), error)?;
 
     Ok(HttpResponse::Ok()
         .cookie(notebook_cookie)
@@ -608,7 +607,7 @@ async fn notebook_forward(
     new_url.set_path(path);
     new_url.set_query(req.uri().query());
 
-    helper::forwarding::forward(req, payload, method, peer_addr, client, new_url).await
+    helper::forwarding::forward(req, payload, method, peer_addr, client, new_url, None).await
 }
 
 pub mod notebook_helper {

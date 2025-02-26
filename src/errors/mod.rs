@@ -74,6 +74,7 @@ pub enum BridgeError {
     NotebookAccessError(String),
     #[cfg(feature = "notebook")]
     #[error("{0}")]
+    #[cfg(feature = "notebook")]
     KubeClientError(String),
     #[error("{0}")]
     ReqwestError(#[from] reqwest::Error),

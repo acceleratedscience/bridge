@@ -1,6 +1,4 @@
-use std::any::Any;
-#[cfg(feature = "notebook")]
-use std::ops::Deref;
+use std::{any::Any, ops::Deref};
 
 #[cfg(feature = "notebook")]
 use actix_web::cookie::{Cookie, SameSite};
@@ -12,7 +10,6 @@ use tera::Context;
 use crate::{
     db::{
         models::{BridgeCookie, Group, User, UserType, GROUP},
-        mongo::DB,
         Database,
     },
     errors::{BridgeError, Result},
@@ -78,7 +75,11 @@ pub(super) fn check_admin(
 }
 
 /// This is a helper function to get all Groups from the database
-pub(super) async fn get_all_groups(db: &DB) -> Result<Vec<Group>> {
+pub(super) async fn get_all_groups<I, O>(db: O) -> Result<Vec<Group>>
+where
+    O: Deref<Target = I>,
+    I: Database<Group, Q = mongodb::bson::Document, C = &'static str>,
+{
     let result: Result<Vec<Group>> = db.find_many(doc! {}, GROUP).await;
     Ok(match result {
         Ok(groups) => groups,
@@ -119,7 +120,7 @@ where
                 let pvc = notebook_helper::make_notebook_volume_name(&user._id.to_string());
                 if let Ok(true) = KubeAPI::<Pod>::check_pvc_exists(&pvc).await {
                     bc.config = Some(crate::db::models::Config {
-                        notebook_persist_pvc: true,
+                        notebook_persist_pvc: Some(true),
                     })
                 }
                 // There may be a case where the user has no notebook status cookie... perhaps
