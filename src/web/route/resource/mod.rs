@@ -3,6 +3,7 @@ use std::marker::PhantomData;
 use actix_web::{
     cookie::{Cookie, SameSite},
     dev::PeerAddr,
+    get,
     http::Method,
     web::{self, Data, ReqData},
     HttpRequest, HttpResponse,
@@ -92,10 +93,35 @@ async fn resource(
     .await
 }
 
+#[instrument(skip(pl))]
+#[get("{resource_name}/ws/{path:.*}")]
+async fn resource_ws(
+    req: HttpRequest,
+    pl: web::Payload,
+    webpath: web::Path<(String, String)>,
+) -> Result<HttpResponse> {
+    let (_, resource) = webpath.into_inner();
+    let prefix = format!("/resource/{}", &resource);
+    let path = req
+        .uri()
+        .path()
+        .strip_prefix(&prefix)
+        .unwrap_or(req.uri().path());
+    let mut new_url = helper::log_with_level!(CATALOG.get_resource(&resource), error)?;
+    new_url
+        .set_scheme("ws")
+        .map_err(|_| BridgeError::GeneralError("Could not set scheme to ws".to_string()))?;
+    new_url.set_path(path);
+    new_url.set_query(req.uri().query());
+
+    helper::ws::manage_connection(req, pl, new_url).await
+}
+
 pub fn config_resource(cfg: &mut web::ServiceConfig) {
     cfg.service(
         web::scope("/resource")
             .wrap(ResourceCookieCheck)
+            .service(resource_ws)
             .default_service(web::to(resource)),
     );
 }
