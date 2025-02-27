@@ -367,7 +367,6 @@ pub mod utils {
     }
 }
 
-#[cfg(feature = "notebook")]
 /// Websocket proxying utilities
 pub mod ws {
     use actix_web::{
