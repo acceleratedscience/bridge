@@ -6,9 +6,9 @@ use std::{
     sync::LazyLock,
 };
 
-use base64::{prelude::BASE64_URL_SAFE_NO_PAD, Engine};
+use base64::{Engine, prelude::BASE64_URL_SAFE_NO_PAD};
 use jsonwebtoken::{Algorithm, DecodingKey, EncodingKey, Validation};
-use p256::{elliptic_curve::JwkEcKey, pkcs8::DecodePublicKey, NistP256};
+use p256::{NistP256, elliptic_curve::JwkEcKey, pkcs8::DecodePublicKey};
 use serde::{Deserialize, Serialize};
 use sha2::Digest;
 
@@ -31,6 +31,7 @@ pub struct Configuration {
     pub db: Database,
     pub cache: CacheDB,
     pub notebooks: HashMap<String, Notebook>,
+    pub notebook_namespace: String,
     pub app_name: String,
     pub app_discription: String,
     pub company: String,
@@ -176,6 +177,7 @@ pub fn init_once() -> Configuration {
     let app_name = app_conf["name"].as_str().unwrap().to_string();
     let app_discription = app_conf["description"].as_str().unwrap().to_string();
     let company = app_conf["company"].as_str().unwrap().to_string();
+    let notebook_namespace = app_conf["notebook_namespace"].as_str().unwrap().to_string();
 
     let notebooks: HashMap<String, Notebook> = toml::from_str(
         &read_to_string(PathBuf::from_str("config/notebook.toml").unwrap()).unwrap(),
@@ -192,6 +194,7 @@ pub fn init_once() -> Configuration {
         db,
         cache,
         notebooks,
+        notebook_namespace,
         app_name,
         app_discription,
         company,
