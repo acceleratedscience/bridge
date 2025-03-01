@@ -167,10 +167,13 @@ pub mod forwarding {
     use std::str::FromStr;
 
     use actix_web::{
-        cookie::Cookie, dev::PeerAddr, http::{
+        cookie::Cookie,
+        dev::PeerAddr,
+        http::{
             header::{HeaderName, HeaderValue},
             Method,
-        }, web, HttpRequest, HttpResponse
+        },
+        web, HttpRequest, HttpResponse,
     };
     use futures::StreamExt;
     use reqwest::header::{
@@ -375,9 +378,15 @@ pub mod ws {
         HttpRequest, HttpResponse,
     };
 
+    use actix_ws::Item;
     use futures::{SinkExt, StreamExt};
     use reqwest::StatusCode;
-    use tokio_tungstenite::tungstenite::{self, handshake::client::Request};
+    use tokio_tungstenite::tungstenite::{
+        self,
+        handshake::client::Request,
+        protocol::frame::coding::{Data, OpCode},
+    };
+    use tracing::{error, warn};
 
     use crate::errors::{BridgeError, Result};
 
@@ -468,34 +477,50 @@ pub mod ws {
                     resp = s_stream.next() => {
                         match resp {
                             Some(result) => {
-                                if let Ok(msg) = result {
-                                    match msg {
-                                        tungstenite::Message::Text(t) => {
-                                            let _ = log_with_level!(s.text(t.as_str()).await, error);
-                                        }
-                                        tungstenite::Message::Binary(b) => {
-                                            let _ = log_with_level!(s.binary(b).await, error);
-                                        }
-                                        tungstenite::Message::Pong(p) => {
-                                            let _ = log_with_level!(s.pong(&p).await, error);
-                                        }
-                                        tungstenite::Message::Ping(p) => {
-                                            let _ = log_with_level!(s.ping(&p).await, error);
-                                        }
-                                        tungstenite::Message::Close(_) => {
-                                            let _ = log_with_level!(s.close(None).await, error);
-                                            let _ = log_with_level!(w.close().await, error);
-                                            break;
-                                        }
-                                        _ => {
-                                            let _ = log_with_level!(s.close(None).await, error);
-                                            let _ = log_with_level!(w.close().await, error);
-                                            break;
+                                match result {
+                                    Ok(msg) => {
+                                        match msg {
+                                            tungstenite::Message::Text(t) => {
+                                                let _ = log_with_level!(s.text(t.as_str()).await, error);
+                                            }
+                                            tungstenite::Message::Binary(b) => {
+                                                let _ = log_with_level!(s.binary(b).await, error);
+                                            }
+                                            tungstenite::Message::Pong(p) => {
+                                                let _ = log_with_level!(s.pong(&p).await, error);
+                                            }
+                                            tungstenite::Message::Ping(p) => {
+                                                let _ = log_with_level!(s.ping(&p).await, error);
+                                            }
+                                            tungstenite::Message::Close(_) => {
+                                                tracing::warn!("Closing connection");
+                                                let _ = log_with_level!(s.close(None).await, error);
+                                                let _ = log_with_level!(w.close().await, error);
+                                                break;
+                                            }
+                                            tungstenite::Message::Frame(frame) => {
+                                                tracing::warn!("Frame: {:?}", frame);
+                                                let header = frame.header().opcode;
+                                                if let OpCode::Data(Data::Continue) = header {
+                                                    let _ = log_with_level!(s.continuation(Item::Continue(frame.into_payload())).await, error);
+                                                } else {
+                                                    let _ = log_with_level!(s.close(None).await, error);
+                                                    let _ = log_with_level!(w.close().await, error);
+                                                    break;
+                                                }
+                                            }
                                         }
                                     }
+                                    Err(e) => {
+                                        error!("Error: {:?}", e);
+                                        let _ = log_with_level!(s.close(None).await, error);
+                                        let _ = log_with_level!(w.close().await, error);
+                                        break;
+                                    },
                                 }
                             },
                             None => {
+                                warn!("Closing connection due to None... connection possibly closed.");
                                 let _ = log_with_level!(s.close(None).await, error);
                                 let _ = log_with_level!(w.close().await, error);
                                 break;
