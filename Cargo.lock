@@ -2800,6 +2800,7 @@ dependencies = [
  "url",
  "urlencoding",
  "utils",
+ "uuid",
 ]
 
 [[package]]

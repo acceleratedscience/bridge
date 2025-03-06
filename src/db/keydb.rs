@@ -2,8 +2,8 @@ use std::sync::OnceLock;
 
 use actix_web::web::Bytes;
 use redis::{
+    AsyncCommands as _, Client, Msg,
     aio::{MultiplexedConnection, PubSubStream},
-    Client, Msg,
 };
 
 use crate::{config::CONFIG, errors::Result};
@@ -32,6 +32,39 @@ impl CacheDB {
         let (mut sink, stream) = self.client.get_async_pubsub().await?.split();
         sink.subscribe(channel.as_ref()).await?;
         Ok(stream)
+    }
+
+    pub async fn set_session_id<T: AsRef<str>>(
+        &self,
+        session_id: T,
+        sub: T,
+        expiration: u64,
+    ) -> Result<()> {
+        let session_id = session_id.as_ref();
+        let sub = sub.as_ref();
+        let _: () = self
+            .get_connection()
+            .set_ex(format!("session:{}", sub), session_id, expiration)
+            .await?;
+        Ok(())
+    }
+
+    pub async fn get_session_id<T: AsRef<str>>(&self, sub: T) -> Result<String> {
+        let sub = sub.as_ref();
+        let session_id: String = self
+            .get_connection()
+            .get(format!("session:{}", sub))
+            .await?;
+        Ok(session_id)
+    }
+
+    pub async fn del_session_id<T: AsRef<str>>(&self, sub: T) -> Result<()> {
+        let sub = sub.as_ref();
+        let _: () = self
+            .get_connection()
+            .del(format!("session:{}", sub))
+            .await?;
+        Ok(())
     }
 }
 

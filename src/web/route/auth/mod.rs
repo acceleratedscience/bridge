@@ -153,7 +153,7 @@ async fn code_to_response(
         .await;
 
     let (id, user_type) = match r {
-        Ok(user) => (user._id, user.user_type),
+        Ok(user) => (user._id.to_string(), user.user_type),
         // user not found, create user
         Err(_) => {
             // get current time in time after unix epoch
@@ -180,21 +180,33 @@ async fn code_to_response(
                 error
             )?;
             (
-                r.as_object_id().ok_or_else(|| {
-                    BridgeError::GeneralError("Could not convert BSON to objectid".to_string())
-                })?,
+                r.as_object_id()
+                    .ok_or_else(|| {
+                        BridgeError::GeneralError("Could not convert BSON to objectid".to_string())
+                    })?
+                    .to_string(),
                 UserType::User,
             )
         }
     };
 
+    // if cache is available, we create a session_id
+    let session_id = match **cache {
+        Some(cache) => {
+            let session_id = uuid::Uuid::new_v4().to_string();
+            cache.set_session_id(&session_id, &id, 60 * 60 * 24).await?;
+            Some(session_id)
+        }
+        None => None,
+    };
+
     let bridge_cookie_json = BridgeCookie {
-        subject: id.to_string(),
+        subject: id,
         user_type,
         config: None,
         resources: None,
         token: None,
-        session_id: None,
+        session_id,
     };
 
     let content = serde_json::to_string(&bridge_cookie_json).map_err(|e| {
