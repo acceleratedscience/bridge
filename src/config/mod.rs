@@ -40,10 +40,12 @@ pub struct Configuration {
 
 pub struct Database {
     pub url: String,
+    pub name: String,
 }
 
 pub struct CacheDB {
     pub url: String,
+    pub name: String,
 }
 
 #[derive(Deserialize, Debug)]
@@ -140,6 +142,7 @@ pub fn init_once() -> Configuration {
         } else {
             mongo_table["url"].as_str().unwrap().to_string()
         },
+        name: mongo_table["name"].as_str().unwrap().to_string(),
     };
 
     let cache_db = db_table["keydb"].as_table().unwrap();
@@ -149,6 +152,7 @@ pub fn init_once() -> Configuration {
         } else {
             cache_db["url"].as_str().unwrap().to_string()
         },
+        name: cache_db["name"].as_str().unwrap().to_string(),
     };
 
     let mut oidc_map: HashMap<String, OIDC> = HashMap::with_capacity(2);
