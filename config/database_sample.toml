@@ -1,11 +1,12 @@
 [mongodb]
 	url = "mongodb://USER:PASSSWORD@guardian-mongodb.mongodb.svc.cluster.local:27017/?authSource=guardian"
 	url_local = "mongodb://guardian-user:admin123456789@localhost:27017/?authSource=guardian" # make sure to port forward
-	db = "guardian"
+	db = "bridge"
 
 [keydb]
 	url = "redis://:PASSWORD@guardian-keydb-master.keydb.svc.cluster.local:6379/0"
 	url_local = "redis://:admin123456789@127.0.0.1:6379/0"
+	name = ""
 
 [user]
 

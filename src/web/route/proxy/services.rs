@@ -179,14 +179,13 @@ mod test {
     #[test]
     fn test_catalog_into() {
         let catalog = &CATALOG;
-        let services: Vec<(Url, String)> = LazyLock::force(catalog).into();
-        assert_ne!(services.len(), 0);
+        let services: ServiceCatalog = LazyLock::force(catalog).into();
+        assert_ne!(services.0.len(), 0);
 
-        let resources: Vec<(Url, String)> =
-            Into::<ResourceCatalog>::into(LazyLock::force(&CATALOG)).into();
-        assert!(resources.len().ge(&2));
+        let resources: ResourceCatalog = Into::<ResourceCatalog>::into(LazyLock::force(&CATALOG));
+        assert!(resources.0.len().ge(&2));
 
-        let postman = services.iter().find(|(_, name)| name == "postman");
+        let postman = services.0.iter().find(|(_, name)| name == "postman");
         assert!(postman.is_some());
     }
 
@@ -200,7 +199,7 @@ mod test {
     #[test]
     fn test_get_details() {
         let catalog = &CATALOG;
-        let Value::Boolean(b) = *catalog.get_details("resources", "example", "show").unwrap()
+        let Value::Boolean(b) = *catalog.get_details("resources", "reddit", "show").unwrap()
         else {
             panic!("show not found");
         };

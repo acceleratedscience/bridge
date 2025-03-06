@@ -445,7 +445,7 @@ mod tests {
         let sleep_min = Duration::from_secs(1);
         let fut = LifecycleStream::new(test);
         let sigterm = sleep(Duration::from_secs(5));
-        DB::init_once("guardian").await.unwrap();
+        DB::init_once("bridge").await.unwrap();
         let db = DBCONN.get().unwrap();
         let lifecycle = Medium::new(exp_min, sleep_min, db, fut, sigterm);
 

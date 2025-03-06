@@ -37,4 +37,5 @@ redirect_url = "https://open.accelerate.science/auth/callback/ibm"
 [app-config]
 name = "Open Accelerated Discovery"
 description = "This is you gateway to the future of scientific discovery"
-company = "IBM Accelerated Discovery"
+company = "IBM Research"
+notebook_namespace = "notebook-openad"

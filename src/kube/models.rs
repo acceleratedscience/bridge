@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::{collections::BTreeMap, sync::LazyLock};
 
 use k8s_openapi::{
     api::core::v1::{PersistentVolumeClaim, VolumeResourceRequirements},
@@ -10,7 +10,9 @@ use serde::{Deserialize, Serialize};
 
 use crate::config::CONFIG;
 
-pub const NAMESPACE: &str = "notebook-openad";
+pub const NAMESPACE: LazyLock::<&str> = LazyLock::new(|| {
+    &CONFIG.notebook_namespace
+});
 
 // Define the Notebook CRD struct
 #[derive(CustomResource, Deserialize, Serialize, Clone, Debug, JsonSchema)]
@@ -33,7 +35,7 @@ impl NotebookSpec {
 
         notebook_env.push(format!(
             "--ServerApp.base_url='notebook/{}/{}'",
-            NAMESPACE, name
+            *NAMESPACE, name
         ));
 
         let mut env = vec![EnvVar {
@@ -252,7 +254,7 @@ mod test {
                             "env": [
                                 {
                                     "name": "NOTEBOOK_ARGS",
-                                    "value": "--ServerApp.token='' --ServerApp.password='' --ServerApp.notebook_dir='/opt/app-root/src' --ServerApp.quit_button=False --ServerApp.default_url='/lab/tree/start_menu.ipynb' --ServerApp.trust_xheaders=True --ServerApp.base_url='notebook/notebook/notebook'",
+                                    "value": "--ServerApp.token='' --ServerApp.password='' --ServerApp.notebook_dir='/opt/app-root/src' --ServerApp.quit_button=False --ServerApp.default_url='/lab/tree/start_menu.ipynb' --ServerApp.trust_xheaders=True --ServerApp.base_url='notebook/notebook-openad/notebook'",
                                 }]}],
                     "imagePullSecrets": [{
                         "name": "ibmdpdev-openad-pull-secret"

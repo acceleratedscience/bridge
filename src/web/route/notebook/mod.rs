@@ -195,7 +195,7 @@ async fn notebook_create(
         )?
         .is_some()
         {
-            info!("Namespace {} has been created", NAMESPACE)
+            info!("Namespace {} has been created", *NAMESPACE)
         }
 
         // User is allowed to create a notebook, but notebook does not exist... so create one
@@ -635,11 +635,11 @@ pub mod notebook_helper {
             return match path {
                 Some(p) => format!(
                     "{}://localhost:{}/notebook/{}/{}/{}",
-                    protocol, NOTEBOOK_PORT, NAMESPACE, name, p
+                    protocol, NOTEBOOK_PORT, *NAMESPACE, name, p
                 ),
                 None => format!(
                     "{}://localhost:{}/notebook/{}/{}",
-                    protocol, NOTEBOOK_PORT, NAMESPACE, name
+                    protocol, NOTEBOOK_PORT, *NAMESPACE, name
                 ),
             };
         }
@@ -647,19 +647,19 @@ pub mod notebook_helper {
             // TODO: This is super cumbersome... FIX IT FIX IT!
             Some(p) => format!(
                 "{}://{}:{}/notebook/{}/{}/{}",
-                protocol, ip, NOTEBOOK_PORT, NAMESPACE, name, p
+                protocol, ip, NOTEBOOK_PORT, *NAMESPACE, name, p
             ),
             None => format!(
                 "{}://{}:{}/notebook/{}/{}",
-                protocol, ip, NOTEBOOK_PORT, NAMESPACE, name
+                protocol, ip, NOTEBOOK_PORT, *NAMESPACE, name
             ),
         }
     }
 
     pub(super) fn make_path(name: &str, path: Option<&str>) -> String {
         match path {
-            Some(p) => format!("/notebook/{}/{}/{}", NAMESPACE, name, p),
-            None => format!("/notebook/{}/{}", NAMESPACE, name),
+            Some(p) => format!("/notebook/{}/{}/{}", *NAMESPACE, name, p),
+            None => format!("/notebook/{}/{}", *NAMESPACE, name),
         }
     }
 
@@ -715,7 +715,7 @@ pub mod notebook_helper {
 
 pub fn config_notebook(cfg: &mut web::ServiceConfig) {
     cfg.service(
-        web::scope(&("/notebook/".to_string() + NAMESPACE))
+        web::scope(&("/notebook/".to_string() + *NAMESPACE))
             .wrap(NotebookCookieCheck)
             .service(notebook_ws_subscribe)
             .service(notebook_ws_session)

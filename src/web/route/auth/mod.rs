@@ -1,9 +1,9 @@
 use actix_web::{
-    cookie::{time, Cookie, SameSite},
+    HttpRequest, HttpResponse,
+    cookie::{Cookie, SameSite, time},
     get,
     http::header::{self, ContentType},
     web::{self, Data},
-    HttpRequest, HttpResponse,
 };
 use mongodb::bson::{doc, oid::ObjectId};
 use openidconnect::{EndUserEmail, Nonce};
@@ -13,13 +13,14 @@ use tracing::instrument;
 
 use crate::{
     auth::{
-        openid::{get_openid_provider, OpenID, OpenIDProvider},
         COOKIE_NAME,
+        openid::{OpenID, OpenIDProvider, get_openid_provider},
     },
     db::{
-        models::{BridgeCookie, User, UserType, USER},
-        mongo::DB,
         Database,
+        keydb::CacheDB,
+        models::{BridgeCookie, USER, User, UserType},
+        mongo::DB,
     },
     errors::{BridgeError, Result},
     web::helper::{self},
@@ -63,11 +64,12 @@ async fn login(req: HttpRequest) -> Result<HttpResponse> {
 }
 
 #[get("/callback/{provider}")]
-#[instrument(skip(data, db))]
+#[instrument(skip(data, db, cache))]
 async fn callback(
     req: HttpRequest,
     data: Data<Tera>,
     db: Data<&DB>,
+    cache: Data<Option<&CacheDB>>,
     path: web::Path<String>,
 ) -> Result<HttpResponse> {
     let query = req.query_string();
@@ -88,7 +90,7 @@ async fn callback(
     let openid = helper::log_with_level!(get_openid_provider(openid_kind), error)?;
 
     // get token from auth server
-    code_to_response(callback_response.code, req, openid, data, db).await
+    code_to_response(callback_response.code, req, openid, data, db, cache).await
 }
 
 async fn code_to_response(
@@ -97,6 +99,7 @@ async fn code_to_response(
     openid: &OpenID,
     data: Data<Tera>,
     db: Data<&DB>,
+    cache: Data<Option<&CacheDB>>,
 ) -> Result<HttpResponse> {
     let token = helper::log_with_level!(openid.get_token(code).await, error)?;
 
@@ -191,6 +194,7 @@ async fn code_to_response(
         config: None,
         resources: None,
         token: None,
+        session_id: None,
     };
 
     let content = serde_json::to_string(&bridge_cookie_json).map_err(|e| {

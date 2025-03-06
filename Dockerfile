@@ -8,16 +8,21 @@ COPY . ./
 ARG NOTEBOOK=false
 ARG LIFECYCLE=false
 
-RUN if [ "$NOTEBOOK" = "true" ] && [ "$LIFECYCLE" = "false" ]; then \
-        echo "Building with Notebook Feature..." \
-        && cargo build --release --features notebook; \
-	elif [ "$NOTEBOOK" = "true" ] && [ "$LIFECYCLE" = "true" ]; then \
-		echo "Building Notebook and Lifecycle Feature..." \
-		&& cargo build --release --features notebook,lifecycle; \
-    else \
-        echo "Building without Notebook Feature..." \
-        && cargo build --release; \
-    fi
+RUN <<EOF
+#!/bin/bash
+flags=()
+if [ "$NOTEBOOK" = "true" ]; then
+	flags+=("notebook")
+fi
+if [ "$LIFECYCLE" = "true" ]; then
+	flags+=("lifecycle")
+fi
+if [ ${#flags[@]} -eq 0 ]; then
+	cargo build --release
+else
+	cargo build --release --features "${flags[@]}"
+fi
+EOF
 
 # Stage 2 build
 FROM debian:stable-slim
