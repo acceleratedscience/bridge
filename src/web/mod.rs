@@ -23,7 +23,7 @@ use crate::{
         keydb::{CacheDB, CACHEDB},
         mongo::{DB, DBCONN, DBNAME},
     },
-    logger::Logger,
+    logger,
     templating,
 };
 
@@ -65,11 +65,11 @@ const SIGTERM_FREQ: Duration = Duration::from_secs(5);
 /// ```
 pub async fn start_server(with_tls: bool) -> Result<()> {
     // Not configurable by the caller
-    // Either INFO or WARN based on release mode
+    // Either DEBUG or INGO based on release mode
     if cfg!(debug_assertions) {
-        Logger::start(LevelFilter::DEBUG);
+        logger::start_logger(LevelFilter::DEBUG);
     } else {
-        Logger::start(LevelFilter::INFO);
+        logger::start_logger(LevelFilter::INFO);
     }
 
     rustls::crypto::ring::default_provider()
