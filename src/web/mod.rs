@@ -43,6 +43,7 @@ pub use route::proxy::services;
 use self::helper::maintenance_watch;
 
 // One hour timeout for client requests
+// TODO: Make this configurable
 const TIMEOUT: u64 = 3600;
 #[cfg(all(feature = "notebook", feature = "lifecycle"))]
 const LIFECYCLE_TIME: Duration = Duration::from_secs(3600);
@@ -127,7 +128,7 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
         let tera_data = Data::new(templating::start_template_eng());
         let mut context = Context::new();
         context.insert("application", "OpenBridge");
-        context.insert("version", "v0.1.0");
+        context.insert("application_version", "v0.1.0");
         let context = Data::new(context);
 
         let client_data = Data::new(

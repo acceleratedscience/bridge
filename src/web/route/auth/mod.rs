@@ -166,7 +166,7 @@ async fn code_to_response(
                         sub: subject,
                         user_name: name.clone(),
                         email: email.clone(),
-                        groups: vec![],
+                        groups: Vec::new(),
                         user_type: UserType::User,
                         token: None,
                         notebook: None,

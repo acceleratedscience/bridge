@@ -163,7 +163,7 @@
 				{% endif %}
 			</div>
 			<div class="flex flex-col grow justify-end items-center">
-				<p class="pb-4 text-xs">Powered by {{ application }} {{ version }}</p>
+				<p class="pb-4 text-xs">Powered by {{ application }} {{ application_version }}</p>
 			</div>
 		</div>
 	</div>
@@ -196,7 +196,7 @@
 	{% endif %}
 	{% endif %}
 	<div class="grow flex flex-col justify-end">
-		<p class="text-xs self-center pb-0.5">Powered by OpenBridge v0.1.0</p>
+		<p class="text-xs self-center pb-0.5">Powered by {{ application }} {{ application_version }}</p>
 	</div>
 </div>
 {% endblock nav %}

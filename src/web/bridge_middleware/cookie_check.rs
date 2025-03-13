@@ -1,23 +1,29 @@
-use std::future::{ready, Ready};
+use std::{
+    future::{Ready, ready},
+    rc::Rc,
+};
 
 use actix_web::{
-    body::EitherBody,
-    dev::{forward_ready, Service, ServiceRequest, ServiceResponse, Transform},
     Error, HttpMessage, HttpResponse,
+    body::EitherBody,
+    dev::{Service, ServiceRequest, ServiceResponse, Transform, forward_ready},
 };
-use futures::{future::LocalBoxFuture, FutureExt, TryFutureExt};
+use futures::{FutureExt, future::LocalBoxFuture};
 use tracing::warn;
 
 use crate::{
     auth::{COOKIE_NAME, NOTEBOOK_STATUS_COOKIE_NAME},
-    db::models::{BridgeCookie, NotebookStatusCookie},
+    db::{
+        keydb::CACHEDB,
+        models::{BridgeCookie, NotebookStatusCookie},
+    },
 };
 
 pub struct CookieCheck;
 
 impl<S, B> Transform<S, ServiceRequest> for CookieCheck
 where
-    S: Service<ServiceRequest, Response = ServiceResponse<B>, Error = Error>,
+    S: Service<ServiceRequest, Response = ServiceResponse<B>, Error = Error> + 'static,
     S::Future: 'static,
     B: 'static,
 {
@@ -28,17 +34,19 @@ where
     type Future = Ready<Result<Self::Transform, Self::InitError>>;
 
     fn new_transform(&self, service: S) -> Self::Future {
-        ready(Ok(CookieCheckMW { service }))
+        ready(Ok(CookieCheckMW {
+            service: Rc::new(service),
+        }))
     }
 }
 
 pub struct CookieCheckMW<S> {
-    service: S,
+    service: Rc<S>,
 }
 
 impl<S, B> Service<ServiceRequest> for CookieCheckMW<S>
 where
-    S: Service<ServiceRequest, Response = ServiceResponse<B>, Error = Error>,
+    S: Service<ServiceRequest, Response = ServiceResponse<B>, Error = Error> + 'static,
     S::Future: 'static,
     B: 'static,
 {
@@ -62,11 +70,25 @@ where
                                 req.extensions_mut().insert(ncs);
                             }
                         }
+
+                        let session_id = gcs.session_id.clone();
                         req.extensions_mut().insert(gcs);
-                        self.service
-                            .call(req)
-                            .map_ok(ServiceResponse::map_into_left_body)
-                            .boxed_local()
+                        let service = self.service.clone();
+                        async move {
+                            if let Some(cache) = CACHEDB.get() {
+                                if let Some(session_id) = session_id {
+                                    warn!("Session id: {:?}", session_id);
+                                // TODO: check with redis if session_id is still valid
+                                } else {
+                                    return Ok(req.into_response(
+                                        HttpResponse::Unauthorized().finish().map_into_right_body(),
+                                    ));
+                                }
+                            }
+
+                            Ok(service.call(req).await?.map_into_left_body())
+                        }
+                        .boxed_local()
                     }
                     Err(e) => {
                         warn!("Bridge cookie deserialization error: {:?}", e);
