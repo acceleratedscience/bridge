@@ -364,13 +364,11 @@ pub async fn notebook_lifecycle(client: Client) -> Result<()> {
 #[cfg(test)]
 mod tests {
     use crate::db::mongo::DB;
-    use crate::logger;
 
     use super::*;
     use futures::StreamExt;
     use serde_json::json;
     use tokio::time::timeout;
-    use tracing::level_filters::LevelFilter;
 
     async fn test(client: Client) -> Result<()> {
         // ping postman echo

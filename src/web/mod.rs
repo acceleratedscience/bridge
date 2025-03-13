@@ -4,27 +4,27 @@ use std::{io::Result, process::exit, time::Duration};
 use std::pin::pin;
 
 use actix_web::{
+    App, HttpServer,
     middleware::{self},
     web::{self, Data},
-    App, HttpServer,
 };
+use tera::Context;
 use tracing::{error, level_filters::LevelFilter, warn};
 
 #[cfg(feature = "notebook")]
 use crate::kube::{self};
 #[cfg(all(feature = "notebook", feature = "lifecycle"))]
-use crate::kube::{notebook_lifecycle, LifecycleStream, Medium};
+use crate::kube::{LifecycleStream, Medium, notebook_lifecycle};
 #[cfg(all(feature = "notebook", feature = "lifecycle"))]
 use futures::future::select;
 
 use crate::{
     auth::openid,
     db::{
-        keydb::{CacheDB, CACHEDB},
+        keydb::{CACHEDB, CacheDB},
         mongo::{DB, DBCONN, DBNAME},
     },
-    logger,
-    templating,
+    logger, templating,
 };
 
 mod bridge_middleware;
@@ -125,6 +125,11 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
 
     let server = HttpServer::new(move || {
         let tera_data = Data::new(templating::start_template_eng());
+        let mut context = Context::new();
+        context.insert("application", "OpenBridge");
+        context.insert("version", "v0.1.0");
+        let context = Data::new(context);
+
         let client_data = Data::new(
             reqwest::Client::builder()
                 .timeout(Duration::from_secs(TIMEOUT))
@@ -137,10 +142,11 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
         let app = App::new()
             // .wrap(bridge_middleware::HttpRedirect)
             .app_data(tera_data.clone())
+            .app_data(context.clone())
             .app_data(client_data)
             .app_data(db)
             .app_data(cache)
-            .wrap(bridge_middleware::custom_code_handle(tera_data))
+            .wrap(bridge_middleware::custom_code_handle(tera_data, context))
             .wrap(middleware::NormalizePath::trim())
             .wrap(middleware::Compress::default())
             .wrap(bridge_middleware::Maintainence)

@@ -1,21 +1,21 @@
 use std::str::FromStr;
 
 use actix_web::{
+    HttpRequest, HttpResponse,
     cookie::{Cookie, SameSite},
     get,
     web::{Data, ReqData},
-    HttpRequest, HttpResponse,
 };
 use mongodb::bson::{doc, oid::ObjectId};
-use tera::Tera;
+use tera::{Context, Tera};
 use tracing::instrument;
 
 use crate::{
     auth::COOKIE_NAME,
     db::{
-        models::{BridgeCookie, Group, NotebookStatusCookie, User, UserType, GROUP, USER},
-        mongo::DB,
         Database,
+        models::{BridgeCookie, GROUP, Group, NotebookStatusCookie, USER, User, UserType},
+        mongo::DB,
     },
     errors::{BridgeError, Result},
     web::{helper, route::portal::user_htmx::Profile},
@@ -27,6 +27,7 @@ const USER_PAGE: &str = "pages/portal_user.html";
 #[instrument(skip(data, db, subject))]
 pub(super) async fn user(
     data: Data<Tera>,
+    context: Data<Context>,
     req: HttpRequest,
     subject: Option<ReqData<BridgeCookie>>,
     nsc: Option<ReqData<NotebookStatusCookie>>,
@@ -81,7 +82,13 @@ pub(super) async fn user(
         }
         let content = helper::log_with_level!(
             profile
-                .render(data, nsc, &mut bridge_cookie, helper::add_token_exp_to_tera)
+                .render(
+                    data,
+                    context,
+                    nsc,
+                    &mut bridge_cookie,
+                    helper::add_token_exp_to_tera
+                )
                 .await,
             error
         )?;

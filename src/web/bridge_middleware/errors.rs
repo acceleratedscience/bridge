@@ -1,12 +1,12 @@
 use std::{collections::HashMap, sync::OnceLock};
 
 use actix_web::{
+    HttpResponse,
     body::BoxBody,
     dev::ServiceResponse,
-    http::{header::ContentType, StatusCode},
+    http::{StatusCode, header::ContentType},
     middleware::{ErrorHandlerResponse, ErrorHandlers},
     web::Data,
-    HttpResponse,
 };
 use tera::{Context, Tera};
 
@@ -15,10 +15,9 @@ use super::htmx::HTMX_ERROR_RES;
 static ERROR_HTMLS: OnceLock<HashMap<&str, String>> = OnceLock::new();
 
 // TODO: refactor this using middleware pattern
-pub fn custom_code_handle(data: Data<Tera>) -> ErrorHandlers<BoxBody> {
+pub fn custom_code_handle(data: Data<Tera>, context_burn: Data<Context>) -> ErrorHandlers<BoxBody> {
     let template = ERROR_HTMLS.get_or_init(|| {
         let mut map = HashMap::new();
-        let context_burn = Context::new();
         map.insert(
             "404",
             data.render("pages/404.html", &context_burn)

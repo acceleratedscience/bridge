@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::config::CONFIG;
 
-pub const NAMESPACE: LazyLock::<&str> = LazyLock::new(|| {
+pub static NAMESPACE: LazyLock::<&str> = LazyLock::new(|| {
     &CONFIG.notebook_namespace
 });
 

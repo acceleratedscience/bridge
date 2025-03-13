@@ -7,7 +7,8 @@ use tera::{Context, Tera};
 use crate::{
     config::CONFIG,
     db::models::{BridgeCookie, NotebookStatusCookie, User},
-    errors::Result, web::services::CATALOG,
+    errors::Result,
+    web::services::CATALOG,
 };
 
 #[cfg(feature = "notebook")]
@@ -43,11 +44,12 @@ impl<'p> Profile<'p> {
     pub async fn render(
         &self,
         tera: Data<Tera>,
+        context: Data<Context>,
         nsc: Option<ReqData<NotebookStatusCookie>>,
         bc: &mut BridgeCookie,
         t_exp: impl FnOnce(&mut Context, &str),
     ) -> Result<(String, Option<[Cookie; 2]>)> {
-        let mut context = tera::Context::new();
+        let mut context = (**context).clone();
         context.insert("name", &self.user.user_name);
         context.insert("app_name", &CONFIG.app_name);
 

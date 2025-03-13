@@ -113,7 +113,7 @@ impl OpenID {
         let reqwest_client = reqwest::Client::new();
 
         let provider_metadata = core::CoreProviderMetadata::discover_async(
-            IssuerUrl::new((&oidc.url).to_owned())?,
+            IssuerUrl::new(oidc.url.to_owned())?,
             &reqwest_client,
         )
         .await
