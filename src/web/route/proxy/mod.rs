@@ -1,4 +1,4 @@
-use actix_web::{dev::PeerAddr, http::Method, web, HttpRequest, HttpResponse};
+use actix_web::{HttpRequest, HttpResponse, dev::PeerAddr, http::Method, web};
 use actix_web_httpauth::middleware::HttpAuthentication;
 use tracing::{error, instrument, warn};
 

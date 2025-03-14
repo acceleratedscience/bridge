@@ -1,6 +1,6 @@
 use std::time::{Duration, Instant};
 
-use futures::{stream, Stream, StreamExt};
+use futures::{Stream, StreamExt, stream};
 use num_bigint::BigUint;
 use redis::AsyncCommands;
 use reqwest::Client;

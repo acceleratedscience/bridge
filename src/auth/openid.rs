@@ -3,11 +3,11 @@
 use std::sync::OnceLock;
 
 use openidconnect::{
-    core::{self, CoreClient, CoreResponseType},
     AuthenticationFlow, AuthorizationCode, Client, ClientId, ClientSecret, CsrfToken,
     EmptyAdditionalClaims, EmptyExtraTokenFields, EndpointMaybeSet, EndpointNotSet, EndpointSet,
     IdTokenFields, IssuerUrl, Nonce, RedirectUrl, Scope, StandardErrorResponse,
     StandardTokenResponse,
+    core::{self, CoreClient, CoreResponseType},
 };
 use tracing::error;
 use url::Url;

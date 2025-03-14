@@ -1,7 +1,7 @@
-use actix_web::{dev::ServiceRequest, Error};
+use actix_web::{Error, dev::ServiceRequest};
 use actix_web_httpauth::extractors::{
-    bearer::{self, BearerAuth},
     AuthenticationError,
+    bearer::{self, BearerAuth},
 };
 
 use crate::{auth::jwt::validate_token, config::CONFIG, web::route::proxy::INFERENCE_HEADER};

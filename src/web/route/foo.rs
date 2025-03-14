@@ -1,8 +1,7 @@
 use actix_web::{
-    get,
+    HttpResponse, get,
     http::header::ContentType,
     web::{self, Data},
-    HttpResponse,
 };
 use tera::{Context, Tera};
 use tracing::instrument;

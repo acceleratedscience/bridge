@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use serde::{de::Visitor, Deserialize};
+use serde::{Deserialize, de::Visitor};
 
 #[allow(dead_code)]
 #[derive(Debug)]

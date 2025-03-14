@@ -1,25 +1,24 @@
 use std::marker::PhantomData;
 
 use actix_web::{
-    get,
+    HttpMessage, HttpRequest, HttpResponse, get,
     http::header::{ContentType, WWW_AUTHENTICATE},
     post,
     web::{self, Data},
-    HttpMessage, HttpRequest, HttpResponse,
 };
 use actix_web_httpauth::extractors::{basic::BasicAuth, bearer::BearerAuth};
 use mongodb::bson::doc;
 use regex::Regex;
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use tracing::error;
 
 use crate::{
     auth::jwt::validate_token,
     config::CONFIG,
     db::{
-        models::{AppPayload, Apps, GroupSubs, User, UserType, APPS, USER},
-        mongo::{ObjectID, DB},
         Database,
+        models::{APPS, AppPayload, Apps, GroupSubs, USER, User, UserType},
+        mongo::{DB, ObjectID},
     },
     errors::Result,
     web::helper::{self, generate_salt},

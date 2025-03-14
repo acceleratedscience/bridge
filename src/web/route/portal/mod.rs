@@ -1,12 +1,12 @@
 use std::{marker::PhantomData, str::FromStr};
 
 use actix_web::{
+    HttpRequest, HttpResponse,
     cookie::{Cookie, SameSite},
     get,
     http::header::{self, ContentType},
     post,
     web::{self, Data, ReqData},
-    HttpRequest, HttpResponse,
 };
 use mongodb::bson::{doc, oid::ObjectId};
 use tera::{Context, Tera};
@@ -14,13 +14,13 @@ use tera::{Context, Tera};
 use crate::{
     auth::{COOKIE_NAME, NOTEBOOK_COOKIE_NAME, NOTEBOOK_STATUS_COOKIE_NAME},
     db::{
-        models::{BridgeCookie, User, UserType, USER},
-        mongo::DB,
         Database,
+        models::{BridgeCookie, USER, User, UserType},
+        mongo::DB,
     },
     errors::{BridgeError, Result},
     web::{
-        bridge_middleware::{CookieCheck, Htmx, HTMX_ERROR_RES},
+        bridge_middleware::{CookieCheck, HTMX_ERROR_RES, Htmx},
         helper::log_with_level,
         services::CATALOG,
     },

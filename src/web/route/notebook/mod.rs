@@ -9,32 +9,32 @@ use mongodb::bson::doc;
 use serde::Deserialize;
 
 use actix_web::{
+    HttpRequest, HttpResponse,
     cookie::{Cookie, SameSite},
     delete,
     dev::PeerAddr,
     get,
-    http::{header::ContentType, Method, StatusCode},
+    http::{Method, StatusCode, header::ContentType},
     post,
     web::{self, Data, ReqData},
-    HttpRequest, HttpResponse,
 };
 use tera::{Context, Tera};
 use tracing::{info, instrument, warn};
 use url::Url;
 
 use crate::{
-    auth::{jwt, COOKIE_NAME, NOTEBOOK_COOKIE_NAME, NOTEBOOK_STATUS_COOKIE_NAME},
+    auth::{COOKIE_NAME, NOTEBOOK_COOKIE_NAME, NOTEBOOK_STATUS_COOKIE_NAME, jwt},
     config::{AUD, CONFIG},
     db::{
-        models::{
-            BridgeCookie, Config, Group, NotebookCookie, NotebookInfo, NotebookStatusCookie, User,
-            UserNotebook, GROUP, USER,
-        },
-        mongo::{ObjectID, DB},
         Database,
+        models::{
+            BridgeCookie, Config, GROUP, Group, NotebookCookie, NotebookInfo, NotebookStatusCookie,
+            USER, User, UserNotebook,
+        },
+        mongo::{DB, ObjectID},
     },
     errors::{BridgeError, Result},
-    kube::{KubeAPI, Notebook, NotebookSpec, PVCSpec, NAMESPACE},
+    kube::{KubeAPI, NAMESPACE, Notebook, NotebookSpec, PVCSpec},
     web::{
         bridge_middleware::{CookieCheck, Htmx, NotebookCookieCheck},
         helper::{self, bson},
@@ -59,7 +59,7 @@ async fn notebook_ws_subscribe(
                     "Notebook cookie not found".to_string(),
                 )),
                 error
-            )
+            );
         }
     };
     let url = notebook_helper::make_forward_url(
@@ -93,7 +93,7 @@ async fn notebook_ws_session(
                     "Notebook cookie not found".to_string(),
                 )),
                 error
-            )
+            );
         }
     };
 
@@ -330,7 +330,7 @@ async fn notebook_delete(
                     "Notebook cookie not found".to_string(),
                 )),
                 error
-            )
+            );
         }
     };
 
@@ -404,7 +404,7 @@ async fn notebook_status(
                     "Bridge cookie and or notebook_status_cookie not found".to_string(),
                 )),
                 error
-            )
+            );
         }
     };
 
@@ -594,7 +594,7 @@ async fn notebook_forward(
                     "Notebook cookie not found".to_string(),
                 )),
                 error
-            )
+            );
         }
     };
 

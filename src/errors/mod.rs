@@ -1,6 +1,6 @@
 use std::convert::Infallible;
 
-use actix_web::{http::StatusCode, ResponseError};
+use actix_web::{ResponseError, http::StatusCode};
 use thiserror::Error;
 
 pub type Result<T> = std::result::Result<T, BridgeError>;

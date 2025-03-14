@@ -1,12 +1,12 @@
 use std::{marker::PhantomData, str::FromStr};
 
 use actix_web::{
+    HttpRequest, HttpResponse,
     cookie::{Cookie, SameSite},
     get,
     http::header::ContentType,
     patch,
     web::{self, Data, ReqData},
-    HttpRequest, HttpResponse,
 };
 use futures::StreamExt;
 use mongodb::bson::{doc, oid::ObjectId};
@@ -16,18 +16,19 @@ use tracing::instrument;
 use crate::{
     auth::COOKIE_NAME,
     db::{
+        Database,
         models::{
-            AdminTab, AdminTabs, BridgeCookie, Group, ModifyUser, NotebookStatusCookie, User,
-            UserGroupMod, UserType, GROUP, USER,
+            AdminTab, AdminTabs, BridgeCookie, GROUP, Group, ModifyUser, NotebookStatusCookie,
+            USER, User, UserGroupMod, UserType,
         },
         mongo::DB,
-        Database,
     },
     errors::{BridgeError, Result},
     web::{
-        bridge_middleware::{Htmx, HTMX_ERROR_RES},
+        bridge_middleware::{HTMX_ERROR_RES, Htmx},
         helper::{self, bson},
-        route::portal::helper::check_admin, services::CATALOG,
+        route::portal::helper::check_admin,
+        services::CATALOG,
     },
 };
 

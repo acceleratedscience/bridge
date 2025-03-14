@@ -1,12 +1,12 @@
 use std::{fmt::Debug, sync::OnceLock};
 
 use k8s_openapi::{
-    api::core::v1::{Namespace, PersistentVolumeClaim, Pod},
     NamespaceResourceScope,
+    api::core::v1::{Namespace, PersistentVolumeClaim, Pod},
 };
 use kube::{
-    api::{DeleteParams, ObjectMeta, PostParams},
     Api, Client, Resource,
+    api::{DeleteParams, ObjectMeta, PostParams},
 };
 use reqwest::StatusCode;
 use serde::{Deserialize, Serialize};
@@ -15,10 +15,10 @@ use tracing::info;
 use crate::errors::{BridgeError, Result};
 
 mod models;
-pub use models::{Notebook, NotebookSpec, PVCSpec, NAMESPACE};
+pub use models::{NAMESPACE, Notebook, NotebookSpec, PVCSpec};
 
 mod notebook_lifecycle;
-pub use notebook_lifecycle::{notebook_lifecycle, LifecycleStream, Medium};
+pub use notebook_lifecycle::{LifecycleStream, Medium, notebook_lifecycle};
 
 pub struct KubeAPI<M> {
     model: M,

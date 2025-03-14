@@ -71,21 +71,36 @@ where
                             }
                         }
 
-                        let session_id = gcs.session_id.clone();
-                        req.extensions_mut().insert(gcs);
+                        req.extensions_mut().insert(gcs.clone());
                         let service = self.service.clone();
                         async move {
                             if let Some(cache) = CACHEDB.get() {
-                                if let Some(session_id) = session_id {
-                                    warn!("Session id: {:?}", session_id);
-                                // TODO: check with redis if session_id is still valid
-                                } else {
-                                    return Ok(req.into_response(
-                                        HttpResponse::Unauthorized().finish().map_into_right_body(),
-                                    ));
+                                if let Some(session_id) = &gcs.session_id {
+                                    match cache.get_session_id(&gcs.subject).await {
+                                        Ok(session_id_retreived) => {
+                                            if session_id_retreived.eq(session_id) {
+                                                return Ok(service.call(req).await?.map_into_left_body());
+                                            }
+                                        }
+                                        Err(e) => {
+                                            warn!(
+                                                "Session id not found in cache for user: {:?} ip: {:?} error: {:?}", 
+                                                gcs.subject,
+                                                req.connection_info().realip_remote_addr(),
+                                                e
+                                            );
+                                        }
+                                    }
                                 }
+                                warn!(
+                                    "Session id not found in cookie for user: {:?} ip: {:?}",
+                                    gcs.subject,
+                                    req.connection_info().realip_remote_addr()
+                                );
+                                return Ok(req.into_response(
+                                    HttpResponse::Unauthorized().finish().map_into_right_body(),
+                                ));
                             }
-
                             Ok(service.call(req).await?.map_into_left_body())
                         }
                         .boxed_local()

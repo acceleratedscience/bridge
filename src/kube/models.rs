@@ -4,15 +4,13 @@ use k8s_openapi::{
     api::core::v1::{PersistentVolumeClaim, VolumeResourceRequirements},
     apimachinery::pkg::api::resource::Quantity,
 };
-use kube::{api::ObjectMeta, CustomResource};
+use kube::{CustomResource, api::ObjectMeta};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 use crate::config::CONFIG;
 
-pub static NAMESPACE: LazyLock::<&str> = LazyLock::new(|| {
-    &CONFIG.notebook_namespace
-});
+pub static NAMESPACE: LazyLock<&str> = LazyLock::new(|| &CONFIG.notebook_namespace);
 
 // Define the Notebook CRD struct
 #[derive(CustomResource, Deserialize, Serialize, Clone, Debug, JsonSchema)]

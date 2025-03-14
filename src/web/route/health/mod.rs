@@ -1,8 +1,7 @@
 use actix_web::{
-    get,
-    http::{header::ContentType, StatusCode},
+    HttpRequest, HttpResponse, get,
+    http::{StatusCode, header::ContentType},
     web::{self, Data},
-    HttpRequest, HttpResponse,
 };
 use futures::StreamExt;
 use reqwest::Client;

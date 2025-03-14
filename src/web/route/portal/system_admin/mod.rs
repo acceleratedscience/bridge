@@ -3,12 +3,12 @@ use std::{marker::PhantomData, str::FromStr};
 mod htmx;
 
 use actix_web::{
+    HttpRequest, HttpResponse,
     cookie::{Cookie, SameSite},
     delete, get,
     http::header::ContentType,
     patch, post,
     web::{self, Data, ReqData},
-    HttpRequest, HttpResponse,
 };
 use mongodb::bson::{doc, oid::ObjectId};
 use serde::Deserialize;
@@ -18,16 +18,16 @@ use tracing::instrument;
 use crate::{
     auth::COOKIE_NAME,
     db::{
+        Database,
         models::{
-            AdminTab, AdminTabs, BridgeCookie, Group, GroupForm, NotebookStatusCookie, User,
-            UserDeleteForm, UserForm, UserType, GROUP, USER,
+            AdminTab, AdminTabs, BridgeCookie, GROUP, Group, GroupForm, NotebookStatusCookie, USER,
+            User, UserDeleteForm, UserForm, UserType,
         },
         mongo::DB,
-        Database,
     },
     errors::{BridgeError, Result},
     web::{
-        bridge_middleware::{Htmx, HTMX_ERROR_RES},
+        bridge_middleware::{HTMX_ERROR_RES, Htmx},
         helper::{self, bson, payload_to_struct},
         route::portal::helper::{check_admin, get_all_groups},
         services::CATALOG,
@@ -38,7 +38,7 @@ use crate::{
 use crate::web::route::portal::helper::notebook_bookkeeping;
 
 use self::htmx::{
-    GroupContent, UserContent, CREATE_MODIFY_GROUP, MODIFY_USER, VIEW_GROUP, VIEW_USER,
+    CREATE_MODIFY_GROUP, GroupContent, MODIFY_USER, UserContent, VIEW_GROUP, VIEW_USER,
 };
 
 const USER_PAGE: &str = "pages/portal_system.html";

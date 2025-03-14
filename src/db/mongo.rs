@@ -1,12 +1,17 @@
-use std::{marker::PhantomData, str::FromStr, sync::{LazyLock, OnceLock}, time::Duration};
+use std::{
+    marker::PhantomData,
+    str::FromStr,
+    sync::{LazyLock, OnceLock},
+    time::Duration,
+};
 
 use futures::{StreamExt, TryStreamExt};
 use mongodb::{
-    bson::{doc, oid::ObjectId, Bson, DateTime, Document, Regex},
-    options::IndexOptions,
     Client, Collection, Database as MongoDatabase, IndexModel,
+    bson::{Bson, DateTime, Document, Regex, doc, oid::ObjectId},
+    options::IndexOptions,
 };
-use serde::{de::DeserializeOwned, Serialize};
+use serde::{Serialize, de::DeserializeOwned};
 
 use crate::{
     config::CONFIG,
@@ -15,8 +20,8 @@ use crate::{
 };
 
 use super::{
-    models::{Group, GroupSubs, Locks, User, APPS, GROUP, LOCKS, USER},
     Database,
+    models::{APPS, GROUP, Group, GroupSubs, LOCKS, Locks, USER, User},
 };
 
 type Pipeline = Vec<Document>;
@@ -344,7 +349,7 @@ mod tests {
 
     use crate::{
         config,
-        db::models::{User, UserType, USER},
+        db::models::{USER, User, UserType},
     };
 
     use super::*;

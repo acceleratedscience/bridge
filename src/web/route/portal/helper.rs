@@ -9,8 +9,8 @@ use tera::Context;
 
 use crate::{
     db::{
-        models::{BridgeCookie, Group, User, UserType, GROUP},
         Database,
+        models::{BridgeCookie, GROUP, Group, User, UserType},
     },
     errors::{BridgeError, Result},
     web::helper,
@@ -60,7 +60,7 @@ pub(super) fn check_admin(
                     g.into_inner().subject
                 ))),
                 error
-            )
+            );
         }
         None => {
             return helper::log_with_level!(
@@ -69,7 +69,7 @@ pub(super) fn check_admin(
                         .to_string(),
                 )),
                 error
-            )
+            );
         }
     })
 }

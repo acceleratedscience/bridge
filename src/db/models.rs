@@ -222,7 +222,8 @@ mod tests {
 
     #[test]
     fn test_bridge_cookie_serde() {
-        let bridge_cookie = r#"{"subject":"test","user_type":"system","config":null,"resources":null}"#;
+        let bridge_cookie =
+            r#"{"subject":"test","user_type":"system","config":null,"resources":null}"#;
         let bridge_cookie: super::BridgeCookie = serde_json::from_str(bridge_cookie).unwrap();
         assert_eq!(bridge_cookie.subject, "test");
         assert_eq!(bridge_cookie.user_type, UserType::SystemAdmin);

@@ -199,8 +199,7 @@ mod test {
     #[test]
     fn test_get_details() {
         let catalog = &CATALOG;
-        let Value::Boolean(b) = *catalog.get_details("resources", "reddit", "show").unwrap()
-        else {
+        let Value::Boolean(b) = *catalog.get_details("resources", "reddit", "show").unwrap() else {
             panic!("show not found");
         };
         assert!(b);

@@ -1,9 +1,9 @@
-use std::future::{ready, Ready};
+use std::future::{Ready, ready};
 
 use actix_web::{
-    dev::{forward_ready, Service, ServiceRequest, ServiceResponse, Transform},
-    http::header::{self, HeaderValue, CACHE_CONTROL},
     Error,
+    dev::{Service, ServiceRequest, ServiceResponse, Transform, forward_ready},
+    http::header::{self, CACHE_CONTROL, HeaderValue},
 };
 use futures::future::LocalBoxFuture;
 

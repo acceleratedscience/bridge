@@ -1,13 +1,15 @@
 use actix_web::{
-    get,
+    HttpRequest, HttpResponse, get,
     http::header,
     web::{self, Data},
-    HttpRequest, HttpResponse,
 };
 use tera::{Context, Tera};
 
 use crate::{
-    auth::COOKIE_NAME, config::CONFIG, errors::Result, web::helper::{self}
+    auth::COOKIE_NAME,
+    config::CONFIG,
+    errors::Result,
+    web::helper::{self},
 };
 
 pub mod auth;

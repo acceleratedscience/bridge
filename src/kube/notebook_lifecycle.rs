@@ -13,14 +13,14 @@ use pin_project::pin_project;
 use reqwest::Client;
 use serde::Deserialize;
 use time::OffsetDateTime;
-use tokio::time::{sleep, Instant, Sleep};
+use tokio::time::{Instant, Sleep, sleep};
 use tracing::info;
 
 use crate::{
     db::{
-        models::{NotebookInfo, User, USER},
-        mongo::{ObjectID, DB, DBCONN},
         Database,
+        models::{NotebookInfo, USER, User},
+        mongo::{DB, DBCONN, ObjectID},
     },
     errors::{BridgeError, Result},
     kube::KubeAPI,
