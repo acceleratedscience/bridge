@@ -74,6 +74,7 @@ where
                         req.extensions_mut().insert(gcs.clone());
                         let service = self.service.clone();
                         async move {
+                            // sesssion_id management only enabled if cache is present
                             if let Some(cache) = CACHEDB.get() {
                                 if let Some(session_id) = &gcs.session_id {
                                     match cache.get_session_id(&gcs.subject).await {
@@ -81,6 +82,11 @@ where
                                             if session_id_retreived.eq(session_id) {
                                                 return Ok(service.call(req).await?.map_into_left_body());
                                             }
+                                            warn!(
+                                                "Session id does not match cache for user: {:?} ip: {:?}",
+                                                gcs.subject,
+                                                req.connection_info().realip_remote_addr()
+                                            );
                                         }
                                         Err(e) => {
                                             warn!(
@@ -91,12 +97,13 @@ where
                                             );
                                         }
                                     }
+                                } else {
+                                    warn!(
+                                        "Session id not found in bridge cookie for user: {:?} ip: {:?}",
+                                        gcs.subject,
+                                        req.connection_info().realip_remote_addr()
+                                    );
                                 }
-                                warn!(
-                                    "Session id not found in cookie for user: {:?} ip: {:?}",
-                                    gcs.subject,
-                                    req.connection_info().realip_remote_addr()
-                                );
                                 return Ok(req.into_response(
                                     HttpResponse::Unauthorized().finish().map_into_right_body(),
                                 ));
