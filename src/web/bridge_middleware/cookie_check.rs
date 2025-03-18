@@ -72,6 +72,7 @@ where
                         }
 
                         req.extensions_mut().insert(gcs.clone());
+
                         let service = self.service.clone();
                         async move {
                             // sesssion_id management only enabled if cache is present
@@ -108,6 +109,7 @@ where
                                     HttpResponse::Unauthorized().finish().map_into_right_body(),
                                 ));
                             }
+
                             Ok(service.call(req).await?.map_into_left_body())
                         }
                         .boxed_local()
