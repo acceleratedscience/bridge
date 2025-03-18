@@ -59,7 +59,9 @@ impl<'p> Profile<'p> {
         }
 
         context.insert("user", "user");
-        context.insert("group", &self.groups.join(", "));
+        context.insert("user_id", &self.user.sub);
+        context.insert("email", &self.user.email);
+        context.insert("group", &self.groups);
         context.insert("subscriptions", &self.subscriptions);
         context.insert("token", &self.user.token);
         // add in the expiration time if token is present
