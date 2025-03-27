@@ -29,7 +29,7 @@ impl NotebookSpec {
         env_to_add: Vec<(String, String)>,
     ) -> Self {
         let notebook_image = CONFIG.notebooks.get(notebook_image_name).unwrap();
-        let mut notebook_env = notebook_image.env.clone().unwrap_or_default();
+        let mut notebook_env = notebook_image.notebook_env.clone().unwrap_or_default();
 
         notebook_env.push(format!(
             "--ServerApp.base_url='notebook/{}/{}'",
@@ -43,6 +43,13 @@ impl NotebookSpec {
 
         if !env_to_add.is_empty() {
             env_to_add.into_iter().for_each(|(name, value)| {
+                env.push(EnvVar { name, value });
+            });
+        }
+
+        // TODO: look into removing this clone
+        if let Some(envs) = notebook_image.env.clone() {
+            envs.into_iter().for_each(|(name, value)| {
                 env.push(EnvVar { name, value });
             });
         }
