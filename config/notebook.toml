@@ -1,10 +1,10 @@
 [open_ad_workbench]
 name = "OpenAD Workbench"
-url = "quay.io/ibmdpdev/openad_workbench_stage:latest"
+url = "quay.io/ibmdpdev/openad_workbench_prod:latest"
 pull_policy = "Always"
 working_dir = "/opt/app-root/src"
 volume_mnt_path = "/opt/app-root/src"
-env = [
+notebook_env = [
 	"--ServerApp.token=''",
 	"--ServerApp.password=''",
 	"--ServerApp.notebook_dir='/opt/app-root/src'",
@@ -17,6 +17,8 @@ env = [
 secret = "ibmdpdev-openad-pull-secret"
 start_up_url = "lab/tree/start_menu.ipynb"
 max_idle_time = 86400
+[open_ad_workbench.env]
+PROXY_URL = "https://open.accelerate.science/proxy"
 
 [datascience_notebook]
 name = "Data Science Notebook"
@@ -24,7 +26,7 @@ url = "jupyter/base-notebook:latest"
 pull_policy = "IfNotPresent"
 working_dir = "/home/jovyan"
 volume_mnt_path = "/home/jovyan/"
-env = [
+notebook_env = [
 	"--ServerApp.token=''",
 	"--ServerApp.password=''",
 	"--ServerApp.notebook_dir='/home/jovyan'",
