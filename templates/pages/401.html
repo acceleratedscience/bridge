@@ -2,8 +2,9 @@
 {% block title %}401: Unauthorized{% endblock title %}
 
 {% block body %}
-<div hx-trigger="load delay:3s" hx-post="/portal/hx/logout">
+<div hx-trigger="load delay:3s" hx-post="/session/logout">
 	<h1>Error 401</h1>
 	<p>Unauthorized</p>
+	<p>You are now being redirected to the login page.</p>
 </div>
 {% endblock body %}

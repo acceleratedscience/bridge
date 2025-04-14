@@ -71,7 +71,7 @@ mimalloc = "~0.1"
 # security
 base64 = "~0.22.1"
 rand = "~0.9"
-uuid = { version = "~1.15", features = ["v4"] }
+uuid = { version = "~1.16", features = ["v4"] }
 
 [dev-dependencies]
 jsonwebkey = { version = "~0.3", features = ["jwt-convert"] }

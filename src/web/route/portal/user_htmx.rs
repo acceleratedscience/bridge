@@ -61,6 +61,7 @@ impl<'p> Profile<'p> {
         context.insert("user", "user");
         context.insert("user_id", &self.user.sub);
         context.insert("email", &self.user.email);
+        context.insert("user_type", &self.user.user_type);
         context.insert("group", &self.groups);
         context.insert("subscriptions", &self.subscriptions);
         context.insert("token", &self.user.token);

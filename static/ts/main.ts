@@ -97,7 +97,6 @@ class Menu {
 
 if (currentPath !== "/") {
 	window.addEventListener("DOMContentLoaded", () => {
-
 		const menu_labels: menuLabels = {
 			button: "menu_button",
 			big: "menu_big",

@@ -187,6 +187,7 @@ async fn search_by_email(
 
 #[post("logout")]
 async fn logout() -> HttpResponse {
+    println!("Logging out user");
     // clear all the cookie
     let mut cookie_remove = Cookie::build(COOKIE_NAME, "")
         .same_site(SameSite::Strict)
@@ -228,12 +229,12 @@ pub fn config_portal(cfg: &mut web::ServiceConfig) {
                 web::scope("/hx")
                     .wrap(Htmx)
                     .service(token::get_token_for_user)
-                    .service(search_by_email)
-                    .service(logout),
+                    .service(search_by_email),
             )
             .service(index)
             .service(user::user)
             .configure(group_admin::config_group)
             .configure(system_admin::config_system),
-    );
+    )
+    .service(web::scope("/session").wrap(Htmx).service(logout));
 }

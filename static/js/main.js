@@ -79,9 +79,13 @@ class Menu {
         });
     }
 }
-// only for path other than "/" and starting with "/callback"
-if (currentPath !== "/" && !currentPath.startsWith("/callback")) {
-    window.addEventListener("load", () => {
+function buttonLoading(element) {
+    element.classList.remove("cursor-pointer");
+    element.setAttribute("disabled", "true");
+    element.classList.add("divide-gray-500");
+}
+if (currentPath !== "/") {
+    window.addEventListener("DOMContentLoaded", () => {
         const menu_labels = {
             button: "menu_button",
             big: "menu_big",
