@@ -6,16 +6,37 @@ class Menu {
     menu_mobile;
     menu_open;
     menu_close;
-    constructor(menu_labels) {
+    main;
+    constructor(menu_labels, main) {
         this.menu_button = document.getElementById(menu_labels.button);
         this.menu_big = document.getElementById(menu_labels.big).childNodes;
         this.menu = document.getElementById(menu_labels.menu);
         this.menu_mobile = document.getElementById(menu_labels.menu).childNodes;
         this.menu_open = document.getElementById(menu_labels.open);
         this.menu_close = document.getElementById(menu_labels.close);
+        this.main = document.getElementById(main).childNodes;
+        const showById = (node, delimiter) => {
+            if (node instanceof HTMLElement) {
+                const element = node.id;
+                const id = element.split(delimiter)[1];
+                const target = document.getElementById(id);
+                if (target instanceof HTMLElement) {
+                    target.classList.remove("hidden");
+                }
+            }
+        };
+        const hideAllMain = () => {
+            this.main.forEach((node) => {
+                if (node instanceof HTMLElement) {
+                    node.classList.add("hidden");
+                }
+            });
+        };
         // Big menu item selection styling
         this.menu_big.forEach((node) => {
             node.addEventListener("click", () => {
+                hideAllMain();
+                showById(node, "_");
                 this.menu_big.forEach((node) => {
                     if (node instanceof HTMLElement) {
                         node.classList.remove(menu_labels.menu_selected);
@@ -36,6 +57,8 @@ class Menu {
         // mobile menu item selection styling
         this.menu_mobile.forEach((node) => {
             node.addEventListener("click", () => {
+                hideAllMain();
+                showById(node, "_");
                 this.menu_mobile.forEach((node) => {
                     if (node instanceof HTMLElement) {
                         node.classList.remove(menu_labels.mobile_menu_selected);
@@ -79,11 +102,6 @@ class Menu {
         });
     }
 }
-function buttonLoading(element) {
-    element.classList.remove("cursor-pointer");
-    element.setAttribute("disabled", "true");
-    element.classList.add("divide-gray-500");
-}
 if (currentPath !== "/") {
     window.addEventListener("DOMContentLoaded", () => {
         const menu_labels = {
@@ -95,7 +113,7 @@ if (currentPath !== "/") {
             menu_selected: "menu_selected",
             mobile_menu_selected: "mobile_menu_selected"
         };
-        new Menu(menu_labels);
+        new Menu(menu_labels, "main");
     });
 }
 // @ts-ignore

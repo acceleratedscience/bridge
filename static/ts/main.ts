@@ -17,18 +17,43 @@ class Menu {
 	menu_mobile: NodeListOf<ChildNode>;
 	menu_open: HTMLElement;
 	menu_close: HTMLElement;
+	main: NodeListOf<ChildNode>;
 
-	constructor(menu_labels: menuLabels) {
+	constructor(menu_labels: menuLabels, main: string) {
 		this.menu_button = document.getElementById(menu_labels.button);
 		this.menu_big = document.getElementById(menu_labels.big).childNodes;
 		this.menu = document.getElementById(menu_labels.menu);
 		this.menu_mobile = document.getElementById(menu_labels.menu).childNodes;
 		this.menu_open = document.getElementById(menu_labels.open);
 		this.menu_close = document.getElementById(menu_labels.close);
+		this.main = document.getElementById(main).childNodes;
+
+		const showById = (node: ChildNode, delimiter: string) => {
+			if (node instanceof HTMLElement) {
+				const element = node.id;
+				const id =  element.split(delimiter)[1];
+				const target = document.getElementById(id);
+				if (target instanceof HTMLElement) {
+					target.classList.remove("hidden");
+				}
+			}
+		};
+
+		const hideAllMain = () => {
+			this.main.forEach((node) => {
+				if (node instanceof HTMLElement) {
+					node.classList.add("hidden");
+				}
+			});
+		};
 
 		// Big menu item selection styling
 		this.menu_big.forEach((node) => {
 			node.addEventListener("click", () => {
+
+				hideAllMain();
+				showById(node, "_");
+
 				this.menu_big.forEach((node) => {
 					if (node instanceof HTMLElement) {
 						node.classList.remove(menu_labels.menu_selected);
@@ -50,6 +75,10 @@ class Menu {
 		// mobile menu item selection styling
 		this.menu_mobile.forEach((node) => {
 			node.addEventListener("click", () => {
+
+				hideAllMain();
+				showById(node, "_");
+
 				this.menu_mobile.forEach((node) => {
 					if (node instanceof HTMLElement) {
 						node.classList.remove(menu_labels.mobile_menu_selected);
@@ -107,7 +136,7 @@ if (currentPath !== "/") {
 			mobile_menu_selected: "mobile_menu_selected"
 		};
 
-		new Menu(menu_labels);
+		new Menu(menu_labels, "main");
 	});
 }
 

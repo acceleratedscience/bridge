@@ -2,7 +2,17 @@
 {% block title %}Portal User{% endblock title %}
 
 {% block main %}
+
+<div id="profile">
 {% include 'components/profile.html' %}
+</div>
+
+{% if notebook %}
+<div id="notebook" class="hidden">
+{% include 'components/notebook.html' %}
+</div>
+{% endif %}
+
 {% endblock main %}
 
 {% block footer %}
