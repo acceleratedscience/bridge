@@ -1,15 +1,20 @@
 {% extends 'pages/nav_base.html' %}
 {% block title %}Portal User{% endblock title %}
 
+{% block head %}
+{{ super() }}
+<script src="/static/js/response-targets.js"></script>
+{% endblock head %}
+
 {% block main %}
 
 <div id="profile">
-{% include 'components/profile.html' %}
+	{% include 'components/profile.html' %}
 </div>
 
 {% if notebook %}
 <div id="notebook" class="hidden">
-{% include 'components/notebook.html' %}
+	{% include 'components/notebook/notebook.html' %}
 </div>
 {% endif %}
 

@@ -171,7 +171,7 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
         server
             .bind_rustls_0_23(
                 ("0.0.0.0", 8080),
-                tls::load_certs("certs/fullchain.cer", "certs/open.accelerate.science.key"),
+                tls::load_certs("certs/fullchain.cer", "certs/open.accelerator.cafe.key"),
             )?
             .run()
             .await?;

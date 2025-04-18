@@ -1,13 +1,7 @@
-const currentPath = window.location.pathname;
-class Menu {
-    menu_button;
-    menu_big;
-    menu;
-    menu_mobile;
-    menu_open;
-    menu_close;
-    main;
-    constructor(menu_labels, main) {
+var currentPath = window.location.pathname;
+var Menu = /** @class */ (function () {
+    function Menu(menu_labels, main) {
+        var _this = this;
         this.menu_button = document.getElementById(menu_labels.button);
         this.menu_big = document.getElementById(menu_labels.big).childNodes;
         this.menu = document.getElementById(menu_labels.menu);
@@ -15,96 +9,97 @@ class Menu {
         this.menu_open = document.getElementById(menu_labels.open);
         this.menu_close = document.getElementById(menu_labels.close);
         this.main = document.getElementById(main).childNodes;
-        const showById = (node, delimiter) => {
+        var showById = function (node, delimiter) {
             if (node instanceof HTMLElement) {
-                const element = node.id;
-                const id = element.split(delimiter)[1];
-                const target = document.getElementById(id);
+                var element = node.id;
+                var id = element.split(delimiter)[1];
+                var target = document.getElementById(id);
                 if (target instanceof HTMLElement) {
                     target.classList.remove("hidden");
                 }
             }
         };
-        const hideAllMain = () => {
-            this.main.forEach((node) => {
+        var hideAllMain = function () {
+            _this.main.forEach(function (node) {
                 if (node instanceof HTMLElement) {
                     node.classList.add("hidden");
                 }
             });
         };
         // Big menu item selection styling
-        this.menu_big.forEach((node) => {
-            node.addEventListener("click", () => {
+        this.menu_big.forEach(function (node) {
+            node.addEventListener("click", function () {
                 hideAllMain();
                 showById(node, "_");
-                this.menu_big.forEach((node) => {
+                _this.menu_big.forEach(function (node) {
                     if (node instanceof HTMLElement) {
                         node.classList.remove(menu_labels.menu_selected);
                     }
                 });
-                this.menu_mobile.forEach((node) => {
+                _this.menu_mobile.forEach(function (node) {
                     if (node instanceof HTMLElement) {
                         node.classList.remove(menu_labels.mobile_menu_selected);
                     }
                 });
                 if (node instanceof HTMLElement) {
                     node.classList.add(menu_labels.menu_selected);
-                    let mobile_target = node.id.replace("big_", "mobile_");
+                    var mobile_target = node.id.replace("big_", "mobile_");
                     document.getElementById(mobile_target).classList.add(menu_labels.mobile_menu_selected);
                 }
             });
         });
         // mobile menu item selection styling
-        this.menu_mobile.forEach((node) => {
-            node.addEventListener("click", () => {
+        this.menu_mobile.forEach(function (node) {
+            node.addEventListener("click", function () {
                 hideAllMain();
                 showById(node, "_");
-                this.menu_mobile.forEach((node) => {
+                _this.menu_mobile.forEach(function (node) {
                     if (node instanceof HTMLElement) {
                         node.classList.remove(menu_labels.mobile_menu_selected);
                     }
                 });
-                this.menu_big.forEach((node) => {
+                _this.menu_big.forEach(function (node) {
                     if (node instanceof HTMLElement) {
                         node.classList.remove(menu_labels.menu_selected);
                     }
                 });
                 if (node instanceof HTMLElement) {
                     node.classList.add(menu_labels.mobile_menu_selected);
-                    let big_target = node.id.replace("mobile_", "big_");
+                    var big_target = node.id.replace("mobile_", "big_");
                     document.getElementById(big_target).classList.add(menu_labels.menu_selected);
                 }
             });
         });
         // Mobile menu
-        this.menu_button.addEventListener("click", () => {
-            if (this.menu.classList.contains("hidden")) {
-                this.menu.classList.add("flex");
-                this.menu.classList.remove("hidden");
-                this.menu_open.classList.add("hidden");
-                this.menu_close.classList.remove("hidden");
+        this.menu_button.addEventListener("click", function () {
+            if (_this.menu.classList.contains("hidden")) {
+                _this.menu.classList.add("flex");
+                _this.menu.classList.remove("hidden");
+                _this.menu_open.classList.add("hidden");
+                _this.menu_close.classList.remove("hidden");
             }
             else {
-                this.menu.classList.add("hidden");
-                this.menu.classList.remove("flex");
-                this.menu_open.classList.remove("hidden");
-                this.menu_close.classList.add("hidden");
+                _this.menu.classList.add("hidden");
+                _this.menu.classList.remove("flex");
+                _this.menu_open.classList.remove("hidden");
+                _this.menu_close.classList.add("hidden");
             }
         });
         // Mobile when close when clicking outside the menu
-        document.addEventListener("click", (e) => {
-            if (e.target instanceof HTMLElement && !this.menu_button.contains(e.target) && this.menu.classList.contains("flex")) {
-                this.menu.classList.add("hidden");
-                this.menu.classList.remove("flex");
-                this.menu_open.classList.remove("hidden");
-                this.menu_close.classList.add("hidden");
+        document.addEventListener("click", function (e) {
+            if (e.target instanceof HTMLElement && !_this.menu_button.contains(e.target) && _this.menu.classList.contains("flex")) {
+                _this.menu.classList.add("hidden");
+                _this.menu.classList.remove("flex");
+                _this.menu_open.classList.remove("hidden");
+                _this.menu_close.classList.add("hidden");
             }
         });
     }
-}
+    return Menu;
+}());
 if (currentPath !== "/") {
-    window.addEventListener("DOMContentLoaded", () => {
-        const menu_labels = {
+    window.addEventListener("DOMContentLoaded", function () {
+        var menu_labels = {
             button: "menu_button",
             big: "menu_big",
             menu: "menu",

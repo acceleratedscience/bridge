@@ -117,7 +117,7 @@ async fn notebook_ws_session(
 #[post("/create")]
 async fn notebook_create(
     subject: Option<ReqData<BridgeCookie>>,
-    payload: web::Payload,
+    // payload: web::Payload,
     db: Data<&DB>,
     data: Data<Tera>,
 ) -> Result<HttpResponse> {
@@ -125,11 +125,16 @@ async fn notebook_create(
         let mut bridge_cookie = _subject.into_inner();
         let id = ObjectID::new(&bridge_cookie.subject);
 
-        let mut persist_pvc = false;
-        let pl = payload.to_bytes().await?;
-        if String::from_utf8_lossy(&pl).eq("volume=on") {
-            persist_pvc = true;
-        }
+        // Defaulting to true with ui update... this is to simiply the pvc option. Instead of
+        // giving the user the option to persist the pvc before start a workbench, we ask when the
+        // user want to terminate workbench whether they want to persist the pvc or not.
+        // To ensure we can continue to give this option despite the notebook lifecycle, we set
+        // this to true by default.
+        let persist_pvc = true;
+        // let pl = payload.to_bytes().await?;
+        // if String::from_utf8_lossy(&pl).eq("volume=on") {
+        //     persist_pvc = true;
+        // }
         bridge_cookie.config = Some(Config {
             notebook_persist_pvc: Some(persist_pvc),
         });
