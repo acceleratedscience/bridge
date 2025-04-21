@@ -1,9 +1,10 @@
 <p class="pt-2">You currently do not have workbench running.</p>
 <div class="flex flex-grow pt-2 text-center justify-center items-center">
-	<a id="token_button"
+	<a id="notebook_start_button"
 		class="lg:w-[300px] w-[220px] h-[50px] py-2 flex justify-center items-center relative cb_button cursor-pointer"
 		hx-post="/notebook_manage/hx/create" hx-target="#notebook_panel" hx-trigger="click" hx-swap="innerHTML"
 		tabindex="0" hx-confirm="You are about to spin up a new instance of a workbench">
+		{#
 		<svg class="mr-1" preserveAspectRatio="xMidYMid meet" fill="currentColor" width="32" height="32"
 			viewBox="0 0 32 32" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
 			<path
@@ -11,6 +12,7 @@
 			</path>
 			<circle cx="22" cy="10" r="2"></circle>
 		</svg>
+		#}
 		Create Workbench
 	</a>
 </div>

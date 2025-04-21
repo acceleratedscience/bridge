@@ -140,6 +140,7 @@ async fn notebook_create(
         });
 
         // check if the user can create a notebook
+        // TODO: instead of two separate calls to the DB, do this in one call
         let user: User = helper::log_with_level!(
             db.find(
                 doc! {
@@ -322,6 +323,7 @@ async fn notebook_create(
 
 #[delete("/delete")]
 async fn notebook_delete(
+    req: HttpRequest,
     subject: Option<ReqData<BridgeCookie>>,
     data: Data<Tera>,
     db: Data<&DB>,
@@ -351,12 +353,7 @@ async fn notebook_delete(
         .await,
         error
     )?;
-    let persist_pvc = user
-        .notebook
-        .ok_or_else(|| {
-            BridgeError::NotebookExistsError("Notebook entry not found in DB".to_string())
-        })?
-        .persist_pvc;
+    let persist_pvc = req.query_string().contains("save");
 
     helper::utils::notebook_destroy(**db, &bridge_cookie.subject, persist_pvc, &user.email).await?;
 

@@ -24,7 +24,7 @@
 	<a id="token_button"
 		class="lg:w-[300px] w-[220px] h-[50px] py-2 flex justify-center items-center relative cb_button cursor-pointer"
 		hx-get="/portal/hx/token" hx-target="#token" hx-trigger="click" hx-swap="innerHTML" tabindex="0" {%if token %}
-		hx-confirm="This will revoke your previous token" {%endif%}>
+		hx-confirm="This will revoke your current token" {%endif%}>
 		<svg class="mr-1" preserveAspectRatio="xMidYMid meet" fill="currentColor" width="32" height="32"
 			viewBox="0 0 32 32" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
 			<path
