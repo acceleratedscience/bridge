@@ -87,9 +87,14 @@ pub(super) async fn group(
     let group_name = user.groups.first().unwrap_or(&"".to_string()).clone();
 
     let subscriptions: Result<Group> = db.find(doc! {"name": group_name}, GROUP).await;
-    let subs = match subscriptions {
-        Ok(g) => g.subscriptions,
-        Err(_) => vec![],
+    let (subs, group_created_at, group_updated_at, group_last_updated) = match subscriptions {
+        Ok(g) => (
+            g.subscriptions,
+            g.created_at.to_string(),
+            g.updated_at.to_string(),
+            g.last_updated_by.to_string(),
+        ),
+        Err(_) => (vec![], "".to_string(), "".to_string(), "".to_string()),
     };
 
     let mut ctx = (**context).clone();
@@ -98,6 +103,9 @@ pub(super) async fn group(
     ctx.insert("email", &user.email);
     ctx.insert("group", &user.groups);
     ctx.insert("subscriptions", &subs);
+    ctx.insert("group_created_at", &group_created_at);
+    ctx.insert("group_updated_at", &group_updated_at);
+    ctx.insert("group_last_updated", &group_last_updated);
     ctx.insert("token", &user.token);
     if let Some(token) = &user.token {
         helper::add_token_exp_to_tera(&mut ctx, token);
