@@ -6,7 +6,7 @@ use tera::{Context, Tera};
 
 use crate::{
     config::CONFIG,
-    db::models::{BridgeCookie, NotebookStatusCookie, User},
+    db::models::{BridgeCookie, NotebookStatusCookie, User, UserType},
     errors::Result,
     web::services::CATALOG,
 };
@@ -51,17 +51,14 @@ impl<'p> Profile<'p> {
     ) -> Result<(String, Option<[Cookie; 2]>)> {
         let mut context = (**context).clone();
         context.insert("name", &self.user.user_name);
-        context.insert("app_name", &CONFIG.app_name);
 
         if self.groups.is_empty() {
-            context.insert("user", "pending");
+            context.insert("user_type", "pending");
             return Ok((tera.render(EMPTY_PROFILE, &context)?, None));
         }
 
-        context.insert("user", "user");
-        context.insert("user_id", &self.user.sub);
-        context.insert("email", &self.user.email);
         context.insert("user_type", &self.user.user_type);
+        context.insert("email", &self.user.email);
         context.insert("group", &self.groups);
         context.insert("subscriptions", &self.subscriptions);
         context.insert("token", &self.user.token);

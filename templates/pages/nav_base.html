@@ -77,7 +77,7 @@
 						<p class="self-center grow pl-4">Profile</p>
 					</div>
 				</a>
-				{% if user != "pending" %}
+				{% if user_type != "pending" %}
 				{#
 				<a href="#" id="big_models" class="block py-2 px-4 dark:hover:bg-[#4d5358] hover:bg-[#c6c6c6]">
 					<div class="flex">
@@ -121,7 +121,7 @@
 					</div>
 				</a>
 				{% endif %}
-				{% if user == "system_admin" %}
+				{% if user_type == "system" %}
 				<a href="#" id="big_groups" class="block py-2 px-4 dark:hover:bg-[#4d5358] hover:bg-[#c6c6c6]">
 					<div class="flex">
 						<svg preserveAspectRatio="xMidYMid meet" fill="currentColor" width="32" height="32"
@@ -149,7 +149,7 @@
 					</div>
 				</a>
 				{% endif %}
-				{% if user == "group_admin" %}
+				{% if user_type == "group" %}
 				<a href="#" id="big_members" class="block py-2 px-4 dark:hover:bg-[#4d5358] hover:bg-[#c6c6c6]">
 					<div class="flex">
 						<svg preserveAspectRatio="xMidYMid meet" fill="currentColor" width="32" height="32"
@@ -183,7 +183,7 @@
 	class="fixed flex-col left-0 top-12 bg-[#f4f4f4]/70 dark:bg-[#121619]/70 min-h-96 min-w-52 rounded-br-md backdrop-blur-xs drop-shadow-md hidden md:hidden">
 	<a href="#" id="mobile_profile"
 		class="block py-3 px-4 mobile_menu_selected dark:hover:bg-[#4d5358] hover:bg-[#c6c6c6]">Profile</a>
-	{% if user != "pending" %}
+	{% if user_type != "pending" %}
 	{#
 	<a href="#" id="mobile_models" class="block py-3 px-4 dark:hover:bg-[#4d5358] hover:bg-[#c6c6c6]">Available
 		Models</a>
@@ -194,12 +194,12 @@
 	{% if notebook %}
 	<a href="#" id="mobile_notebook" class="block py-3 px-4 dark:hover:bg-[#4d5358] hover:bg-[#c6c6c6]">Notebook</a>
 	{% endif %}
-	{% if user == "system_admin" %}
+	{% if user_type == "system" %}
 	<a href="#" id="mobile_groups" class="block py-3 px-4 dark:hover:bg-[#4d5358] hover:bg-[#c6c6c6]">Group
 		Management</a>
 	<a href="#" id="mobile_users" class="block py-3 px-4 dark:hover:bg-[#4d5358] hover:bg-[#c6c6c6]">User Management</a>
 	{% endif %}
-	{% if user == "group_admin" %}
+	{% if user_type == "group" %}
 	<a href="#" id="mobile_members" class="block py-3 px-4 dark:hover:bg-[#4d5358] hover:bg-[#c6c6c6]">Member
 		Management</a>
 	{% endif %}

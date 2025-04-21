@@ -10,11 +10,12 @@ use actix_web::{
 };
 use futures::StreamExt;
 use mongodb::bson::{doc, oid::ObjectId};
-use tera::Tera;
+use tera::{Context, Tera};
 use tracing::instrument;
 
 use crate::{
     auth::COOKIE_NAME,
+    config::CONFIG,
     db::{
         Database,
         models::{
@@ -39,13 +40,14 @@ use self::htmx::ModifyUserGroup;
 
 mod htmx;
 
-const USER_PAGE: &str = "pages/portal_group.html";
+const USER_PAGE: &str = "pages/portal_user.html";
 
 #[get("")]
 #[instrument(skip(data, db, subject))]
 pub(super) async fn group(
     data: Data<Tera>,
     req: HttpRequest,
+    context: Data<Context>,
     nsc: Option<ReqData<NotebookStatusCookie>>,
     db: Data<&DB>,
     subject: Option<ReqData<BridgeCookie>>,
@@ -90,9 +92,11 @@ pub(super) async fn group(
         Err(_) => vec![],
     };
 
-    let mut ctx = tera::Context::new();
+    let mut ctx = (**context).clone();
     ctx.insert("name", &user.user_name);
-    ctx.insert("group", &user.groups.join(", "));
+    ctx.insert("user_type", &user.user_type);
+    ctx.insert("email", &user.email);
+    ctx.insert("group", &user.groups);
     ctx.insert("subscriptions", &subs);
     ctx.insert("token", &user.token);
     if let Some(token) = &user.token {

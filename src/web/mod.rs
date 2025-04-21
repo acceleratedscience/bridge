@@ -19,12 +19,10 @@ use crate::kube::{LifecycleStream, Medium, notebook_lifecycle};
 use futures::future::select;
 
 use crate::{
-    auth::openid,
-    db::{
-        keydb::{CACHEDB, CacheDB},
+    auth::openid, config::CONFIG, db::{
+        keydb::{CacheDB, CACHEDB},
         mongo::{DB, DBCONN, DBNAME},
-    },
-    logger, templating,
+    }, logger, templating
 };
 
 mod bridge_middleware;
@@ -129,6 +127,7 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
         let mut context = Context::new();
         context.insert("application", "OpenBridge");
         context.insert("application_version", "v0.1.0");
+        context.insert("app_name", &CONFIG.app_name);
         let context = Data::new(context);
 
         let client_data = Data::new(

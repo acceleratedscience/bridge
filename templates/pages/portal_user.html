@@ -1,5 +1,11 @@
 {% extends 'pages/nav_base.html' %}
-{% block title %}Portal User{% endblock title %}
+{% block title %}
+{% if user_type == "user" %}
+Portal User
+{% else %}
+Portal Admin
+{% endif %}
+{% endblock title %}
 
 {% block head %}
 {{ super() }}
@@ -15,6 +21,12 @@
 
 {% if notebook %}
 <div id="notebook" class="hidden">
+	{% include 'components/notebook/notebook.html' %}
+</div>
+{% endif %}
+
+{% if user_type != "user" %}
+<div id="members" class="hidden">
 	{% include 'components/notebook/notebook.html' %}
 </div>
 {% endif %}
