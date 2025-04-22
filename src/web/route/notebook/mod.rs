@@ -2,9 +2,9 @@
 //! notebook, we use the forward function from the helper module. But we also introduce to
 //! websocket endpoints.
 
-use std::{marker::PhantomData, str::FromStr};
+use std::{marker::PhantomData, str::FromStr, time::Duration};
 
-use k8s_openapi::api::core::v1::Pod;
+use k8s_openapi::api::core::v1::{PersistentVolumeClaim, Pod};
 use mongodb::bson::doc;
 use serde::Deserialize;
 
@@ -35,6 +35,7 @@ use crate::{
     },
     errors::{BridgeError, Result},
     kube::{KubeAPI, NAMESPACE, Notebook, NotebookSpec, PVCSpec},
+    log_with_level,
     web::{
         bridge_middleware::{CookieCheck, Htmx, NotebookCookieCheck},
         helper::{self, bson},
@@ -116,6 +117,7 @@ async fn notebook_ws_session(
 
 #[post("/create")]
 async fn notebook_create(
+    req: HttpRequest,
     subject: Option<ReqData<BridgeCookie>>,
     // payload: web::Payload,
     db: Data<&DB>,
@@ -207,6 +209,32 @@ async fn notebook_create(
         // User is allowed to create a notebook, but notebook does not exist... so create one
         // Create a PVC at 1Gi
         let pvc_name = notebook_helper::make_notebook_volume_name(&bridge_cookie.subject);
+
+        if req.query_string().contains("clear") {
+            log_with_level!(
+                KubeAPI::<PersistentVolumeClaim>::delete(&pvc_name).await,
+                error
+            )?;
+
+            // PVC takes time to delete... loop and check it is gone
+            loop {
+                let mut loop_cnt = 0;
+                if KubeAPI::<PersistentVolumeClaim>::check_pvc_exists(&pvc_name).await? {
+                    tokio::time::sleep(Duration::from_secs(2)).await;
+                    loop_cnt += 1;
+                } else {
+                    break;
+                }
+
+                if loop_cnt > 5 {
+                    warn!("PVC {} not deleted after 25 seconds", pvc_name);
+                    return Err(BridgeError::GeneralError(
+                        "PVC not deleted after 25 seconds".to_string(),
+                    ));
+                }
+            }
+        }
+
         let pvc = PVCSpec::new(pvc_name.clone(), 1);
         if let Err(e) = KubeAPI::new(pvc.spec).create().await {
             match e {
@@ -376,10 +404,17 @@ async fn notebook_delete(
     let mut ctx = Context::new();
     ctx.insert("cooloff", &true);
     #[cfg(feature = "notebook")]
-    if let Some(ref conf) = bridge_cookie.config {
-        // TODO:: check if it's ok to pass in Option instead of bool
-        ctx.insert("pvc", &conf.notebook_persist_pvc);
+    {
+        if let Some(ref conf) = bridge_cookie.config {
+            // TODO:: check if it's ok to pass in Option instead of bool
+            ctx.insert("pvc", &conf.notebook_persist_pvc);
+        }
+        if persist_pvc {
+            ctx.insert("pvc_exists", &true);
+        }
     }
+
+    println!("Context: {:?}", ctx);
 
     let content =
         helper::log_with_level!(data.render("components/notebook/start.html", &ctx), error)?;

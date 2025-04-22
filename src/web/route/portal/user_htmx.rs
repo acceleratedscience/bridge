@@ -85,6 +85,9 @@ impl<'p> Profile<'p> {
             notebook_bookkeeping(self.user, nsc, bc, &mut context, self.subscriptions.clone())
                 .await?;
 
+        // TODO: with the notebook flow refactor '25... this doesn't exactly fit anymore... right now
+        // it should not affect the functionality of the application for keeping this around.  But
+        // remove or redo this later.
         #[cfg(feature = "notebook")]
         if let Some(ref conf) = bc.config {
             context.insert("pvc", &conf.notebook_persist_pvc);

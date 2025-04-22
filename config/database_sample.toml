@@ -4,7 +4,7 @@
 	db = "guardian"
 
 [keydb]
-	url = "redis://:PASSWORD@guardian-keydb-master.keydb.svc.cluster.local:6379/0"
+	url = "redis://:PASSWORD@keydb-master.keydb.svc.cluster.local:6379/0"
 	url_local = "redis://:admin123456789@127.0.0.1:6379/0"
 
 [user]

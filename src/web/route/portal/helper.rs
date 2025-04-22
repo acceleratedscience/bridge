@@ -121,7 +121,8 @@ where
                 if let Ok(true) = KubeAPI::<Pod>::check_pvc_exists(&pvc).await {
                     bc.config = Some(crate::db::models::Config {
                         notebook_persist_pvc: Some(true),
-                    })
+                    });
+                    ctx.insert("pvc_exists", &true);
                 }
                 // There may be a case where the user has no notebook status cookie... perhaps
                 // cleared the browser history while the notebook was still running. If the
