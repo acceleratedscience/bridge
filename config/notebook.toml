@@ -18,7 +18,7 @@ secret = "ibmdpdev-openad-pull-secret"
 start_up_url = "lab/tree/abagbindings_demo.ipynb"
 max_idle_time = 86400
 [open_ad_workbench.env]
-PROXY_URL = "https://open.accelerate.science/proxy"
+PROXY_URL = "https://bi.open.accelerate.science/proxy"
 
 [datascience_notebook]
 name = "Data Science Notebook"
