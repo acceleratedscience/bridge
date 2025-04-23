@@ -35,7 +35,6 @@ use crate::{
     },
     errors::{BridgeError, Result},
     kube::{KubeAPI, NAMESPACE, Notebook, NotebookSpec, PVCSpec},
-    log_with_level,
     web::{
         bridge_middleware::{CookieCheck, Htmx, NotebookCookieCheck},
         helper::{self, bson},
@@ -45,6 +44,7 @@ use crate::{
 pub const NOTEBOOK_SUB_NAME: &str = "notebook";
 const NOTEBOOK_PORT: &str = "8888";
 const NOTEBOOK_TOKEN_LIFETIME: usize = const { 60 * 60 * 24 * 30 };
+const PVC_DELETE_ATTEMPT: u8 = 9;
 
 #[get("{name}/api/events/subscribe")]
 async fn notebook_ws_subscribe(
@@ -211,7 +211,7 @@ async fn notebook_create(
         let pvc_name = notebook_helper::make_notebook_volume_name(&bridge_cookie.subject);
 
         if req.query_string().contains("clear") {
-            log_with_level!(
+            helper::log_with_level!(
                 KubeAPI::<PersistentVolumeClaim>::delete(&pvc_name).await,
                 error
             )?;
@@ -226,10 +226,14 @@ async fn notebook_create(
                     break;
                 }
 
-                if loop_cnt > 5 {
-                    warn!("PVC {} not deleted after 25 seconds", pvc_name);
+                if loop_cnt > PVC_DELETE_ATTEMPT {
+                    let apx_time_elapsed = PVC_DELETE_ATTEMPT * loop_cnt;
+                    warn!(
+                        "PVC {} not deleted after {} seconds",
+                        pvc_name, apx_time_elapsed
+                    );
                     return Err(BridgeError::GeneralError(
-                        "PVC not deleted after 25 seconds".to_string(),
+                        "PVC not deleted after extended period of time".to_string(),
                     ));
                 }
             }

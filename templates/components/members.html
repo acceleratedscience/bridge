@@ -2,11 +2,11 @@
 	<div id="group_admin_info" class="px-3 py-3 mx-3 mb-4 xl:my-0 rounded-md dark:bg-[#343a3f] bg-[#f4f4f4]">
 		<p class="border-b font-bold">Your Group Info</p>
 		<p class="pt-4">Name: {{ group | first }}</p>
-		<p class="pt-4">Created at: {{ group_created_at }}</p>
-		<p class="pt-4">Update at: {{ group_updated_at }}</p>
+		<p class="pt-4">Created at: {{ group_created_at | truncate(length=15) }}</p>
+		<p class="pt-4">Update at: {{ group_updated_at | truncate(length=15) }}</p>
 		<p class="pt-4">Last Updated by: {{ group_last_updated }}</p>
 	</div>
-	<div id="group_admin_details" class="px-3 py-3 mx-3 xl:my-0 lg:mb-4 rounded-md dark:bg-[#343a3f] bg-[#f4f4f4]">
+	<div id="group_admin_details" class="px-3 py-3 mx-3 mb-4 xl:my-0 rounded-md dark:bg-[#343a3f] bg-[#f4f4f4]">
 		<p class="border-b font-bold">Group Details</p>
 		<table class="w-full mt-4">
 			<tr>
@@ -27,19 +27,7 @@
 			</tr>
 		</table>
 	</div>
-	<div id="group_admin_panel" class="px-3 py-3 mx-3 xl:my-0 lg:mb-4 rounded-md dark:bg-[#343a3f] bg-[#f4f4f4]">
-		<p class="border-b font-bold">Management</p>
-		<div class="flex flex-col flex-grow pt-4 text-center justify-center items-center">
-			<a id="group_admin_view_member"
-				class="lg:w-[300px] w-[220px] h-[50px] py-2 flex justify-center items-center cb_button cursor-pointer"
-				tabindex="0">
-				View Members
-			</a>
-			<a id="group_admin_add_member"
-				class="lg:w-[300px] w-[220px] h-[50px] py-2 mt-4 flex justify-center items-center cb_button cursor-pointer"
-				tabindex="0">
-				Add Members
-			</a>
-		</div>
+	<div id="group_admin_panel" class="px-3 py-3 mx-3 xl:my-0 mb-4 rounded-md dark:bg-[#343a3f] bg-[#f4f4f4]">
+		{% include 'components/member_manage.html' %}
 	</div>
 </div>

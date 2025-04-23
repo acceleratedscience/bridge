@@ -3,7 +3,7 @@ use tera::Tera;
 
 use crate::errors::Result;
 
-pub(super) static MODIFY_USER_GROUP: &str = "components/user_member_edit.html";
+pub(super) static MODIFY_USER_GROUP: &str = "components/member_add.html";
 
 pub struct ModifyUserGroup {
     user_in_group: Vec<String>,

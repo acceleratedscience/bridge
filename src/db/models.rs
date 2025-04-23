@@ -55,6 +55,33 @@ pub struct User {
     pub last_updated_by: String,
 }
 
+#[derive(Debug, Deserialize, Serialize)]
+pub struct UserPortalRep {
+    pub _id: String,
+    pub sub: String,
+    pub user_name: String,
+    pub email: String,
+    pub user_type: &'static str,
+    pub created_at: String,
+    pub updated_at: String,
+    pub last_updated_by: String,
+}
+
+impl From<User> for UserPortalRep {
+    fn from(user: User) -> Self {
+        UserPortalRep {
+            _id: user._id.to_string(),
+            sub: user.sub,
+            user_name: user.user_name,
+            email: user.email,
+            user_type: user.user_type.into(),
+            created_at: user.created_at.to_string(),
+            updated_at: user.updated_at.to_string(),
+            last_updated_by: user.last_updated_by,
+        }
+    }
+}
+
 #[derive(Debug, Default, Deserialize, Serialize)]
 pub struct NotebookInfo {
     pub start_time: Option<time::OffsetDateTime>,

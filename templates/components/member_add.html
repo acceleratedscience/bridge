@@ -1,0 +1,21 @@
+<p class="border-b font-bold">Add Members</p>
+<div class="pt-4" hx-ext="response-targets">
+	<label for="searchInput" class="text-sm font-medium">
+		Search (type to see results after 1 second delay):
+	</label>
+	<input type="text" id="searchInput" name="email" class=" w-full shadow-sm border" placeholder="..."
+		hx-get="hx/search_by_email" hx-trigger="input delay:1s" hx-target="#searchResults" hx-swap="innerHTML"
+		hx-target-400="#searchResults" _="on input from me
+		set innerHTML ef #searchResults to '' end
+		on htmx:beforeRequest if my value is empty set innerHTML of #searchResults to 'Value is required'
+		then halt the event end">
+	<div id="searchResults" class="pt-2">
+	</div>
+</div>
+<div class="flex flex-col flex-grow pt-4 text-center justify-center items-center">
+	<a id="group_admin_back" hx-get="group_admin/hx/tab?tab=Main" hx-target="#group_admin_panel"
+		class="lg:w-[300px] w-[220px] h-[50px] py-2 flex justify-center items-center cb_button cursor-pointer"
+		tabindex="0">
+		Go Back
+	</a>
+</div>

@@ -20,7 +20,7 @@ use crate::{
         Database,
         models::{
             AdminTab, AdminTabs, BridgeCookie, GROUP, Group, ModifyUser, NotebookStatusCookie,
-            USER, User, UserGroupMod, UserType,
+            USER, User, UserGroupMod, UserPortalRep, UserType,
         },
         mongo::DB,
     },
@@ -305,6 +305,8 @@ async fn group_tab_htmx(
             })?;
 
             let group_members: Vec<User> = db.find_many(doc! {"groups": group_name }, USER).await?;
+            let group_members: Vec<UserPortalRep> =
+                group_members.into_iter().map(|v| v.into()).collect();
 
             let mut context = tera::Context::new();
             context.insert("group_members", &group_members);
@@ -314,7 +316,7 @@ async fn group_tab_htmx(
             helper::log_with_level!(data.render("components/member_view.html", &context), error)?
         }
         AdminTab::Main => helper::log_with_level!(
-            data.render("components/group_member_tab.html", &tera::Context::new()),
+            data.render("components/member_manage.html", &tera::Context::new()),
             error
         )?,
         _ => {

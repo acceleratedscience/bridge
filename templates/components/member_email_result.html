@@ -1,0 +1,42 @@
+<table class="w-full text-sm text-left">
+	<thead class="text-xs">
+		<tr>
+			<th scope="col" class="py-3 px-1">
+				Name
+			</th>
+			<th scope="col" class="py-3 px-1">
+				Email
+			</th>
+			<th scope="col" class="py-3 px-1">
+				Updated
+			</th>
+			<th scope="col" class="py-3 px-1">
+				Actions
+			</th>
+		</tr>
+	</thead>
+	<tbody>
+		{% for user in users %}
+		<tr class="{% if loop.index is even and users | length > 1 %}border-t{% endif %}">
+			<td class="py-3 px-1">
+				{{ user.user_name }}
+			</td>
+			<td class="py-3 px-1">
+				{{ user.email }}
+			</td>
+			<td class="py-3 px-1" title="{{ user.updated_at }}">
+				{{ user.updated_at | truncate(length=16) }}
+			</td>
+			<td id="_{{ user.sub | slugify }}_add" class="py-3 px-1">
+				<button class="font-medium dark:text-green-700 text-green-900 hover:underline cursor-pointer"
+					hx-patch="group_admin/hx/user"
+					hx-vals='{"email": "{{ user.email }}", "group_name": "{{ group }}", "modify_user": "add", "last_updated_by": "{{ group_admin }}"}'
+					hx-target="#_{{ user.sub | slugify }}_add"
+					hx-confirm="Are you sure you wish to add {{ user.email }}?" hx-swap="outerhtml">
+					Add
+				</button>
+			</td>
+		</tr>
+		{% endfor %}
+	</tbody>
+</table>

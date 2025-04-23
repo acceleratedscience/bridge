@@ -15,7 +15,7 @@ use crate::{
     auth::{COOKIE_NAME, NOTEBOOK_COOKIE_NAME, NOTEBOOK_STATUS_COOKIE_NAME},
     db::{
         Database,
-        models::{BridgeCookie, USER, User, UserType},
+        models::{BridgeCookie, USER, User, UserPortalRep, UserType},
         mongo::DB,
     },
     errors::{BridgeError, Result},
@@ -147,6 +147,7 @@ async fn search_by_email(
                     }
                 },
             };
+            let res: Vec<UserPortalRep> = res.into_iter().map(|u| u.into()).collect();
 
             let mut ctx = Context::new();
             ctx.insert("users", &res);
@@ -164,7 +165,7 @@ async fn search_by_email(
 
                     ctx.insert("group", group);
                     ctx.insert("group_admin", &user.email);
-                    "components/user_view_result_group.html"
+                    "components/member_email_result.html"
                 }
                 _ => {
                     return Ok(HttpResponse::BadRequest()

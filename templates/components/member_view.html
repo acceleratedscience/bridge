@@ -1,0 +1,57 @@
+<p class="border-b font-bold">Group View</p>
+<table class="w-full text-sm text-left">
+	<thead class="text-xs">
+		<tr>
+			<th scope="col" class="py-3 px-1">
+				Name
+			</th>
+			<th scope="col" class="py-3 px-1">
+				Email
+			</th>
+			<th scope="col" class="py-3 px-1">
+				Updated
+			</th>
+			<th scope="col" class="py-3 px-1">
+				Actions
+			</th>
+		</tr>
+	</thead>
+	<tbody>
+		{% if group_members %}
+		{% for user in group_members %}
+		<tr class="{% if loop.index is even and group_members | length > 1 %}border-t{% endif %}">
+			<td class="py-3 px-1">
+				{{ user.user_name }}
+			</td>
+			<td class="py-3 px-1">
+				{{ user.email }}
+			</td>
+			<td class="py-3 px-1" title="{{ user.updated_at }}">
+				{{ user.updated_at | truncate(length=16) }}
+			</td>
+			<td id="_{{ user.sub | slugify }}_remove" class="py-3 px-1">
+				<button class="font-medium text-red-600 dark:text-red-500 cursor-pointer" hx-patch="group_admin/hx/user"
+					hx-vals='{"email": "{{ user.email }}", "group_name": "{{ group }}", "modify_user": "remove", "last_updated_by": "{{ group_admin }}"}'
+					hx-target="#_{{ user.sub | slugify }}_remove" hx-swap="outerhtml"
+					hx-confirm="Are you sure you wish to remove {{ user.email }}?">
+					Remove
+				</button>
+			</td>
+		</tr>
+		{% endfor %}
+		{% else %}
+		<tr>
+			<td colspan="4" class="py-4 px-6 text-center text-gray-500 dark:text-gray-400">
+				No users found.
+			</td>
+		</tr>
+		{% endif %}
+	</tbody>
+</table>
+<div class="flex flex-col flex-grow pt-4 text-center justify-center items-center">
+	<a id="group_admin_back" hx-get="group_admin/hx/tab?tab=Main" hx-target="#group_admin_panel"
+		class="lg:w-[300px] w-[220px] h-[50px] py-2 flex justify-center items-center cb_button cursor-pointer"
+		tabindex="0">
+		Go Back
+	</a>
+</div>
