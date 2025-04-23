@@ -12,7 +12,7 @@ use actix_web::{
 };
 use mongodb::bson::{doc, oid::ObjectId};
 use serde::Deserialize;
-use tera::Tera;
+use tera::{Context, Tera};
 use tracing::instrument;
 
 use crate::{
@@ -41,13 +41,14 @@ use self::htmx::{
     CREATE_MODIFY_GROUP, GroupContent, MODIFY_USER, UserContent, VIEW_GROUP, VIEW_USER,
 };
 
-const USER_PAGE: &str = "pages/portal_system.html";
+const USER_PAGE: &str = "pages/portal_user.html";
 
 #[get("")]
 #[instrument(skip(data, db, subject))]
 pub(super) async fn system(
     data: Data<Tera>,
     req: HttpRequest,
+    context: Data<Context>,
     subject: Option<ReqData<BridgeCookie>>,
     nsc: Option<ReqData<NotebookStatusCookie>>,
     db: Data<&DB>,
@@ -86,15 +87,25 @@ pub(super) async fn system(
     let group_name = user.groups.first().unwrap_or(&"".to_string()).clone();
 
     let subscriptions: Result<Group> = db.find(doc! {"name": group_name}, GROUP).await;
-    let subs = match subscriptions {
-        Ok(g) => g.subscriptions,
-        Err(_) => vec![],
+    let (subs, group_created_at, group_updated_at, group_last_updated) = match subscriptions {
+        Ok(g) => (
+            g.subscriptions,
+            g.created_at.to_string(),
+            g.updated_at.to_string(),
+            g.last_updated_by.to_string(),
+        ),
+        Err(_) => (vec![], "".to_string(), "".to_string(), "".to_string()),
     };
 
-    let mut ctx = tera::Context::new();
+    let mut ctx = (**context).clone();
     ctx.insert("name", &user.user_name);
-    ctx.insert("group", &user.groups.join(", "));
+    ctx.insert("user_type", &user.user_type);
+    ctx.insert("email", &user.email);
+    ctx.insert("group", &user.groups);
     ctx.insert("subscriptions", &subs);
+    ctx.insert("group_created_at", &group_created_at);
+    ctx.insert("group_updated_at", &group_updated_at);
+    ctx.insert("group_last_updated", &group_last_updated);
     ctx.insert("token", &user.token);
     if let Some(token) = &user.token {
         helper::add_token_exp_to_tera(&mut ctx, token);

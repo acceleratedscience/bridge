@@ -15,7 +15,6 @@ use tracing::instrument;
 
 use crate::{
     auth::COOKIE_NAME,
-    config::CONFIG,
     db::{
         Database,
         models::{

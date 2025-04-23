@@ -29,6 +29,7 @@
 					<span class="text-lg ml-2">{{ app_name }}</span>
 				</div>
 			</div>
+			{#
 			<div
 				class="flex relative dark:hover:bg-[#4d5358] hover:bg-[#c6c6c6] min-h-full items-center justify-center px-2 cursor-pointer">
 				<span class="sr-only">View notifications</span>
@@ -40,6 +41,7 @@
 					<title>Notification</title>
 				</svg>
 			</div>
+			#}
 			<div class="flex relative dark:hover:bg-[#4d5358] hover:bg-[#c6c6c6] ml-2 min-h-full items-center justify-center px-2 cursor-pointer"
 				hx-post="/session/logout">
 				<span class="sr-only">Logout</span>
@@ -122,30 +124,19 @@
 				</a>
 				{% endif %}
 				{% if user_type == "system" %}
-				<a href="#" id="big_groups" class="block py-2 px-4 dark:hover:bg-[#4d5358] hover:bg-[#c6c6c6]">
+				<a href="#" id="big_systems" class="block py-2 px-4 dark:hover:bg-[#4d5358] hover:bg-[#c6c6c6]">
 					<div class="flex">
-						<svg preserveAspectRatio="xMidYMid meet" fill="currentColor" width="32" height="32"
-							viewBox="0 0 32 32" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
-							<path
-								d="M8 19H6V17a3.0033 3.0033 0 013-3h5v2H9a1.0011 1.0011 0 00-1 1zM12 13a4 4 0 114-4A4.0045 4.0045 0 0112 13zm0-6a2 2 0 102 2A2.0021 2.0021 0 0012 7zM20 20a4 4 0 114-4A4.0045 4.0045 0 0120 20zm0-6a2 2 0 102 2A2.0021 2.0021 0 0020 14zM26 26H24V24a1.0011 1.0011 0 00-1-1H17a1.0011 1.0011 0 00-1 1v2H14V24a3.0033 3.0033 0 013-3h6a3.0033 3.0033 0 013 3z">
+						<svg focusable="false" preserveAspectRatio="xMidYMid meet" fill="currentColor" width="32"
+							height="32" viewBox="0 0 32 32" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+							<path stroke-width="0"
+								d="M30 30h-2v-2c0-.5513-.4482-1-1-1h-6c-.5518 0-1 .4487-1 1v2h-2v-2c0-1.6543 1.3457-3 3-3h6c1.6543 0 3 1.3457 3 3v2zM24 24c-2.2061 0-4-1.7944-4-4s1.7939-4 4-4 4 1.7944 4 4-1.7939 4-4 4zm0-6c-1.1025 0-2 .897-2 2s.8975 2 2 2 2-.897 2-2-.8975-2-2-2zM8 20H10V22H8zM12 20H18V22H12zM8 16H10V18H8zM12 16H18V18H12zM8 12H10V14H8zM12 12H18V14H12z">
 							</path>
-							<path
-								d="M8 30H4a2.0021 2.0021 0 01-2-2V4A2.0021 2.0021 0 014 2H8V4H4V28H8zM28 30H24V28h4V4H24V2h4a2.0021 2.0021 0 012 2V28A2.0021 2.0021 0 0128 30z">
+							<path stroke-width="0"
+								d="m21,5h-3v-1c0-1.103-.8975-2-2-2h-6c-1.1025,0-2,.897-2,2v1h-3c-1.1025,0-2,.897-2,2v19c0,1.103.8975,2,2,2h9v-2H5V7h3v2h10v-2h3v6.9999h2v-6.9999c0-1.103-.8975-2-2-2Zm-5,2h-6v-3h6v3Z">
 							</path>
+							<title>Administrator</title>
 						</svg>
-						<p class="self-center grow pl-4">Group Management</p>
-					</div>
-				</a>
-				<a href="#" id="big_users" class="block py-2 px-4 dark:hover:bg-[#4d5358] hover:bg-[#c6c6c6]">
-					<div class="flex">
-						<svg preserveAspectRatio="xMidYMid meet" fill="currentColor" width="32" height="32"
-							viewBox="0 0 32 32" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
-							<path
-								d="M30 30H28V25a5.0057 5.0057 0 00-5-5V18a7.0078 7.0078 0 017 7zM22 30H20V25a5.0059 5.0059 0 00-5-5H9a5.0059 5.0059 0 00-5 5v5H2V25a7.0082 7.0082 0 017-7h6a7.0082 7.0082 0 017 7zM20 2V4a5 5 0 010 10v2A7 7 0 0020 2zM12 4A5 5 0 117 9a5 5 0 015-5m0-2a7 7 0 107 7A7 7 0 0012 2z">
-							</path>
-							<title>User multiple</title>
-						</svg>
-						<p class="self-center grow pl-4">User Management</p>
+						<p class="self-center grow pl-4">System Management</p>
 					</div>
 				</a>
 				{% endif %}
@@ -195,9 +186,8 @@
 	<a href="#" id="mobile_notebook" class="block py-3 px-4 dark:hover:bg-[#4d5358] hover:bg-[#c6c6c6]">Notebook</a>
 	{% endif %}
 	{% if user_type == "system" %}
-	<a href="#" id="mobile_groups" class="block py-3 px-4 dark:hover:bg-[#4d5358] hover:bg-[#c6c6c6]">Group
+	<a href="#" id="mobile_systems" class="block py-3 px-4 dark:hover:bg-[#4d5358] hover:bg-[#c6c6c6]">System
 		Management</a>
-	<a href="#" id="mobile_users" class="block py-3 px-4 dark:hover:bg-[#4d5358] hover:bg-[#c6c6c6]">User Management</a>
 	{% endif %}
 	{% if user_type == "group" %}
 	<a href="#" id="mobile_members" class="block py-3 px-4 dark:hover:bg-[#4d5358] hover:bg-[#c6c6c6]">Member
