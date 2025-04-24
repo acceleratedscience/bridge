@@ -28,7 +28,7 @@
 	<tbody>
 		{% if groups %}
 		{% for group in groups %}
-		<tr class="{% if loop.index is even and group_members | length > 1 %}border-t{% endif %}">
+		<tr class="{% if loop.index is even and groups | length > 1 %}border-t{% endif %}">
 			<td class="py-3 px-1">
 				{{ group.name }}
 			</td>

@@ -8,7 +8,8 @@ pub struct GroupContent {
 }
 
 pub(super) static VIEW_GROUP: &str = "components/group_view.html";
-pub(super) static CREATE_MODIFY_GROUP: &str = "components/group_edit.html";
+pub(super) static MODIFY_GROUP: &str = "components/group_edit.html";
+pub(super) static CREATE_GROUP: &str = "components/group_create.html";
 
 impl GroupContent {
     pub fn new() -> Self {

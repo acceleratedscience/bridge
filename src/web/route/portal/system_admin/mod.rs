@@ -38,7 +38,7 @@ use crate::{
 use crate::web::route::portal::helper::notebook_bookkeeping;
 
 use self::htmx::{
-    CREATE_MODIFY_GROUP, GroupContent, MODIFY_USER, UserContent, VIEW_GROUP, VIEW_USER,
+    CREATE_GROUP, GroupContent, MODIFY_GROUP, MODIFY_USER, UserContent, VIEW_GROUP, VIEW_USER,
 };
 
 const USER_PAGE: &str = "pages/portal_user.html";
@@ -394,20 +394,23 @@ async fn system_tab_htmx(
                     let groups: Vec<GroupPortalRep> =
                         groups.into_iter().map(|group| group.into()).collect();
 
-                    group_form.render(
-                        &user.email,
-                        data,
-                        VIEW_GROUP,
-                        Some(|ctx: &mut tera::Context| {
-                            ctx.insert("groups", &groups);
-                        }),
+                    helper::log_with_level!(
+                        group_form.render(
+                            &user.email,
+                            data,
+                            VIEW_GROUP,
+                            Some(|ctx: &mut tera::Context| {
+                                ctx.insert("groups", &groups);
+                            }),
+                        ),
+                        error
                     )?
                 }
                 AdminTab::GroupCreate => helper::log_with_level!(
                     group_form.render(
                         &user.email,
                         data,
-                        CREATE_MODIFY_GROUP,
+                        CREATE_GROUP,
                         None::<fn(&mut tera::Context)>,
                     ),
                     error
@@ -433,7 +436,7 @@ async fn system_tab_htmx(
                         group_form.render(
                             &user.email,
                             data,
-                            CREATE_MODIFY_GROUP,
+                            MODIFY_GROUP,
                             Some(|ctx: &mut tera::Context| {
                                 ctx.insert("group_name", &name);
                                 ctx.insert("selections", &selections);
