@@ -1,7 +1,7 @@
 <div class="flex flex-row">
 	<p class="border-b font-bold">Edit {{ target_user }}</p>
 	<div class="flex flex-row justify-end border-b font-bold flex-grow">
-		<a id="group_admin_back" hx-get="" hx-target=""
+		<a id="group_admin_back" hx-get="system_admin/hx/tab?tab=UserList" hx-target="#system_admin_user"
 			class="flex justify-center w-16 text-center cb_button_secondary cursor-pointer" tabindex="0">
 			<svg focusable="false" preserveAspectRatio="xMidYMid meet" fill="currentColor" width="20" height="20"
 				viewBox="0 0 32 32" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
@@ -12,10 +12,11 @@
 	</div>
 </div>
 <div class="mb-4">
-	<form hx-patch="system_admin/hx/user" hx-target="#response-message" hx-swap="innerHTML">
+	<form class="flex flex-col items-center" hx-patch="system_admin/hx/user" hx-target="#response-message"
+		hx-swap="innerHTML">
 		<input type="hidden" name="email" value="{{ target_user }}">
 		<input type="hidden" name="last_updated_by" value="{{ subject }}">
-		<label for="user_type_select">
+		<label for="user_type_select" class="mt-2">
 			Choose User Type:
 		</label>
 		<select id="user_type_select" name="user_type" class="border w-full hover:border-gray-400 my-2 px-4 py-2 pr-8 leading-tight

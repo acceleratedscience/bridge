@@ -245,7 +245,7 @@ pub enum AdminTab {
     GroupModify,
     UserView,
     UserModify,
-    UserDelete,
+    UserList,
     Main,
 }
 

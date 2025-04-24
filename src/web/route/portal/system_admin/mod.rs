@@ -18,15 +18,18 @@ use tracing::instrument;
 use crate::{
     auth::COOKIE_NAME,
     db::{
+        Database,
         models::{
-            AdminTab, AdminTabs, BridgeCookie, Group, GroupForm, GroupPortalRep, NotebookStatusCookie, User, UserDeleteForm, UserForm, UserPortalRep, UserType, GROUP, USER
-        }, mongo::DB, Database
+            AdminTab, AdminTabs, BridgeCookie, GROUP, Group, GroupForm, GroupPortalRep,
+            NotebookStatusCookie, USER, User, UserDeleteForm, UserForm, UserPortalRep, UserType,
+        },
+        mongo::DB,
     },
     errors::{BridgeError, Result},
     web::{
-        bridge_middleware::{Htmx, HTMX_ERROR_RES},
+        bridge_middleware::{HTMX_ERROR_RES, Htmx},
         helper::{self, bson, payload_to_struct},
-        route::portal::{helper::{check_admin, get_all_groups}, user},
+        route::portal::helper::{check_admin, get_all_groups},
         services::CATALOG,
     },
 };
@@ -442,7 +445,7 @@ async fn system_tab_htmx(
                 _ => unreachable!(),
             }
         }
-        AdminTab::UserModify | AdminTab::UserView | AdminTab::UserDelete => {
+        AdminTab::UserModify | AdminTab::UserView => {
             let mut user_form = UserContent::new();
 
             let target_user = tab
@@ -466,19 +469,10 @@ async fn system_tab_htmx(
                 AdminTab::UserModify => {
                     user_form.render(&user.email, target_user, data, MODIFY_USER, None)?
                 }
-                // DEADCODE: remove
-                AdminTab::UserDelete => user_form.render(
-                    &user.email,
-                    target_user,
-                    data,
-                    MODIFY_USER,
-                    Some(|ctx: &mut tera::Context| {
-                        ctx.insert("delete", &true);
-                    }),
-                )?,
                 _ => unreachable!("Group variants of enum should not be here"),
             }
         }
+        AdminTab::UserList => data.render("components/systems_user.html", &tera::Context::new())?,
         AdminTab::Main => helper::log_with_level!(
             data.render("components/systems_group.html", &tera::Context::new()),
             error
