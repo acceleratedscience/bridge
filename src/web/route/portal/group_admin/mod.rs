@@ -11,7 +11,7 @@ use actix_web::{
 use futures::StreamExt;
 use mongodb::bson::{doc, oid::ObjectId};
 use tera::{Context, Tera};
-use tracing::instrument;
+use tracing::{instrument, warn};
 
 use crate::{
     auth::COOKIE_NAME,
@@ -152,13 +152,21 @@ pub(super) async fn group(
     return Ok(HttpResponse::Ok().cookie(bc).body(content));
 }
 
+// group_update_user is accessible to both group and system admins. This was done so both group and
+// system admins can edit member to a group, and we do not duplicate code
+#[instrument(skip(db, pl))]
 #[patch("user")]
 async fn group_update_user(
     db: Data<&DB>,
     mut pl: web::Payload,
     subject: Option<ReqData<BridgeCookie>>,
 ) -> Result<HttpResponse> {
-    let _ = check_admin(subject, UserType::GroupAdmin)?;
+    if subject.as_ref().is_some_and(|v| {
+        let user_type = &v.user_type;
+        user_type == &UserType::User
+    }) {
+        return Err(BridgeError::NotAdmin);
+    }
 
     let mut body = web::BytesMut::new();
     while let Some(chunk) = pl.next().await {

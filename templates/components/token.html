@@ -1,8 +1,10 @@
 <div class="flex flex-row">
 	<p class="border-b font-bold">Your API Token</p>
 	<div class="flex flex-row justify-end border-b font-bold flex-grow">
-		<a id="token_button" class="w-16 text-center cb_button_secondary cursor-pointer"
-			_="on click writeText(innerText of #token_text) on navigator.clipboard">
+		<a id="token_button" class="w-16 text-center cb_button_secondary cursor-pointer" _="on click writeText(innerText of #token_text) on navigator.clipboard
+			then set my.textContent to 'copied!'
+			wait 2s
+			set my.textContent to 'copy'">
 			copy
 		</a>
 	</div>

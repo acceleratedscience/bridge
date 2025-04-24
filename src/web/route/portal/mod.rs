@@ -153,7 +153,7 @@ async fn search_by_email(
             ctx.insert("users", &res);
 
             let template = match bridge_cookie.user_type {
-                UserType::SystemAdmin => "components/user_view_result_system.html",
+                UserType::SystemAdmin => "components/member_email_result_system.html",
                 UserType::GroupAdmin => {
                     let group = log_with_level!(
                         user.groups.first().ok_or(BridgeError::GeneralError(
@@ -165,7 +165,7 @@ async fn search_by_email(
 
                     ctx.insert("group", group);
                     ctx.insert("group_admin", &user.email);
-                    "components/member_email_result.html"
+                    "components/member_email_result_group.html"
                 }
                 _ => {
                     return Ok(HttpResponse::BadRequest()

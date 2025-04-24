@@ -1,15 +1,7 @@
-{% if user_type %} 
-{% set back_link = 'system_admin/hx/tab?tab=GroupList' %} {# Systems Admin #}
-{% set target_panel = 'system_admin_group' %}
-{% else %}
-{% set back_link = 'group_admin/hx/tab?tab=Main' %}
-{% set target_panel = 'group_admin_panel' %}
-{% endif %}
-
 <div class="flex flex-row">
 	<p class="border-b font-bold">Group View</p>
 	<div class="flex flex-row justify-end border-b font-bold flex-grow">
-		<a id="group_admin_back" hx-get="{{ back_link }}" hx-target="#{{ target_panel }}"
+		<a id="group_admin_back" hx-get="system_admin/hx/tab?tab=Main" hx-target="#system_admin_group"
 			class="flex justify-center w-16 text-center cb_button_secondary cursor-pointer" tabindex="0">
 			<svg focusable="false" preserveAspectRatio="xMidYMid meet" fill="currentColor" width="20" height="20"
 				viewBox="0 0 32 32" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
@@ -26,9 +18,6 @@
 				Name
 			</th>
 			<th scope="col" class="py-3 px-1">
-				Email
-			</th>
-			<th scope="col" class="py-3 px-1">
 				Updated
 			</th>
 			<th scope="col" class="py-3 px-1">
@@ -37,24 +26,23 @@
 		</tr>
 	</thead>
 	<tbody>
-		{% if group_members %}
-		{% for user in group_members %}
+		{% if groups %}
+		{% for group in groups %}
 		<tr class="{% if loop.index is even and group_members | length > 1 %}border-t{% endif %}">
 			<td class="py-3 px-1">
-				{{ user.user_name }}
+				{{ group.name }}
+			</td>
+			<td class="py-3 px-1" title="{{ group.updated_at }}">
+				{{ group.updated_at | truncate(length=16) }}
 			</td>
 			<td class="py-3 px-1">
-				{{ user.email }}
-			</td>
-			<td class="py-3 px-1" title="{{ user.updated_at }}">
-				{{ user.updated_at | truncate(length=16) }}
-			</td>
-			<td id="_{{ user.sub | slugify }}_remove" class="py-3 px-1">
-				<button class="font-medium text-red-600 dark:text-red-500 cursor-pointer" hx-patch="group_admin/hx/user"
-					hx-vals='{"email": "{{ user.email }}", "group_name": "{{ group }}", "modify_user": "remove", "last_updated_by": "{{ group_admin }}"}'
-					hx-target="#_{{ user.sub | slugify }}_remove" hx-swap="outerhtml"
-					hx-confirm="Are you sure you wish to remove {{ user.email }}?">
-					Remove
+				<button class="font-medium hover:underline cursor-pointer"
+					hx-get="system_admin/hx/tab?tab=GroupModify&group={{ group.name }}" hx-target="#system_admin_group">
+					Edit
+				</button>
+				<button class="font-medium hover:underline cursor-pointer pl-1"
+					hx-get="system_admin/hx/tab?tab=GroupView&group={{ group.name }}" hx-target="#system_admin_group">
+					Members
 				</button>
 			</td>
 		</tr>
@@ -62,7 +50,7 @@
 		{% else %}
 		<tr>
 			<td colspan="4" class="py-4 px-6 text-center text-gray-500 dark:text-gray-400">
-				No users found.
+				No groups found
 			</td>
 		</tr>
 		{% endif %}

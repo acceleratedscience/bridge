@@ -130,6 +130,30 @@ pub struct Group {
     pub last_updated_by: String,
 }
 
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct GroupPortalRep {
+    pub _id: String,
+    pub name: String,
+    pub subscriptions: Vec<String>,
+    pub created_at: String,
+    pub updated_at: String,
+    pub last_updated_by: String,
+}
+
+impl From<Group> for GroupPortalRep {
+    fn from(group: Group) -> Self {
+        GroupPortalRep {
+            _id: group._id.to_string(),
+            name: group.name,
+            subscriptions: group.subscriptions,
+            created_at: group.created_at.to_string(),
+            updated_at: group.updated_at.to_string(),
+            last_updated_by: group.last_updated_by,
+        }
+    }
+}
+
 #[derive(Debug, Deserialize, Serialize)]
 pub struct GroupSubs {
     pub _id: ObjectId,
@@ -215,7 +239,7 @@ pub struct NotebookStatusCookie {
 
 #[derive(Debug, Deserialize, Clone)]
 pub enum AdminTab {
-    Profile,
+    GroupList,
     GroupView,
     GroupCreate,
     GroupModify,

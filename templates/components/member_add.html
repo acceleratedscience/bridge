@@ -3,12 +3,23 @@
 	<label for="searchInput" class="text-sm font-medium">
 		Search (type to see results after 1 second delay):
 	</label>
-	<input type="text" id="searchInput" name="email" class=" w-full shadow-sm border" placeholder="..."
-		hx-get="hx/search_by_email" hx-trigger="input delay:1s" hx-target="#searchResults" hx-swap="innerHTML"
-		hx-target-400="#searchResults" _="on input from me
-		set innerHTML ef #searchResults to '' end
+	<div
+		class="flex mt-2 h-10 items-center border focus-within:outline-none focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-transparent">
+		<span class="px-4">
+			<svg data-v-242bab8f="" width="16" height="16" viewBox="0 0 32 32"
+				class="duo--Icon duo--IconSearch text-icon-primary" data-v-0e85f2e5="">
+				<path
+					d="M30 28.586l-7.552-7.552a11.018 11.018 0 1 0-1.414 1.414L28.586 30zM5 14a9 9 0 1 1 9 9 9.01 9.01 0 0 1-9-9z">
+				</path>
+			</svg>
+		</span>
+		<input type="text" id="searchInput" name="email" class="flex-grow focus:outline-none"
+			placeholder="Email address..." hx-get="hx/search_by_email" hx-trigger="input delay:1s"
+			hx-target="#searchResults" hx-swap="innerHTML" hx-target-400="#searchResults" _="on input from me
+		set innerHTML of #searchResults to '' end
 		on htmx:beforeRequest if my value is empty set innerHTML of #searchResults to 'Value is required'
 		then halt the event end">
+	</div>
 	<div id="searchResults" class="pt-2">
 	</div>
 </div>
