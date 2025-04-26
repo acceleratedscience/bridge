@@ -21,7 +21,7 @@ build-front:
 local-mongo:
 	podman run -d --rm --name mongodb \
 	-e MONGODB_ROOT_PASSWORD="admin123456789" \
-	-e MONGODB_USERNAME="guardian-user" -e MONGODB_PASSWORD="admin123456789" -e MONGODB_DATABASE="bridge" \
+	-e MONGODB_USERNAME="bridge-user" -e MONGODB_PASSWORD="admin123456789" -e MONGODB_DATABASE="bridge" \
 	-p 27017:27017 bitnami/mongodb:latest
 
 local-mongo-arm:

@@ -19,9 +19,9 @@ jobs:
         image: bitnami/mongodb:latest
         env:
           MONGODB_ROOT_PASSWORD: "admin123456789"
-          MONGODB_USERNAME: "guardian-user"
+          MONGODB_USERNAME: "bridge-user"
           MONGODB_PASSWORD: "admin123456789"
-          MONGODB_DATABASE: "guardian"
+          MONGODB_DATABASE: "bridge"
         ports:
           - 27017:27017
       keydb:
@@ -57,6 +57,4 @@ jobs:
 
     - name: Run tests
       run: |
-        just local-mongo
-        just local-keydb
         cargo test --verbose --features notebook,lifecycle
