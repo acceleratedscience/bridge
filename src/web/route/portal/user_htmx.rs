@@ -5,8 +5,7 @@ use actix_web::{
 use tera::{Context, Tera};
 
 use crate::{
-    config::CONFIG,
-    db::models::{BridgeCookie, NotebookStatusCookie, User, UserType},
+    db::models::{BridgeCookie, NotebookStatusCookie, User},
     errors::Result,
     web::services::CATALOG,
 };

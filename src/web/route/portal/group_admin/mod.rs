@@ -11,7 +11,7 @@ use actix_web::{
 use futures::StreamExt;
 use mongodb::bson::{doc, oid::ObjectId};
 use tera::{Context, Tera};
-use tracing::{instrument, warn};
+use tracing::instrument;
 
 use crate::{
     auth::COOKIE_NAME,

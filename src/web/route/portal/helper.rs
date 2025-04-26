@@ -53,7 +53,7 @@ pub(super) fn check_admin(
         // System admin
         Some(cookie_subject) if cookie_subject.user_type == admin => cookie_subject.into_inner(),
         // All other users
-        Some(g) => {
+        Some(_) => {
             return helper::log_with_level!(Err(BridgeError::NotAdmin), error);
         }
         None => {

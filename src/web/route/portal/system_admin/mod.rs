@@ -480,7 +480,6 @@ async fn system_tab_htmx(
             data.render("components/systems_group.html", &tera::Context::new()),
             error
         )?,
-        _ => unreachable!(),
     };
 
     Ok(HttpResponse::Ok()
