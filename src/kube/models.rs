@@ -252,7 +252,7 @@ mod test {
                             "env": [
                                 {
                                     "name": "NOTEBOOK_ARGS",
-                                    "value": "--ServerApp.token='' --ServerApp.password='' --ServerApp.notebook_dir='/opt/app-root/src' --ServerApp.quit_button=False --ServerApp.default_url='/lab/tree/start_menu.ipynb' --ServerApp.trust_xheaders=True --ServerApp.base_url='notebook/notebook-openad/notebook'",
+                                    "value": "--ServerApp.token='' --ServerApp.password='' --ServerApp.notebook_dir='/opt/app-root/src' --ServerApp.quit_button=False --LabApp.default_url='/lab/tree/start_menu.ipynb' --ServerApp.default_url='/lab/tree/start_menu.ipynb' --ServerApp.trust_xheaders=True --ServerApp.base_url='notebook/notebook/notebook'",
                                 }]}],
                     "imagePullSecrets": [{
                         "name": "ibmdpdev-openad-pull-secret"

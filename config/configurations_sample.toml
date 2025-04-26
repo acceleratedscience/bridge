@@ -1,17 +1,42 @@
 [openid-w3]
 url = "https://preprod.login.w3.ibm.com/oidc/endpoint/default"
-redirect_url = "https://ae814485de68d45a7b81b063be9ca78f-2001013949.us-east-2.elb.amazonaws.com:8080/auth/redirect"
-# redirect_url = "https://localhost:8080/auth/redirect"
+redirect_url = "https://open.accelerator.cafe/auth/callback/w3"
+# redirect_url = "https://localhost:8080/auth/callback/w3"
 
 	[openid-w3.client]
 	client_id = ""
 	client_secret = ""
 
+[openid-w3-prod]
+url = "https://login.w3.ibm.com/oidc/endpoint/default"
+redirect_url = "https://open.accelerate.science/auth/callback/w3"
+# redirect_url = "https://localhost:8080/auth/callback/w3"
+
+	[openid-w3-prod.client] # PROD
+	client_id = ""
+	client_secret = ""
+
 [openid-ibmid]
 url = "https://prepiam.ice.ibmcloud.com/oidc/endpoint/default"
-redirect_url = "https://ae814485de68d45a7b81b063be9ca78f-2001013949.us-east-2.elb.amazonaws.com:8080/auth/callback"
-# redirect_url = "https://localhost:8080/auth/callback"
+redirect_url = "https://open.accelerator.cafe/auth/callback/ibm"
+# redirect_url = "https://localhost:8080/auth/callback/ibm"
 
 	[openid-ibmid.client]
 	client_id = ""
 	client_secret = ""
+
+[openid-ibmid-prod]
+url = "https://login.ibm.com/oidc/endpoint/default"
+redirect_url = "https://open.accelerate.science/auth/callback/ibm"
+# redirect_url = "https://localhost:8080/auth/callback/ibm"
+
+	[openid-ibmid-prod.client]
+	client_id = ""
+	client_secret = ""
+
+[app-config]
+name = "Open Accelerated Discovery"
+description = "This is your gateway to the future of scientific discovery"
+company = "IBM Research"
+notebook_namespace = "notebook"
+honeycomb_api_key = ""

@@ -119,10 +119,18 @@ pub fn init_once() -> Configuration {
     validation.set_audience(&AUD);
     validation.leeway = 0;
 
-    let conf_table: toml::Table = toml::from_str(
-        &read_to_string(PathBuf::from_str("config/configurations.toml").unwrap()).unwrap(),
-    )
-    .unwrap();
+    let (config_location_str, database_location_str) = if cfg!(debug_assertions) {
+        (
+            "config/configurations_sample.toml",
+            "config/database_sample.toml",
+        )
+    } else {
+        ("config/configurations.toml", "config/database.toml")
+    };
+
+    let conf_table: toml::Table =
+        toml::from_str(&read_to_string(PathBuf::from_str(config_location_str).unwrap()).unwrap())
+            .unwrap();
     let mut hasher = sha2::Sha256::new();
     hasher.update(&public_key);
     let kid = BASE64_URL_SAFE_NO_PAD.encode(hasher.finalize());
@@ -130,10 +138,9 @@ pub fn init_once() -> Configuration {
     let key = p256::PublicKey::from_public_key_pem(&String::from_utf8_lossy(&public_key)).unwrap();
     let jwk = JWK::new(key.to_jwk(), kid.clone());
 
-    let db_table: toml::Table = toml::from_str(
-        &read_to_string(PathBuf::from_str("config/database.toml").unwrap()).unwrap(),
-    )
-    .unwrap();
+    let db_table: toml::Table =
+        toml::from_str(&read_to_string(PathBuf::from_str(database_location_str).unwrap()).unwrap())
+            .unwrap();
 
     let mongo_table = db_table["mongodb"].as_table().unwrap();
     let db = Database {
