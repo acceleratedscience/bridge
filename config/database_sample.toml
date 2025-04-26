@@ -1,7 +1,7 @@
 [mongodb]
-	url = "mongodb://guardian-user:admin123456789@127.0.0.1:27017/?authSource=bridge"
-	url_local = "mongodb://guardian-user:admin123456789@127.0.0.1:27017/?authSource=bridge"
-	url_prod = "mongodb://guardian-user:admin123456789@127.0.0.1:27017/?authSource=bridge"
+	url = "mongodb://bridge-user:admin123456789@127.0.0.1:27017/?authSource=bridge"
+	url_local = "mongodb://bridge-user:admin123456789@127.0.0.1:27017/?authSource=bridge"
+	url_prod = "mongodb://bridge-user:admin123456789@127.0.0.1:27017/?authSource=bridge"
 	name = "bridge"
 
 [keydb]
