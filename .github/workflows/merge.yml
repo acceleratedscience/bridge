@@ -43,6 +43,9 @@ jobs:
     - name: Check Rust Version
       run: rustc --version
 
+    - name: Install tools
+      run: cargo install just
+
     - name: Build
       run: cargo build --verbose
 
