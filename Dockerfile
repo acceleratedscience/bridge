@@ -18,9 +18,12 @@ if [ "$LIFECYCLE" = "true" ]; then
 	flags+=("lifecycle")
 fi
 if [ ${#flags[@]} -eq 0 ]; then
+	echo "Building with no features..."
 	cargo build --release
 else
-	cargo build --release --features "${flags[@]}"
+	features_string=$(IFS=,; echo "${flags[*]}")
+    echo "Building with features: $features_string"
+    cargo build --release --features "$features_string"
 fi
 EOF
 
