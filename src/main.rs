@@ -1,10 +1,11 @@
 use std::io::Result;
 
+use mimalloc::MiMalloc;
+
 use openbridge::web::start_server;
 
-#[cfg(not(target_env = "msvc"))]
 #[global_allocator]
-static GLOBAL: jemallocator::Jemalloc = jemallocator::Jemalloc;
+static GLOBAL: MiMalloc = MiMalloc;
 
 #[tokio::main]
 async fn main() -> Result<()> {

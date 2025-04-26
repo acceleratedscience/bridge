@@ -1,0 +1,32 @@
+<p class="border-b font-bold">Add Members</p>
+<div class="pt-4" hx-ext="response-targets">
+	<label for="searchInput" class="text-sm font-medium">
+		Search (type to see results after 1 second delay):
+	</label>
+	<div
+		class="flex mt-2 h-10 items-center border focus-within:outline-none focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-transparent">
+		<span class="px-4">
+			<svg data-v-242bab8f="" width="16" height="16" viewBox="0 0 32 32"
+				class="duo--Icon duo--IconSearch text-icon-primary" data-v-0e85f2e5="">
+				<path
+					d="M30 28.586l-7.552-7.552a11.018 11.018 0 1 0-1.414 1.414L28.586 30zM5 14a9 9 0 1 1 9 9 9.01 9.01 0 0 1-9-9z">
+				</path>
+			</svg>
+		</span>
+		<input type="text" id="searchInput" name="email" class="flex-grow focus:outline-none"
+			placeholder="Email address..." hx-get="hx/search_by_email" hx-trigger="input delay:1s"
+			hx-target="#searchResults" hx-swap="innerHTML" hx-target-400="#searchResults" _="on input from me
+		set innerHTML of #searchResults to '' end
+		on htmx:beforeRequest if my value is empty set innerHTML of #searchResults to 'Value is required'
+		then halt the event end">
+	</div>
+	<div id="searchResults" class="pt-2">
+	</div>
+</div>
+<div class="flex flex-col flex-grow pt-4 text-center justify-center items-center">
+	<a id="group_admin_back" hx-get="group_admin/hx/tab?tab=Main" hx-target="#group_admin_panel"
+		class="lg:w-[300px] w-[220px] h-[50px] py-2 flex justify-center items-center cb_button cursor-pointer"
+		tabindex="0">
+		Go Back
+	</a>
+</div>

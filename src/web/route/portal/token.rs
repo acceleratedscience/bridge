@@ -1,10 +1,9 @@
 use std::{marker::PhantomData, str::FromStr};
 
 use actix_web::{
-    get,
+    HttpResponse, get,
     http::header::ContentType,
     web::{Data, ReqData},
-    HttpResponse,
 };
 use mongodb::bson::{doc, oid::ObjectId};
 use tera::Tera;
@@ -13,9 +12,9 @@ use crate::{
     auth::jwt,
     config::{AUD, CONFIG},
     db::{
-        models::{BridgeCookie, Group, User, GROUP, USER},
-        mongo::DB,
         Database,
+        models::{BridgeCookie, GROUP, Group, USER, User},
+        mongo::DB,
     },
     errors::{BridgeError, Result},
     web::helper::{self, bson},
@@ -37,7 +36,7 @@ pub async fn get_token_for_user(
                     "subject not passed from middleware".to_string(),
                 )),
                 error
-            )
+            );
         }
     };
     let id =

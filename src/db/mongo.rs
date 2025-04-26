@@ -1,12 +1,17 @@
-use std::{marker::PhantomData, str::FromStr, sync::OnceLock, time::Duration};
+use std::{
+    marker::PhantomData,
+    str::FromStr,
+    sync::{LazyLock, OnceLock},
+    time::Duration,
+};
 
 use futures::{StreamExt, TryStreamExt};
 use mongodb::{
-    bson::{doc, oid::ObjectId, Bson, DateTime, Document, Regex},
-    options::IndexOptions,
     Client, Collection, Database as MongoDatabase, IndexModel,
+    bson::{Bson, DateTime, Document, Regex, doc, oid::ObjectId},
+    options::IndexOptions,
 };
-use serde::{de::DeserializeOwned, Serialize};
+use serde::{Serialize, de::DeserializeOwned};
 
 use crate::{
     config::CONFIG,
@@ -15,8 +20,8 @@ use crate::{
 };
 
 use super::{
-    models::{Group, GroupSubs, Locks, User, APPS, GROUP, LOCKS, USER},
     Database,
+    models::{APPS, GROUP, Group, GroupSubs, LOCKS, Locks, USER, User},
 };
 
 type Pipeline = Vec<Document>;
@@ -41,7 +46,7 @@ impl ObjectID {
 }
 
 pub static DBCONN: OnceLock<DB> = OnceLock::new();
-pub static DBNAME: &str = "bridge";
+pub static DBNAME: LazyLock<&str> = LazyLock::new(|| &CONFIG.db.name);
 
 static COLLECTIONS: [&str; 4] = [USER, GROUP, LOCKS, APPS];
 
@@ -344,7 +349,7 @@ mod tests {
 
     use crate::{
         config,
-        db::models::{User, UserType, USER},
+        db::models::{USER, User, UserType},
     };
 
     use super::*;
@@ -354,7 +359,7 @@ mod tests {
     // Look into the justfile for the command to run
     async fn test_mongo_connection_n_queries() {
         config::init_once();
-        DB::init_once(DBNAME).await.unwrap();
+        DB::init_once(&DBNAME).await.unwrap();
 
         let db = DBCONN.get().unwrap();
         let time = time::OffsetDateTime::now_utc();

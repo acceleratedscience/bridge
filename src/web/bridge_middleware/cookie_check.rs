@@ -1,23 +1,29 @@
-use std::future::{ready, Ready};
+use std::{
+    future::{Ready, ready},
+    rc::Rc,
+};
 
 use actix_web::{
-    body::EitherBody,
-    dev::{forward_ready, Service, ServiceRequest, ServiceResponse, Transform},
     Error, HttpMessage, HttpResponse,
+    body::EitherBody,
+    dev::{Service, ServiceRequest, ServiceResponse, Transform, forward_ready},
 };
-use futures::{future::LocalBoxFuture, FutureExt, TryFutureExt};
+use futures::{FutureExt, future::LocalBoxFuture};
 use tracing::warn;
 
 use crate::{
     auth::{COOKIE_NAME, NOTEBOOK_STATUS_COOKIE_NAME},
-    db::models::{BridgeCookie, NotebookStatusCookie},
+    db::{
+        keydb::CACHEDB,
+        models::{BridgeCookie, NotebookStatusCookie},
+    },
 };
 
 pub struct CookieCheck;
 
 impl<S, B> Transform<S, ServiceRequest> for CookieCheck
 where
-    S: Service<ServiceRequest, Response = ServiceResponse<B>, Error = Error>,
+    S: Service<ServiceRequest, Response = ServiceResponse<B>, Error = Error> + 'static,
     S::Future: 'static,
     B: 'static,
 {
@@ -28,17 +34,19 @@ where
     type Future = Ready<Result<Self::Transform, Self::InitError>>;
 
     fn new_transform(&self, service: S) -> Self::Future {
-        ready(Ok(CookieCheckMW { service }))
+        ready(Ok(CookieCheckMW {
+            service: Rc::new(service),
+        }))
     }
 }
 
 pub struct CookieCheckMW<S> {
-    service: S,
+    service: Rc<S>,
 }
 
 impl<S, B> Service<ServiceRequest> for CookieCheckMW<S>
 where
-    S: Service<ServiceRequest, Response = ServiceResponse<B>, Error = Error>,
+    S: Service<ServiceRequest, Response = ServiceResponse<B>, Error = Error> + 'static,
     S::Future: 'static,
     B: 'static,
 {
@@ -62,11 +70,49 @@ where
                                 req.extensions_mut().insert(ncs);
                             }
                         }
-                        req.extensions_mut().insert(gcs);
-                        self.service
-                            .call(req)
-                            .map_ok(ServiceResponse::map_into_left_body)
-                            .boxed_local()
+
+                        req.extensions_mut().insert(gcs.clone());
+
+                        let service = self.service.clone();
+                        async move {
+                            // sesssion_id management only enabled if cache is present
+                            if let Some(cache) = CACHEDB.get() {
+                                if let Some(session_id) = &gcs.session_id {
+                                    match cache.get_session_id(&gcs.subject).await {
+                                        Ok(session_id_retreived) => {
+                                            if session_id_retreived.eq(session_id) {
+                                                return Ok(service.call(req).await?.map_into_left_body());
+                                            }
+                                            warn!(
+                                                "Session id does not match cache for user: {:?} ip: {:?}",
+                                                gcs.subject,
+                                                req.connection_info().realip_remote_addr()
+                                            );
+                                        }
+                                        Err(e) => {
+                                            warn!(
+                                                "Session id not found in cache for user: {:?} ip: {:?} error: {:?}", 
+                                                gcs.subject,
+                                                req.connection_info().realip_remote_addr(),
+                                                e
+                                            );
+                                        }
+                                    }
+                                } else {
+                                    warn!(
+                                        "Session id not found in bridge cookie for user: {:?} ip: {:?}",
+                                        gcs.subject,
+                                        req.connection_info().realip_remote_addr()
+                                    );
+                                }
+                                return Ok(req.into_response(
+                                    HttpResponse::Unauthorized().finish().map_into_right_body(),
+                                ));
+                            }
+
+                            Ok(service.call(req).await?.map_into_left_body())
+                        }
+                        .boxed_local()
                     }
                     Err(e) => {
                         warn!("Bridge cookie deserialization error: {:?}", e);

@@ -1,12 +1,12 @@
 use std::{fmt::Debug, sync::OnceLock};
 
 use k8s_openapi::{
-    api::core::v1::{Namespace, PersistentVolumeClaim, Pod},
     NamespaceResourceScope,
+    api::core::v1::{Namespace, PersistentVolumeClaim, Pod},
 };
 use kube::{
-    api::{DeleteParams, ObjectMeta, PostParams},
     Api, Client, Resource,
+    api::{DeleteParams, ObjectMeta, PostParams},
 };
 use reqwest::StatusCode;
 use serde::{Deserialize, Serialize};
@@ -15,10 +15,10 @@ use tracing::info;
 use crate::errors::{BridgeError, Result};
 
 mod models;
-pub use models::{Notebook, NotebookSpec, PVCSpec, NAMESPACE};
+pub use models::{NAMESPACE, Notebook, NotebookSpec, PVCSpec};
 
 mod notebook_lifecycle;
-pub use notebook_lifecycle::{notebook_lifecycle, LifecycleStream, Medium};
+pub use notebook_lifecycle::{LifecycleStream, Medium, notebook_lifecycle};
 
 pub struct KubeAPI<M> {
     model: M,
@@ -55,7 +55,7 @@ where
     }
 
     pub async fn create(&self) -> Result<M> {
-        let crd = Api::<M>::namespaced(Self::get_kube_client()?.clone(), NAMESPACE);
+        let crd = Api::<M>::namespaced(Self::get_kube_client()?.clone(), *NAMESPACE);
         let pp = PostParams::default();
         let res = match crd.create(&pp, &self.model).await {
             Ok(res) => res,
@@ -75,7 +75,7 @@ where
     }
 
     pub async fn delete(name: &str) -> Result<StatusCode> {
-        let crd = Api::<M>::namespaced(Self::get_kube_client()?.clone(), NAMESPACE);
+        let crd = Api::<M>::namespaced(Self::get_kube_client()?.clone(), *NAMESPACE);
         let dp = DeleteParams::default();
         let status = match crd.delete(name, &dp).await? {
             // resource is in the process of being deleted
@@ -108,7 +108,7 @@ where
     }
 
     pub async fn check_pod_running(name: &str) -> Result<bool> {
-        let pods = Api::<Pod>::namespaced(Self::get_kube_client()?.clone(), NAMESPACE);
+        let pods = Api::<Pod>::namespaced(Self::get_kube_client()?.clone(), *NAMESPACE);
         let pod = pods.get(name).await?;
         Ok(pod
             .status
@@ -119,19 +119,19 @@ where
 
     pub async fn check_pvc_exists(name: &str) -> Result<bool> {
         let pvcs =
-            Api::<PersistentVolumeClaim>::namespaced(Self::get_kube_client()?.clone(), NAMESPACE);
+            Api::<PersistentVolumeClaim>::namespaced(Self::get_kube_client()?.clone(), *NAMESPACE);
         let pvc = pvcs.get(name).await;
         Ok(pvc.is_ok())
     }
 
     pub async fn get_all_pods() -> Result<Vec<Pod>> {
-        let pods = Api::<Pod>::namespaced(Self::get_kube_client()?.clone(), NAMESPACE);
+        let pods = Api::<Pod>::namespaced(Self::get_kube_client()?.clone(), *NAMESPACE);
         let list = pods.list(&Default::default()).await?;
         Ok(list.items)
     }
 
     pub async fn get_pod_ip(name: &str) -> Result<String> {
-        let pods = Api::<Pod>::namespaced(Self::get_kube_client()?.clone(), NAMESPACE);
+        let pods = Api::<Pod>::namespaced(Self::get_kube_client()?.clone(), *NAMESPACE);
         let pod = pods.get(name).await?;
         Ok(pod
             .status

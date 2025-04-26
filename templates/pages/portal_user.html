@@ -1,12 +1,43 @@
-{% extends "pages/portal.html" %}
+{% extends 'pages/nav_base.html' %}
+{% block title %}
+{% if user_type == "user" %}
+Portal User
+{% else %}
+Portal Admin
+{% endif %}
+{% endblock title %}
 
-{% block title %}Open AD Portal | User Profile{% endblock title %}
-
-{% block htmx %}
+{% block head %}
 {{ super() }}
-<script src="https://unpkg.com/htmx-ext-response-targets@2.0.0/response-targets.js"></script>
-{% endblock htmx %}
+<script src="/static/js/response-targets.js"></script>
+<script src="/static/js/_hyperscript.min.js"></script>
+{% endblock head %}
 
-{% block usertype %}
-User
-{% endblock usertype %}
+{% block main %}
+
+<div id="profile">
+	{% include 'components/profile.html' %}
+</div>
+
+{% if notebook %}
+<div id="notebook" class="hidden">
+	{% include 'components/notebook/notebook.html' %}
+</div>
+{% endif %}
+
+{% if user_type == "group" %}
+<div id="members" class="hidden">
+	{% include 'components/members.html' %}
+</div>
+{% endif %}
+
+{% if user_type == "system" %}
+<div id="systems" class="hidden">
+	{% include 'components/systems.html' %}
+</div>
+{% endif %}
+
+{% endblock main %}
+
+{% block footer %}
+{% endblock footer %}

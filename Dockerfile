@@ -1,5 +1,5 @@
 # Stage 1 build
-FROM rust:1.84.0 AS builder
+FROM rust:1.86.0 AS builder
 
 WORKDIR /app
 
@@ -8,16 +8,24 @@ COPY . ./
 ARG NOTEBOOK=false
 ARG LIFECYCLE=false
 
-RUN if [ "$NOTEBOOK" = "true" ] && [ "$LIFECYCLE" = "false" ]; then \
-        echo "Building with Notebook Feature..." \
-        && cargo build --release --features notebook; \
-	elif [ "$NOTEBOOK" = "true" ] && [ "$LIFECYCLE" = "true" ]; then \
-		echo "Building Notebook and Lifecycle Feature..." \
-		&& cargo build --release --features notebook,lifecycle; \
-    else \
-        echo "Building without Notebook Feature..." \
-        && cargo build --release; \
-    fi
+RUN <<EOF
+#!/bin/bash
+flags=()
+if [ "$NOTEBOOK" = "true" ]; then
+	flags+=("notebook")
+fi
+if [ "$LIFECYCLE" = "true" ]; then
+	flags+=("lifecycle")
+fi
+if [ ${#flags[@]} -eq 0 ]; then
+	echo "Building with no features..."
+	cargo build --release
+else
+	features_string=$(IFS=,; echo "${flags[*]}")
+    echo "Building with features: $features_string"
+    cargo build --release --features "$features_string"
+fi
+EOF
 
 # Stage 2 build
 FROM debian:stable-slim

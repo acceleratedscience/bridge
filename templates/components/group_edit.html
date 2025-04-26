@@ -1,52 +1,42 @@
-{% if not group_name %}
-<h3>Create Group</h3>
-{% else %}
-<h3>Edit Group: {{ group_name }}</h3>
-{% endif %}
-
-<div hx-ext="response-targets">
-	<form class="cds-group">
-		<!-- Hidden: Group identifier -->
-		<!-- <cds-text-input label="Group identifier" name="group_id" hidden></cds-text-input> -->
-		{# DCH - Group ID or other unique identifier #}
-		
-		<!-- Group name -->
-		{% if not group_name %}
-			<cds-text-input label="Group name" name="name" required></cds-text-input>
-		{% else %}
-			<cds-text-input label="Group name" name="name" value="{{ group_name }}" hidden></cds-text-input>
-		{% endif %}
-
-		<!-- Subscriptions -->
-		<cds-multi-select title-text="Subscriptions" label="Select models" name="subscriptions" {% if group_name %}value="{{ selected }}" open=true{% endif %} filterable>
-			{% if group_name %}
-				{% for item in selections %}
-				<cds-multi-select-item {% if item.1 %}selected {% endif %}value="{{ item.0 }}">{{ item.0 }}</cds-multi-select-item>
-				{% endfor %}
-			{% else %}
-				{% for item in items %}
-					<cds-multi-select-item value="{{ item }}">{{ item }}</cds-multi-select-item>
-				{% endfor %}
-			{% endif %}
-		</cds-multi-select>
-
-		<!-- Hidden: Last edit  -->
-		<cds-text-input label="Last edit" name="last_updated_by" hidden value="{{ subject }}"></cds-text-input>
-
-		<!-- Submit -->
-		<cds-button-set>
-			<cds-button href="./">Cancel</cds-button>
-			{% if not group_name %}
-			<cds-button hx-post="/portal/system_admin/hx/group" hx-target="#panel-groups" hx-target-400="#panel-groups" hx-swap="innerhtml">Submit</cds-button>
-			{% else %}
-			<cds-button hx-patch="/portal/system_admin/hx/group" hx-target="#panel-groups" hx-target-400="#panel-groups" hx-swap="innerhtml">Submit</cds-button>
-			{% endif %}
-		</cds-button-set>
-	</form>
+<div class="flex flex-row">
+	<p class="border-b font-bold">Group Edit {{ group_name | capitalize }}</p>
+	<div class="flex flex-row justify-end border-b font-bold flex-grow">
+		<a id="group_admin_back" hx-get="system_admin/hx/tab?tab=GroupList" hx-target="#system_admin_group"
+			class="flex justify-center w-16 text-center cb_button_secondary cursor-pointer" tabindex="0">
+			<svg focusable="false" preserveAspectRatio="xMidYMid meet" fill="currentColor" width="20" height="20"
+				viewBox="0 0 32 32" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+				<path d="M14 26L15.41 24.59 7.83 17 28 17 28 15 7.83 15 15.41 7.41 14 6 4 16 14 26z"></path>
+				<title>Arrow left</title>
+			</svg>
+		</a>
+	</div>
 </div>
-{% if group_name %}
-	<script nonce="carbon-sucks">
-		const multiSelect = document.querySelector('cds-multi-select');
-		multiSelect.setAttribute('value', "{{ selected }}"); 
-	</script>
-{% endif %}
+<div class="flex flex-col items-center" hx-ext="response-targets">
+	<form hx-patch="system_admin/hx/group" hx-target="#response-message" hx-swap="innerHTML"
+		hx-target-400="#response-message" class="px-2 pt-2">
+		<input type="hidden" name="name" value="{{ group_name }}">
+		<input type="hidden" name="last_updated_by" value="{{ subject }}">
+		<div>
+			<label class="text-sm font-bold">
+				Subscriptons:
+			</label>
+			<ul class="list-none p-0 m-0 max-h-80 overflow-y-auto">
+				{% for item in selections %}
+				<li class="px-4 py-6 lg:py-2 border-b last:border-b-0 flex items-center">
+					<input type="checkbox" id="item-{{ item.0 }}" name="subscriptions" value="{{ item.0 }}"
+						class="mr-2 leading-tight" {% if item.1 %}checked{% endif %}>
+					<label for="item-{{ item.0 }}" class="text-sm flex-grow cursor-pointer">
+						{{ item.0 }}
+					</label>
+				</li>
+				{% endfor %}
+			</ul>
+		</div>
+		<button type="submit"
+			class="lg:w-[300px] w-[220px] h-[50px] py-2 mt-4 flex justify-center items-center cb_button cursor-pointer">
+			Save Selection
+		</button>
+	</form>
+	<div id="response-message" class="mt-4 text-green-600">
+	</div>
+</div>

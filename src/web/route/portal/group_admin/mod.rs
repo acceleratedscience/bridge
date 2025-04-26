@@ -1,33 +1,34 @@
 use std::{marker::PhantomData, str::FromStr};
 
 use actix_web::{
+    HttpRequest, HttpResponse,
     cookie::{Cookie, SameSite},
     get,
     http::header::ContentType,
     patch,
     web::{self, Data, ReqData},
-    HttpRequest, HttpResponse,
 };
 use futures::StreamExt;
 use mongodb::bson::{doc, oid::ObjectId};
-use tera::Tera;
+use tera::{Context, Tera};
 use tracing::instrument;
 
 use crate::{
     auth::COOKIE_NAME,
     db::{
+        Database,
         models::{
-            AdminTab, AdminTabs, BridgeCookie, Group, ModifyUser, NotebookStatusCookie, User,
-            UserGroupMod, UserType, GROUP, USER,
+            AdminTab, AdminTabs, BridgeCookie, GROUP, Group, ModifyUser, NotebookStatusCookie,
+            USER, User, UserGroupMod, UserPortalRep, UserType,
         },
         mongo::DB,
-        Database,
     },
     errors::{BridgeError, Result},
     web::{
-        bridge_middleware::{Htmx, HTMX_ERROR_RES},
+        bridge_middleware::{HTMX_ERROR_RES, Htmx},
         helper::{self, bson},
-        route::portal::helper::check_admin, services::CATALOG,
+        route::portal::helper::check_admin,
+        services::CATALOG,
     },
 };
 
@@ -38,13 +39,14 @@ use self::htmx::ModifyUserGroup;
 
 mod htmx;
 
-const USER_PAGE: &str = "pages/portal_group.html";
+const USER_PAGE: &str = "pages/portal_user.html";
 
 #[get("")]
 #[instrument(skip(data, db, subject))]
 pub(super) async fn group(
     data: Data<Tera>,
     req: HttpRequest,
+    context: Data<Context>,
     nsc: Option<ReqData<NotebookStatusCookie>>,
     db: Data<&DB>,
     subject: Option<ReqData<BridgeCookie>>,
@@ -84,15 +86,25 @@ pub(super) async fn group(
     let group_name = user.groups.first().unwrap_or(&"".to_string()).clone();
 
     let subscriptions: Result<Group> = db.find(doc! {"name": group_name}, GROUP).await;
-    let subs = match subscriptions {
-        Ok(g) => g.subscriptions,
-        Err(_) => vec![],
+    let (subs, group_created_at, group_updated_at, group_last_updated) = match subscriptions {
+        Ok(g) => (
+            g.subscriptions,
+            g.created_at.to_string(),
+            g.updated_at.to_string(),
+            g.last_updated_by.to_string(),
+        ),
+        Err(_) => (vec![], "".to_string(), "".to_string(), "".to_string()),
     };
 
-    let mut ctx = tera::Context::new();
+    let mut ctx = (**context).clone();
     ctx.insert("name", &user.user_name);
-    ctx.insert("group", &user.groups.join(", "));
+    ctx.insert("user_type", &user.user_type);
+    ctx.insert("email", &user.email);
+    ctx.insert("group", &user.groups);
     ctx.insert("subscriptions", &subs);
+    ctx.insert("group_created_at", &group_created_at);
+    ctx.insert("group_updated_at", &group_updated_at);
+    ctx.insert("group_last_updated", &group_last_updated);
     ctx.insert("token", &user.token);
     if let Some(token) = &user.token {
         helper::add_token_exp_to_tera(&mut ctx, token);
@@ -140,13 +152,21 @@ pub(super) async fn group(
     return Ok(HttpResponse::Ok().cookie(bc).body(content));
 }
 
+// group_update_user is accessible to both group and system admins. This was done so both group and
+// system admins can edit member to a group, and we do not duplicate code
+#[instrument(skip(db, pl))]
 #[patch("user")]
 async fn group_update_user(
     db: Data<&DB>,
     mut pl: web::Payload,
     subject: Option<ReqData<BridgeCookie>>,
 ) -> Result<HttpResponse> {
-    let _ = check_admin(subject, UserType::GroupAdmin)?;
+    if subject.as_ref().is_some_and(|v| {
+        let user_type = &v.user_type;
+        user_type == &UserType::User
+    }) {
+        return Err(BridgeError::NotAdmin);
+    }
 
     let mut body = web::BytesMut::new();
     while let Some(chunk) = pl.next().await {
@@ -292,6 +312,8 @@ async fn group_tab_htmx(
             })?;
 
             let group_members: Vec<User> = db.find_many(doc! {"groups": group_name }, USER).await?;
+            let group_members: Vec<UserPortalRep> =
+                group_members.into_iter().map(|v| v.into()).collect();
 
             let mut context = tera::Context::new();
             context.insert("group_members", &group_members);
@@ -301,7 +323,7 @@ async fn group_tab_htmx(
             helper::log_with_level!(data.render("components/member_view.html", &context), error)?
         }
         AdminTab::Main => helper::log_with_level!(
-            data.render("components/group_member_tab.html", &tera::Context::new()),
+            data.render("components/member_manage.html", &tera::Context::new()),
             error
         )?,
         _ => {

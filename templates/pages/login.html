@@ -1,17 +1,41 @@
-{% extends "base_guest.html" %}
-
-{% block htmx %}{% endblock htmx %}
-
+{% extends 'base.html' %}
+{% block title %}{{ app_name }}{% endblock title %}
 {% block body %}
-<h1>Open Accelerated Discovery</h1>
-<p>Welcome to the Accelerated Discovery Platform.</p>
-<p>This is OPENAD: your gateway to the future of scientific discovery.</p>
-<p class="small">Powered by OpenBridge v{{ version }}</p>
-<br>
-<cds-button-set>
-	{# <cds-button kind="secondary" href="/auth/login?w3">IBM W3 *</cds-button> #}
-	<cds-button kind="primary" href="/auth/login?ibm">IBM ID</cds-button>
-</cds-button-set>
-<br>
-{# <p class="small">* IBM employees</p> #}
+<div class="flex flex-wrap justify-center flex-1">
+	<div class="lg:w-[500px] w-[384px] flex flex-col md:justify-center justify-end md:pb-0 pb-20">
+		<div class="flex flex-col text-center">
+			<p class="md:text-4xl text-3xl pb-10 mx-5 border-b dark:border-[#4d5358] border-[#e0e0e0]">{{ app_name }}
+			</p>
+			<p class="text-base pt-10 px-2">{{ description }}</p>
+		</div>
+	</div>
+	<div
+		class="transition-all lg:w-[500px] md:w-[384px] w-full flex flex-col md:justify-center justify-start dark:bg-[#343a3f] bg-[#f4f4f4] md:pt-0 pt-10">
+		<div class="flex flex-col text-center items-center">
+			<p class="md:text-2xl text-xl pb-5">Sign in to {{ app_name }}</p>
+			<a class="lg:w-[300px] w-[220px] py-2 flex
+				justify-center items-center relative cb_button" href="/auth/login?ibm" tabindex="0">
+				<svg class="absolute left-0 pl-2" preserveAspectRatio="xMidYMid meet" fill="currentColor" width="30"
+					height="30" viewBox="0 0 32 32" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+					<path
+						d="M16 10a6 6 0 00-6 6v8a6 6 0 0012 0V16A6 6 0 0016 10zm-4.25 7.87h8.5v4.25h-8.5zM16 28.25A4.27 4.27 0 0111.75 24v-.13h8.5V24A4.27 4.27 0 0116 28.25zm4.25-12.13h-8.5V16a4.25 4.25 0 018.5 0zM30.66 19.21L24 13v9.1a4 4 0 008 0A3.83 3.83 0 0030.66 19.21zM28 24.35a2.25 2.25 0 01-2.25-2.25V17l3.72 3.47h0A2.05 2.05 0 0130.2 22 2.25 2.25 0 0128 24.35zM0 22.1a4 4 0 008 0V13L1.34 19.21A3.88 3.88 0 000 22.1zm2.48-1.56h0L6.25 17v5.1a2.25 2.25 0 01-4.5 0A2.05 2.05 0 012.48 20.54zM15 5.5A3.5 3.5 0 1011.5 9 3.5 3.5 0 0015 5.5zm-5.25 0A1.75 1.75 0 1111.5 7.25 1.77 1.77 0 019.75 5.5zM20.5 2A3.5 3.5 0 1024 5.5 3.5 3.5 0 0020.5 2zm0 5.25A1.75 1.75 0 1122.25 5.5 1.77 1.77 0 0120.5 7.25z">
+					</path>
+					<title>Bee</title>
+				</svg>
+				Continue with IBMID
+			</a>
+			<a class="lg:w-[300px] w-[220px] py-2 flex
+				justify-center items-center relative cb_button_secondary mt-4" href="/auth/login?w3" tabindex="0">
+				<svg class="absolute left-0 pl-2" preserveAspectRatio="xMidYMid meet" fill="currentColor" width="30"
+					height="30" viewBox="0 0 32 32" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+					<path
+						d="M16 10a6 6 0 00-6 6v8a6 6 0 0012 0V16A6 6 0 0016 10zm-4.25 7.87h8.5v4.25h-8.5zM16 28.25A4.27 4.27 0 0111.75 24v-.13h8.5V24A4.27 4.27 0 0116 28.25zm4.25-12.13h-8.5V16a4.25 4.25 0 018.5 0zM30.66 19.21L24 13v9.1a4 4 0 008 0A3.83 3.83 0 0030.66 19.21zM28 24.35a2.25 2.25 0 01-2.25-2.25V17l3.72 3.47h0A2.05 2.05 0 0130.2 22 2.25 2.25 0 0128 24.35zM0 22.1a4 4 0 008 0V13L1.34 19.21A3.88 3.88 0 000 22.1zm2.48-1.56h0L6.25 17v5.1a2.25 2.25 0 01-4.5 0A2.05 2.05 0 012.48 20.54zM15 5.5A3.5 3.5 0 1011.5 9 3.5 3.5 0 0015 5.5zm-5.25 0A1.75 1.75 0 1111.5 7.25 1.77 1.77 0 019.75 5.5zM20.5 2A3.5 3.5 0 1024 5.5 3.5 3.5 0 0020.5 2zm0 5.25A1.75 1.75 0 1122.25 5.5 1.77 1.77 0 0120.5 7.25z">
+					</path>
+					<title>Bee</title>
+				</svg>
+				Continue with W3
+			</a>
+		</div>
+	</div>
+</div>
 {% endblock body %}

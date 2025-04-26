@@ -1,20 +1,43 @@
-{# Token generation #}
-
-<div id="token-wrapper">
-	<div id="response-token" _="on click
-			 writeText(my innerText) on navigator.clipboard
-			 add .copy-blink to me then settle
-			 remove .copy-blink then settle">
-		{% if not token %}
-		<span class="softer">You do not have a token yet.</span>
-		{% else %}
-		{{ token }}
-		{% endif %}
+<div class="flex flex-row">
+	<p class="border-b font-bold">Your API Token</p>
+	<div class="flex flex-row justify-end border-b font-bold flex-grow">
+		<a id="token_button" class="w-16 text-center cb_button_secondary cursor-pointer" _="on click writeText(innerText of #token_text) on navigator.clipboard
+			then set my.textContent to 'copied!'
+			wait 2s
+			set my.textContent to 'copy'">
+			copy
+		</a>
 	</div>
-
-	<p class="soft-text">{% if token %}Expiration date: {{ token_exp }}{% else %}&nbsp;{% endif %}</p>
-
-	<cds-button hx-get="/portal/hx/token" hx-target="#token-wrapper" hx-swap="innerhtml">
-		{% if token %}Regenerate{% else %}Generate{% endif %} token
-	</cds-button>
+</div>
+{%if token %}
+<p id="token_text" class="pt-4 overflow-hidden break-all">
+	{{ token }}
+</p>
+<p class="border-b font-bold pt-4">Expiration time</p>
+<p class="pt-4">
+	{{ token_exp }}
+</p>
+{% else %}
+<p class="pt-2">
+	You currently do not have a token.
+</p>
+{% endif %}
+<div class="flex justify-center items-center pt-3 flex-grow">
+	<a id="token_button"
+		class="lg:w-[300px] w-[220px] h-[50px] py-2 flex justify-center items-center relative cb_button cursor-pointer"
+		hx-get="/portal/hx/token" hx-target="#token" hx-trigger="click" hx-swap="innerHTML" tabindex="0" {%if token %}
+		hx-confirm="This will revoke your current token" {%endif%}>
+		<svg class="mr-1" preserveAspectRatio="xMidYMid meet" fill="currentColor" width="32" height="32"
+			viewBox="0 0 32 32" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+			<path
+				d="M21,2a8.9977,8.9977,0,0,0-8.6119,11.6118L2,24v6H8L18.3881,19.6118A9,9,0,1,0,21,2Zm0,16a7.0125,7.0125,0,0,1-2.0322-.3022L17.821,17.35l-.8472.8472-3.1811,3.1812L12.4141,20,11,21.4141l1.3787,1.3786-1.5859,1.586L9.4141,23,8,24.4141l1.3787,1.3786L7.1716,28H4V24.8284l9.8023-9.8023.8472-.8474-.3473-1.1467A7,7,0,1,1,21,18Z">
+			</path>
+			<circle cx="22" cy="10" r="2"></circle>
+		</svg>
+		{% if token %}
+		Regenerate Token
+		{% else %}
+		Generate Token
+		{% endif %}
+	</a>
 </div>

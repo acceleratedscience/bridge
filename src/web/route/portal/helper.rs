@@ -9,8 +9,8 @@ use tera::Context;
 
 use crate::{
     db::{
-        models::{BridgeCookie, Group, User, UserType, GROUP},
         Database,
+        models::{BridgeCookie, GROUP, Group, User, UserType},
     },
     errors::{BridgeError, Result},
     web::helper,
@@ -53,14 +53,8 @@ pub(super) fn check_admin(
         // System admin
         Some(cookie_subject) if cookie_subject.user_type == admin => cookie_subject.into_inner(),
         // All other users
-        Some(g) => {
-            return helper::log_with_level!(
-                Err(BridgeError::UserNotFound(format!(
-                    "User {} is not a system admin",
-                    g.into_inner().subject
-                ))),
-                error
-            )
+        Some(_) => {
+            return helper::log_with_level!(Err(BridgeError::NotAdmin), error);
         }
         None => {
             return helper::log_with_level!(
@@ -69,7 +63,7 @@ pub(super) fn check_admin(
                         .to_string(),
                 )),
                 error
-            )
+            );
         }
     })
 }
@@ -121,7 +115,8 @@ where
                 if let Ok(true) = KubeAPI::<Pod>::check_pvc_exists(&pvc).await {
                     bc.config = Some(crate::db::models::Config {
                         notebook_persist_pvc: Some(true),
-                    })
+                    });
+                    ctx.insert("pvc_exists", &true);
                 }
                 // There may be a case where the user has no notebook status cookie... perhaps
                 // cleared the browser history while the notebook was still running. If the

@@ -1,22 +1,22 @@
 use std::marker::PhantomData;
 
 use actix_web::{
+    HttpRequest, HttpResponse,
     cookie::{Cookie, SameSite},
     dev::PeerAddr,
     get,
     http::Method,
     web::{self, Data, ReqData},
-    HttpRequest, HttpResponse,
 };
 use tracing::instrument;
 
 use crate::{
-    auth::{jwt, COOKIE_NAME},
+    auth::{COOKIE_NAME, jwt},
     config::{AUD, CONFIG},
     db::{
-        models::{BridgeCookie, User, USER},
-        mongo::DB,
         Database,
+        models::{BridgeCookie, USER, User},
+        mongo::DB,
     },
     errors::{BridgeError, Result},
     web::{bridge_middleware::ResourceCookieCheck, helper, services::CATALOG},

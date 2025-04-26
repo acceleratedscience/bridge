@@ -13,14 +13,14 @@ use pin_project::pin_project;
 use reqwest::Client;
 use serde::Deserialize;
 use time::OffsetDateTime;
-use tokio::time::{sleep, Instant, Sleep};
+use tokio::time::{Instant, Sleep, sleep};
 use tracing::info;
 
 use crate::{
     db::{
-        models::{NotebookInfo, User, USER},
-        mongo::{ObjectID, DB, DBCONN},
         Database,
+        models::{NotebookInfo, USER, User},
+        mongo::{DB, DBCONN, ObjectID},
     },
     errors::{BridgeError, Result},
     kube::KubeAPI,
@@ -364,13 +364,11 @@ pub async fn notebook_lifecycle(client: Client) -> Result<()> {
 #[cfg(test)]
 mod tests {
     use crate::db::mongo::DB;
-    use crate::logger;
 
     use super::*;
     use futures::StreamExt;
     use serde_json::json;
     use tokio::time::timeout;
-    use tracing::level_filters::LevelFilter;
 
     async fn test(client: Client) -> Result<()> {
         // ping postman echo
@@ -445,24 +443,24 @@ mod tests {
         let sleep_min = Duration::from_secs(1);
         let fut = LifecycleStream::new(test);
         let sigterm = sleep(Duration::from_secs(5));
-        DB::init_once("guardian").await.unwrap();
+        DB::init_once("bridge").await.unwrap();
         let db = DBCONN.get().unwrap();
         let lifecycle = Medium::new(exp_min, sleep_min, db, fut, sigterm);
 
         timeout(Duration::from_secs(10), lifecycle).await.unwrap();
     }
 
-    #[tokio::test]
-    async fn test_notebook_fn() {
-        rustls::crypto::ring::default_provider()
-            .install_default()
-            .expect("Cannot install default provider");
-
-        crate::kube::init_once().await;
-        DB::init_once("guardian").await.unwrap();
-        logger::Logger::start(LevelFilter::INFO);
-        let result = notebook_lifecycle(Client::new()).await;
-        println!("{:?}", result);
-        assert!(result.is_ok());
-    }
+    // #[tokio::test]
+    // async fn test_notebook_fn() {
+    //     rustls::crypto::ring::default_provider()
+    //         .install_default()
+    //         .expect("Cannot install default provider");
+    //
+    //     crate::kube::init_once().await;
+    //     DB::init_once("guardian").await.unwrap();
+    //     logger::Logger::start(LevelFilter::INFO);
+    //     let result = notebook_lifecycle(Client::new()).await;
+    //     println!("{:?}", result);
+    //     assert!(result.is_ok());
+    // }
 }

@@ -1,8 +1,8 @@
 use std::fmt;
 
 use serde::{
-    de::{self, Visitor},
     Deserialize, Deserializer,
+    de::{self, Visitor},
 };
 
 use super::models::{GroupForm, UserDeleteForm, UserForm, UserType};
@@ -51,7 +51,7 @@ impl Visitor<'_> for GroupFormVisitor {
                     return Err(de::Error::unknown_field(
                         key,
                         ["name", "subscriptions", "last_updated_by"].as_ref(),
-                    ))
+                    ));
                 }
             }
         }
@@ -114,7 +114,7 @@ impl Visitor<'_> for UserFormVisitor {
                     return Err(de::Error::unknown_field(
                         key,
                         ["email", "groups", "user_type", "last_updated_by"].as_ref(),
-                    ))
+                    ));
                 }
             }
         }
@@ -175,7 +175,7 @@ impl Visitor<'_> for UserDeleteFormVisitor {
                     return Err(de::Error::unknown_field(
                         key,
                         ["email", "last_updated_by"].as_ref(),
-                    ))
+                    ));
                 }
             }
         }

@@ -1,13 +1,13 @@
 use actix_web::{
-    get,
+    HttpRequest, HttpResponse, get,
     http::header,
     web::{self, Data},
-    HttpRequest, HttpResponse,
 };
 use tera::{Context, Tera};
 
 use crate::{
     auth::COOKIE_NAME,
+    config::CONFIG,
     errors::Result,
     web::helper::{self},
 };
@@ -34,6 +34,8 @@ async fn index(data: Data<Tera>, req: HttpRequest) -> Result<HttpResponse> {
 
     let mut ctx = Context::new();
     ctx.insert("version", APP_VERSION);
+    ctx.insert("app_name", &CONFIG.app_name);
+    ctx.insert("description", &CONFIG.app_discription);
     let rendered = helper::log_with_level!(data.render("pages/login.html", &ctx), error)?;
 
     Ok(HttpResponse::Ok().body(rendered))

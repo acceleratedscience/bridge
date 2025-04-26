@@ -10,14 +10,18 @@ build-notebook:
 build-notebook-lifecycle:
 	podman build -t bridge --build-arg NOTEBOOK=true --build-arg LIFECYCLE=true .
 
+mini-js:
+	uglifyjs ./static/js/main.js -o ./static/js/main.js -c -m
+
 build-front:
 	tailwindcss -i ./static/css/input.css -o ./static/css/output.css --minify
 	tsc
+	uglifyjs ./static/js/main.js -o ./static/js/main.js -c -m
 
 local-mongo:
 	podman run -d --rm --name mongodb \
 	-e MONGODB_ROOT_PASSWORD="admin123456789" \
-	-e MONGODB_USERNAME="guardian-user" -e MONGODB_PASSWORD="admin123456789" -e MONGODB_DATABASE="bridge" \
+	-e MONGODB_USERNAME="bridge-user" -e MONGODB_PASSWORD="admin123456789" -e MONGODB_DATABASE="bridge" \
 	-p 27017:27017 bitnami/mongodb:latest
 
 local-mongo-arm:
@@ -35,14 +39,11 @@ local-keydb:
 down-local-keydb:
 	podman stop keydb
 
-mini-js:
-	uglifyjs ./static/js/main.js -o ./static/js/main.js -c -m
-
 watch-tailwind:
 	tailwindcss -i ./static/css/input.css -o ./static/css/output.css --minify --watch
 
 watch-rust:
-	bacon run-long --watch . --features "notebook lifecycle"
+	bacon run-long --features "notebook lifecycle"
 
 watch-backend:
 	bacon . --features "notebook lifecycle"

@@ -1,16 +1,16 @@
-use std::collections::BTreeMap;
+use std::{collections::BTreeMap, sync::LazyLock};
 
 use k8s_openapi::{
     api::core::v1::{PersistentVolumeClaim, VolumeResourceRequirements},
     apimachinery::pkg::api::resource::Quantity,
 };
-use kube::{api::ObjectMeta, CustomResource};
+use kube::{CustomResource, api::ObjectMeta};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 use crate::config::CONFIG;
 
-pub const NAMESPACE: &str = "notebook-openad";
+pub static NAMESPACE: LazyLock<&str> = LazyLock::new(|| &CONFIG.notebook_namespace);
 
 // Define the Notebook CRD struct
 #[derive(CustomResource, Deserialize, Serialize, Clone, Debug, JsonSchema)]
@@ -33,7 +33,7 @@ impl NotebookSpec {
 
         notebook_env.push(format!(
             "--ServerApp.base_url='notebook/{}/{}'",
-            NAMESPACE, name
+            *NAMESPACE, name
         ));
 
         let mut env = vec![EnvVar {
@@ -228,7 +228,7 @@ mod test {
                 "spec": {
                     "containers": [{
                             "name": "notebook",
-                            "image": "quay.io/ibmdpdev/openad_workbench:latest",
+                            "image": "quay.io/ibmdpdev/openad_workbench_stage:latest",
                             "resources": {
                                 "requests": {
                                     "cpu": "2",
@@ -240,7 +240,7 @@ mod test {
                                 }
                             },
                             "workingDir": "/opt/app-root/src",
-                            "imagePullPolicy": "IfNotPresent",
+                            "imagePullPolicy": "Always",
                             "volumeMounts": [
                                 {
                                     "name": "notebook-volume",
@@ -252,16 +252,10 @@ mod test {
                             "env": [
                                 {
                                     "name": "NOTEBOOK_ARGS",
-                                    "value": "--ServerApp.token='' --ServerApp.password='' --ServerApp.notebook_dir='/opt/app-root/src' --ServerApp.quit_button=False"
-                                },
-                                {
-                                    "name": "NOTEBOOK_BASE_URL",
-                                    "value": "notebook/notebook/notebook"
-                                }
-                            ]
-                    }],
+                                    "value": "--ServerApp.token='' --ServerApp.password='' --ServerApp.notebook_dir='/opt/app-root/src' --ServerApp.quit_button=False --LabApp.default_url='/lab/tree/start_menu.ipynb' --ServerApp.default_url='/lab/tree/start_menu.ipynb' --ServerApp.trust_xheaders=True --ServerApp.base_url='notebook/notebook/notebook'",
+                                }]}],
                     "imagePullSecrets": [{
-                        "name": "quay-notebook-secret"
+                        "name": "ibmdpdev-openad-pull-secret"
                     }],
                     "volumes": [{
                         "name": "notebook-volume",
@@ -275,8 +269,8 @@ mod test {
 
         let actual = serde_json::to_value(&spec).unwrap();
         assert_eq!(actual, expected);
-        assert_eq!(start_url, Some("/lab/tree/start_menu.ipynb".to_string()));
-        assert_eq!(max_idle_time, Some(60));
+        assert_eq!(start_url, Some("lab/tree/start_menu.ipynb".to_string()));
+        assert_eq!(max_idle_time, Some(86400));
     }
 
     #[test]
@@ -290,7 +284,7 @@ mod test {
             "apiVersion": "v1",
             "kind": "PersistentVolumeClaim",
             "metadata": {
-                "name": "notebook-volume-pvc"
+                "name": "notebook-volume"
             },
             "spec": {
                 "accessModes": ["ReadWriteOnce"],

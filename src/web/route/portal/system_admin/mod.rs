@@ -3,31 +3,31 @@ use std::{marker::PhantomData, str::FromStr};
 mod htmx;
 
 use actix_web::{
+    HttpRequest, HttpResponse,
     cookie::{Cookie, SameSite},
     delete, get,
     http::header::ContentType,
     patch, post,
     web::{self, Data, ReqData},
-    HttpRequest, HttpResponse,
 };
 use mongodb::bson::{doc, oid::ObjectId};
 use serde::Deserialize;
-use tera::Tera;
+use tera::{Context, Tera};
 use tracing::instrument;
 
 use crate::{
     auth::COOKIE_NAME,
     db::{
+        Database,
         models::{
-            AdminTab, AdminTabs, BridgeCookie, Group, GroupForm, NotebookStatusCookie, User,
-            UserDeleteForm, UserForm, UserType, GROUP, USER,
+            AdminTab, AdminTabs, BridgeCookie, GROUP, Group, GroupForm, GroupPortalRep,
+            NotebookStatusCookie, USER, User, UserDeleteForm, UserForm, UserPortalRep, UserType,
         },
         mongo::DB,
-        Database,
     },
     errors::{BridgeError, Result},
     web::{
-        bridge_middleware::{Htmx, HTMX_ERROR_RES},
+        bridge_middleware::{HTMX_ERROR_RES, Htmx},
         helper::{self, bson, payload_to_struct},
         route::portal::helper::{check_admin, get_all_groups},
         services::CATALOG,
@@ -38,16 +38,17 @@ use crate::{
 use crate::web::route::portal::helper::notebook_bookkeeping;
 
 use self::htmx::{
-    GroupContent, UserContent, CREATE_MODIFY_GROUP, MODIFY_USER, VIEW_GROUP, VIEW_USER,
+    CREATE_GROUP, GroupContent, MODIFY_GROUP, MODIFY_USER, UserContent, VIEW_GROUP, VIEW_USER,
 };
 
-const USER_PAGE: &str = "pages/portal_system.html";
+const USER_PAGE: &str = "pages/portal_user.html";
 
 #[get("")]
 #[instrument(skip(data, db, subject))]
 pub(super) async fn system(
     data: Data<Tera>,
     req: HttpRequest,
+    context: Data<Context>,
     subject: Option<ReqData<BridgeCookie>>,
     nsc: Option<ReqData<NotebookStatusCookie>>,
     db: Data<&DB>,
@@ -86,15 +87,25 @@ pub(super) async fn system(
     let group_name = user.groups.first().unwrap_or(&"".to_string()).clone();
 
     let subscriptions: Result<Group> = db.find(doc! {"name": group_name}, GROUP).await;
-    let subs = match subscriptions {
-        Ok(g) => g.subscriptions,
-        Err(_) => vec![],
+    let (subs, group_created_at, group_updated_at, group_last_updated) = match subscriptions {
+        Ok(g) => (
+            g.subscriptions,
+            g.created_at.to_string(),
+            g.updated_at.to_string(),
+            g.last_updated_by.to_string(),
+        ),
+        Err(_) => (vec![], "".to_string(), "".to_string(), "".to_string()),
     };
 
-    let mut ctx = tera::Context::new();
+    let mut ctx = (**context).clone();
     ctx.insert("name", &user.user_name);
-    ctx.insert("group", &user.groups.join(", "));
+    ctx.insert("user_type", &user.user_type);
+    ctx.insert("email", &user.email);
+    ctx.insert("group", &user.groups);
     ctx.insert("subscriptions", &subs);
+    ctx.insert("group_created_at", &group_created_at);
+    ctx.insert("group_updated_at", &group_updated_at);
+    ctx.insert("group_last_updated", &group_last_updated);
     ctx.insert("token", &user.token);
     if let Some(token) = &user.token {
         helper::add_token_exp_to_tera(&mut ctx, token);
@@ -316,10 +327,9 @@ async fn system_delete_user(
         .delete(doc! {"email": &uf.email}, USER, PhantomData::<User>)
         .await?;
 
-    let content = format!("<p>User with sub {} has been deleted</p>", uf.email);
     Ok(HttpResponse::Ok()
         .content_type(ContentType::form_url_encoded())
-        .body(content))
+        .body("Deleted"))
 }
 
 #[get("tab")]
@@ -349,7 +359,10 @@ async fn system_tab_htmx(
     let tab = helper::log_with_level!(serde_urlencoded::from_str::<AdminTabs>(query), error)?;
 
     let content = match tab.tab {
-        AdminTab::GroupModify | AdminTab::GroupView | AdminTab::GroupCreate => {
+        AdminTab::GroupModify
+        | AdminTab::GroupList
+        | AdminTab::GroupCreate
+        | AdminTab::GroupView => {
             let mut group_form = GroupContent::new();
 
             CATALOG.get_all_by_name().iter().for_each(|name| {
@@ -359,24 +372,45 @@ async fn system_tab_htmx(
 
             match tab.tab {
                 AdminTab::GroupView => {
-                    let groups: Vec<Group> = db.find_many(doc! {}, GROUP).await.unwrap_or(vec![]);
-                    let group_names: Vec<String> =
-                        groups.into_iter().map(|group| group.name).collect();
+                    let group_name = tab.group.unwrap_or_default();
+                    let group_members: Vec<User> =
+                        db.find_many(doc! {"groups": &group_name}, USER).await?;
+                    let group_members: Vec<UserPortalRep> =
+                        group_members.into_iter().map(|v| v.into()).collect();
 
-                    group_form.render(
-                        &user.email,
-                        data,
-                        VIEW_GROUP,
-                        Some(|ctx: &mut tera::Context| {
-                            ctx.insert("groups", &group_names);
-                        }),
+                    let mut context = tera::Context::new();
+                    context.insert("group_members", &group_members);
+                    context.insert("group", &group_name);
+                    context.insert("group_admin", &user.email);
+                    context.insert("user_type", &user.user_type);
+
+                    helper::log_with_level!(
+                        data.render("components/member_view.html", &context),
+                        error
+                    )?
+                }
+                AdminTab::GroupList => {
+                    let groups: Vec<Group> = db.find_many(doc! {}, GROUP).await.unwrap_or(vec![]);
+                    let groups: Vec<GroupPortalRep> =
+                        groups.into_iter().map(|group| group.into()).collect();
+
+                    helper::log_with_level!(
+                        group_form.render(
+                            &user.email,
+                            data,
+                            VIEW_GROUP,
+                            Some(|ctx: &mut tera::Context| {
+                                ctx.insert("groups", &groups);
+                            }),
+                        ),
+                        error
                     )?
                 }
                 AdminTab::GroupCreate => helper::log_with_level!(
                     group_form.render(
                         &user.email,
                         data,
-                        CREATE_MODIFY_GROUP,
+                        CREATE_GROUP,
                         None::<fn(&mut tera::Context)>,
                     ),
                     error
@@ -402,10 +436,9 @@ async fn system_tab_htmx(
                         group_form.render(
                             &user.email,
                             data,
-                            CREATE_MODIFY_GROUP,
+                            MODIFY_GROUP,
                             Some(|ctx: &mut tera::Context| {
                                 ctx.insert("group_name", &name);
-                                ctx.insert("selected", &group_info.subscriptions.join(","));
                                 ctx.insert("selections", &selections);
                             }),
                         )?
@@ -415,7 +448,7 @@ async fn system_tab_htmx(
                 _ => unreachable!(),
             }
         }
-        AdminTab::UserModify | AdminTab::UserView | AdminTab::UserDelete => {
+        AdminTab::UserModify | AdminTab::UserView => {
             let mut user_form = UserContent::new();
 
             let target_user = tab
@@ -439,20 +472,14 @@ async fn system_tab_htmx(
                 AdminTab::UserModify => {
                     user_form.render(&user.email, target_user, data, MODIFY_USER, None)?
                 }
-                AdminTab::UserDelete => user_form.render(
-                    &user.email,
-                    target_user,
-                    data,
-                    MODIFY_USER,
-                    Some(|ctx: &mut tera::Context| {
-                        ctx.insert("delete", &true);
-                    }),
-                )?,
                 _ => unreachable!("Group variants of enum should not be here"),
             }
         }
-        AdminTab::Profile => r#"<br><p>Profile tab</p>"#.to_string(),
-        _ => unreachable!(),
+        AdminTab::UserList => data.render("components/systems_user.html", &tera::Context::new())?,
+        AdminTab::Main => helper::log_with_level!(
+            data.render("components/systems_group.html", &tera::Context::new()),
+            error
+        )?,
     };
 
     Ok(HttpResponse::Ok()

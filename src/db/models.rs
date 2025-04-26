@@ -55,6 +55,33 @@ pub struct User {
     pub last_updated_by: String,
 }
 
+#[derive(Debug, Deserialize, Serialize)]
+pub struct UserPortalRep {
+    pub _id: String,
+    pub sub: String,
+    pub user_name: String,
+    pub email: String,
+    pub user_type: &'static str,
+    pub created_at: String,
+    pub updated_at: String,
+    pub last_updated_by: String,
+}
+
+impl From<User> for UserPortalRep {
+    fn from(user: User) -> Self {
+        UserPortalRep {
+            _id: user._id.to_string(),
+            sub: user.sub,
+            user_name: user.user_name,
+            email: user.email,
+            user_type: user.user_type.into(),
+            created_at: user.created_at.to_string(),
+            updated_at: user.updated_at.to_string(),
+            last_updated_by: user.last_updated_by,
+        }
+    }
+}
+
 #[derive(Debug, Default, Deserialize, Serialize)]
 pub struct NotebookInfo {
     pub start_time: Option<time::OffsetDateTime>,
@@ -101,6 +128,30 @@ pub struct Group {
     pub created_at: time::OffsetDateTime,
     pub updated_at: time::OffsetDateTime,
     pub last_updated_by: String,
+}
+
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct GroupPortalRep {
+    pub _id: String,
+    pub name: String,
+    pub subscriptions: Vec<String>,
+    pub created_at: String,
+    pub updated_at: String,
+    pub last_updated_by: String,
+}
+
+impl From<Group> for GroupPortalRep {
+    fn from(group: Group) -> Self {
+        GroupPortalRep {
+            _id: group._id.to_string(),
+            name: group.name,
+            subscriptions: group.subscriptions,
+            created_at: group.created_at.to_string(),
+            updated_at: group.updated_at.to_string(),
+            last_updated_by: group.last_updated_by,
+        }
+    }
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -164,6 +215,7 @@ pub struct BridgeCookie {
     pub config: Option<Config>,
     pub resources: Option<Vec<String>>,
     pub token: Option<String>,
+    pub session_id: Option<String>,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -187,13 +239,13 @@ pub struct NotebookStatusCookie {
 
 #[derive(Debug, Deserialize, Clone)]
 pub enum AdminTab {
-    Profile,
+    GroupList,
     GroupView,
     GroupCreate,
     GroupModify,
     UserView,
     UserModify,
-    UserDelete,
+    UserList,
     Main,
 }
 
@@ -221,7 +273,8 @@ mod tests {
 
     #[test]
     fn test_bridge_cookie_serde() {
-        let bridge_cookie = r#"{"subject":"test","user_type":"system","config":null,"resources":null}"#;
+        let bridge_cookie =
+            r#"{"subject":"test","user_type":"system","config":null,"resources":null}"#;
         let bridge_cookie: super::BridgeCookie = serde_json::from_str(bridge_cookie).unwrap();
         assert_eq!(bridge_cookie.subject, "test");
         assert_eq!(bridge_cookie.user_type, UserType::SystemAdmin);

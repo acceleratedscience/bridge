@@ -6,11 +6,13 @@ use std::{
     sync::LazyLock,
 };
 
-use base64::{prelude::BASE64_URL_SAFE_NO_PAD, Engine};
+use base64::{Engine, prelude::BASE64_URL_SAFE_NO_PAD};
 use jsonwebtoken::{Algorithm, DecodingKey, EncodingKey, Validation};
-use p256::{elliptic_curve::JwkEcKey, pkcs8::DecodePublicKey, NistP256};
+use p256::{NistP256, elliptic_curve::JwkEcKey, pkcs8::DecodePublicKey};
 use serde::{Deserialize, Serialize};
 use sha2::Digest;
+
+use crate::auth::openid::OpenIDProvider;
 
 /// Singleton configuration object
 pub struct Configuration {
@@ -29,14 +31,21 @@ pub struct Configuration {
     pub db: Database,
     pub cache: CacheDB,
     pub notebooks: HashMap<String, Notebook>,
+    pub notebook_namespace: String,
+    pub app_name: String,
+    pub app_discription: String,
+    pub company: String,
+    pub oidc: HashMap<String, OIDC>,
 }
 
 pub struct Database {
     pub url: String,
+    pub name: String,
 }
 
 pub struct CacheDB {
     pub url: String,
+    pub name: String,
 }
 
 #[derive(Deserialize, Debug)]
@@ -51,6 +60,15 @@ pub struct Notebook {
     pub args: Option<Vec<String>>,
     pub start_up_url: Option<String>,
     pub max_idle_time: Option<u64>,
+}
+
+const OIDC_PROVIDER: [OpenIDProvider; 2] = [OpenIDProvider::W3, OpenIDProvider::IbmId];
+pub struct OIDC {
+    pub client: String,
+    pub url: String,
+    pub redirect_url: String,
+    pub client_id: String,
+    pub client_secret: String,
 }
 
 #[derive(Serialize, Debug)]
@@ -101,6 +119,18 @@ pub fn init_once() -> Configuration {
     validation.set_audience(&AUD);
     validation.leeway = 0;
 
+    let (config_location_str, database_location_str) = if cfg!(debug_assertions) {
+        (
+            "config/configurations_sample.toml",
+            "config/database_sample.toml",
+        )
+    } else {
+        ("config/configurations.toml", "config/database.toml")
+    };
+
+    let conf_table: toml::Table =
+        toml::from_str(&read_to_string(PathBuf::from_str(config_location_str).unwrap()).unwrap())
+            .unwrap();
     let mut hasher = sha2::Sha256::new();
     hasher.update(&public_key);
     let kid = BASE64_URL_SAFE_NO_PAD.encode(hasher.finalize());
@@ -108,10 +138,9 @@ pub fn init_once() -> Configuration {
     let key = p256::PublicKey::from_public_key_pem(&String::from_utf8_lossy(&public_key)).unwrap();
     let jwk = JWK::new(key.to_jwk(), kid.clone());
 
-    let db_table: toml::Table = toml::from_str(
-        &read_to_string(PathBuf::from_str("config/database.toml").unwrap()).unwrap(),
-    )
-    .unwrap();
+    let db_table: toml::Table =
+        toml::from_str(&read_to_string(PathBuf::from_str(database_location_str).unwrap()).unwrap())
+            .unwrap();
 
     let mongo_table = db_table["mongodb"].as_table().unwrap();
     let db = Database {
@@ -120,6 +149,7 @@ pub fn init_once() -> Configuration {
         } else {
             mongo_table["url"].as_str().unwrap().to_string()
         },
+        name: mongo_table["name"].as_str().unwrap().to_string(),
     };
 
     let cache_db = db_table["keydb"].as_table().unwrap();
@@ -129,7 +159,36 @@ pub fn init_once() -> Configuration {
         } else {
             cache_db["url"].as_str().unwrap().to_string()
         },
+        name: cache_db["name"].as_str().unwrap().to_string(),
     };
+
+    let mut oidc_map: HashMap<String, OIDC> = HashMap::with_capacity(2);
+    OIDC_PROVIDER.into_iter().for_each(|provider| {
+        let provider: &str = provider.into();
+        let openid_table = conf_table[provider].as_table().unwrap();
+        let client = openid_table["client"].as_table().unwrap();
+
+        let url = openid_table["url"].as_str().unwrap().to_string();
+        let redirect_url = openid_table["redirect_url"].as_str().unwrap().to_string();
+
+        let client_id = client["client_id"].as_str().unwrap().to_string();
+        let client_secret = client["client_secret"].as_str().unwrap().to_string();
+        let oidc = OIDC {
+            client: provider.into(),
+            url,
+            redirect_url,
+            client_id,
+            client_secret,
+        };
+
+        oidc_map.insert(provider.into(), oidc);
+    });
+
+    let app_conf = conf_table["app-config"].as_table().unwrap();
+    let app_name = app_conf["name"].as_str().unwrap().to_string();
+    let app_discription = app_conf["description"].as_str().unwrap().to_string();
+    let company = app_conf["company"].as_str().unwrap().to_string();
+    let notebook_namespace = app_conf["notebook_namespace"].as_str().unwrap().to_string();
 
     let notebooks: HashMap<String, Notebook> = toml::from_str(
         &read_to_string(PathBuf::from_str("config/notebook.toml").unwrap()).unwrap(),
@@ -146,6 +205,11 @@ pub fn init_once() -> Configuration {
         db,
         cache,
         notebooks,
+        notebook_namespace,
+        app_name,
+        app_discription,
+        company,
+        oidc: oidc_map,
     }
 }
 
@@ -160,11 +224,11 @@ mod tests {
     fn test_config_init_once() {
         let config = init_once();
         let workbench = config.notebooks.get("open_ad_workbench").unwrap();
-        assert_eq!(workbench.pull_policy, "IfNotPresent");
+        assert_eq!(workbench.pull_policy, "Always");
         assert_eq!(workbench.working_dir, Some("/opt/app-root/src".to_string()));
         assert_eq!(
             workbench.start_up_url,
-            Some("/lab/tree/start_menu.ipynb".to_string())
+            Some("lab/tree/start_menu.ipynb".to_string())
         );
     }
 

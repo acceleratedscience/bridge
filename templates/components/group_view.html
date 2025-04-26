@@ -1,10 +1,58 @@
-<div class="key-val-wrap">
-	<div class="key">Subscriptions</div>
-	<div class="val list-table">
-		{% for item in groups %}
-		<div class="list-table-item">{{ item }}<div class="btn-wrap"><a href="" hx-get="system_admin/hx/tab?tab=GroupModify&group={{ item }}" hx-target="#panel-groups">view / edit</a></div></div>
-		{% else %}
-		<div class="list-table-item">No groups in the system</div>
-		{% endfor %}
+<div class="flex flex-row">
+	<p class="border-b font-bold">Group View</p>
+	<div class="flex flex-row justify-end border-b font-bold flex-grow">
+		<a id="group_admin_back" hx-get="system_admin/hx/tab?tab=Main" hx-target="#system_admin_group"
+			class="flex justify-center w-16 text-center cb_button_secondary cursor-pointer" tabindex="0">
+			<svg focusable="false" preserveAspectRatio="xMidYMid meet" fill="currentColor" width="20" height="20"
+				viewBox="0 0 32 32" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+				<path d="M14 26L15.41 24.59 7.83 17 28 17 28 15 7.83 15 15.41 7.41 14 6 4 16 14 26z"></path>
+				<title>Arrow left</title>
+			</svg>
+		</a>
 	</div>
 </div>
+<table class="w-full text-sm text-left">
+	<thead class="text-xs">
+		<tr>
+			<th scope="col" class="py-3 px-1">
+				Name
+			</th>
+			<th scope="col" class="py-3 px-1">
+				Updated
+			</th>
+			<th scope="col" class="py-3 px-1">
+				Actions
+			</th>
+		</tr>
+	</thead>
+	<tbody>
+		{% if groups %}
+		{% for group in groups %}
+		<tr class="{% if loop.index is even and groups | length > 1 %}border-t{% endif %}">
+			<td class="py-3 px-1">
+				{{ group.name }}
+			</td>
+			<td class="py-3 px-1" title="{{ group.updated_at }}">
+				{{ group.updated_at | truncate(length=16) }}
+			</td>
+			<td class="py-3 px-1">
+				<button class="font-medium hover:underline cursor-pointer"
+					hx-get="system_admin/hx/tab?tab=GroupModify&group={{ group.name }}" hx-target="#system_admin_group">
+					Edit
+				</button>
+				<button class="font-medium hover:underline cursor-pointer pl-1"
+					hx-get="system_admin/hx/tab?tab=GroupView&group={{ group.name }}" hx-target="#system_admin_group">
+					Members
+				</button>
+			</td>
+		</tr>
+		{% endfor %}
+		{% else %}
+		<tr>
+			<td colspan="4" class="py-4 px-6 text-center text-gray-500 dark:text-gray-400">
+				No groups found
+			</td>
+		</tr>
+		{% endif %}
+	</tbody>
+</table>

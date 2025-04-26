@@ -1,61 +1,40 @@
+{# This is the base template inherited by all templates in the hierarchy. #}
 <!DOCTYPE html>
 <html lang="en">
-	<head>
-		<meta charset="utf-8" />
-		<meta name="viewport" content="width=device-width, initial-scale=1" />
-		<title>{% block title %}{% endblock title %}</title>
-		<link rel="icon" href="/static/img/favicon.ico" />
 
-		{#
-		Carbon cdn
-		https://carbondesignsystem.com/developing/frameworks/web-components
-		#}
-		<link rel="stylesheet" href="https://1.www.s81c.com/common/carbon-for-ibm-dotcom/tag/v1/latest/plex.css" />
-		<link rel="stylesheet" href="https://1.www.s81c.com/common/carbon/web-components/tag/v2/latest/themes.css" />
-		<script type="module" src="https://1.www.s81c.com/common/carbon/web-components/tag/v2/latest/button.min.js"></script>
-		<script type="module" src="https://1.www.s81c.com/common/carbon/web-components/tag/v2/latest/ui-shell.min.js"></script>
-		<script type="module" src="https://1.www.s81c.com/common/carbon/web-components/tag/v2/latest/dropdown.min.js"></script>
-		<script type="module" src="https://1.www.s81c.com/common/carbon/web-components/tag/v2/latest/multi-select.min.js"></script>
-		<script type="module" src="https://1.www.s81c.com/common/carbon/web-components/tag/v2/latest/text-input.min.js"></script>
-		<script type="module" src="https://1.www.s81c.com/common/carbon/web-components/tag/v2/latest/form-group.min.js"></script>
-		<script type="module" src="https://1.www.s81c.com/common/carbon/web-components/tag/v2/latest/tabs.min.js"></script>
-		<script type="module" src="https://1.www.s81c.com/common/carbon/web-components/tag/v2/latest/loading.min.js"></script>
-		<script type="module" src="https://1.www.s81c.com/common/carbon/web-components/tag/v2/latest/checkbox.min.js"></script>
-		<style>
-			{# Fix for bug in ui-shell component - https://github.com/carbon-design-system/carbon-for-ibm-dotcom/issues/11973 #}
-			cds-header-nav {
-				display: flex;
-			}
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>{% block title %}{% endblock title %}</title>
+	<link rel="icon" href="/static/img/favicon.svg" />
+	<link rel="stylesheet" href="/static/css/output.css" />
+	{% block htmx %}
+	<script src="/static/js/htmx.min.js"></script>
+	<script src="/static/js/main.js" defer></script>
+	{% endblock htmx %}
 
-			{# Avoid CSS-flash for custom elements #}
-			cds-button:not(:defined),
-			cds-header:not(:defined),
-			cds-dropdown:not(:defined),
-			cds-multi-select:not(:defined),
-			cds-text-input:not(:defined),
-			cds-form-group:not(:defined) {
-				display: none;
-			}
-		</style>
+	{% block head %}
+	{% endblock head %}
+</head>
 
-		{% block htmx %}
-		<script src="https://unpkg.com/htmx.org@2.0.1" integrity="sha384-QWGpdj554B4ETpJJC9z+ZHJcA/i59TyjxEPXiiUgN2WmTyV5OEZWCD6gQhgkdpB/" crossorigin="anonymous"></script>
-		<script src="https://unpkg.com/hyperscript.org@0.9.12"></script>
-		{% endblock htmx %}
+<body class="flex flex-col min-h-screen bg-[#ffffff] dark:bg-[#21272a] text-slate-900 dark:text-slate-200">
+	{% block nav %}
+	{% endblock nav %}
 
-		<link rel="stylesheet" href="/static/css/main.css" />
+	{% block body %}
+	{% endblock body %}
 
-		{% block head %}
-		{% endblock head %}
-	</head>
-	<body class="cds-theme-zone-white">
-		{% block nav %}
-		{% endblock nav %}
-		
-		{% block body %}
-		{% endblock body %}
+	{% block footer %}
+	<footer>
+		<div class="flex justify-start items-center h-[42px] border-t dark:border-[#4d5358] border-[#e0e0e0]">
+			<a class="pl-2 text-sm" href="https://accelerate.science" target="_blank"
+				rel="noopener noreferrer">Openbridge v0.1.0</a>
+		</div>
+	</footer>
+	{% endblock footer %}
 
-		{% block script %}
-		{% endblock script %}
-	</body>
+	{% block script %}
+	{% endblock script %}
+</body>
+
 </html>

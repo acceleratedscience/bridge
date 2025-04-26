@@ -1,6 +1,6 @@
 {
 	"compilerOptions": {
-		"target": "esnext",
+		"module": "ESNext",
 		"outDir": "./static/js/"
 	},
 	 "include": ["./static/ts/**/*"]

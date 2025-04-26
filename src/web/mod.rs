@@ -4,27 +4,25 @@ use std::{io::Result, process::exit, time::Duration};
 use std::pin::pin;
 
 use actix_web::{
+    App, HttpServer,
     middleware::{self},
     web::{self, Data},
-    App, HttpServer,
 };
+use tera::Context;
 use tracing::{error, level_filters::LevelFilter, warn};
 
 #[cfg(feature = "notebook")]
 use crate::kube::{self};
 #[cfg(all(feature = "notebook", feature = "lifecycle"))]
-use crate::kube::{notebook_lifecycle, LifecycleStream, Medium};
+use crate::kube::{LifecycleStream, Medium, notebook_lifecycle};
 #[cfg(all(feature = "notebook", feature = "lifecycle"))]
 use futures::future::select;
 
 use crate::{
-    auth::openid,
-    db::{
+    auth::openid, config::CONFIG, db::{
         keydb::{CacheDB, CACHEDB},
         mongo::{DB, DBCONN, DBNAME},
-    },
-    logger::Logger,
-    templating,
+    }, logger, templating
 };
 
 mod bridge_middleware;
@@ -43,6 +41,7 @@ pub use route::proxy::services;
 use self::helper::maintenance_watch;
 
 // One hour timeout for client requests
+// TODO: Make this configurable
 const TIMEOUT: u64 = 3600;
 #[cfg(all(feature = "notebook", feature = "lifecycle"))]
 const LIFECYCLE_TIME: Duration = Duration::from_secs(3600);
@@ -65,11 +64,11 @@ const SIGTERM_FREQ: Duration = Duration::from_secs(5);
 /// ```
 pub async fn start_server(with_tls: bool) -> Result<()> {
     // Not configurable by the caller
-    // Either INFO or WARN based on release mode
+    // Either DEBUG or INGO based on release mode
     if cfg!(debug_assertions) {
-        Logger::start(LevelFilter::DEBUG);
+        logger::start_logger(LevelFilter::DEBUG);
     } else {
-        Logger::start(LevelFilter::INFO);
+        logger::start_logger(LevelFilter::INFO);
     }
 
     rustls::crypto::ring::default_provider()
@@ -78,7 +77,7 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
 
     // Singletons
     openid::init_once().await;
-    if let Err(e) = DB::init_once(DBNAME).await {
+    if let Err(e) = DB::init_once(&DBNAME).await {
         error!("{e}");
         exit(1);
     }
@@ -125,6 +124,12 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
 
     let server = HttpServer::new(move || {
         let tera_data = Data::new(templating::start_template_eng());
+        let mut context = Context::new();
+        context.insert("application", "OpenBridge");
+        context.insert("application_version", "v0.1.0");
+        context.insert("app_name", &CONFIG.app_name);
+        let context = Data::new(context);
+
         let client_data = Data::new(
             reqwest::Client::builder()
                 .timeout(Duration::from_secs(TIMEOUT))
@@ -137,10 +142,11 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
         let app = App::new()
             // .wrap(bridge_middleware::HttpRedirect)
             .app_data(tera_data.clone())
+            .app_data(context.clone())
             .app_data(client_data)
             .app_data(db)
             .app_data(cache)
-            .wrap(bridge_middleware::custom_code_handle(tera_data))
+            .wrap(bridge_middleware::custom_code_handle(tera_data, context))
             .wrap(middleware::NormalizePath::trim())
             .wrap(middleware::Compress::default())
             .wrap(bridge_middleware::Maintainence)
@@ -164,7 +170,7 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
         server
             .bind_rustls_0_23(
                 ("0.0.0.0", 8080),
-                tls::load_certs("certs/fullchain.cer", "certs/open.accelerate.science.key"),
+                tls::load_certs("certs/fullchain.cer", "certs/open.accelerator.cafe.key"),
             )?
             .run()
             .await?;

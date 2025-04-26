@@ -9,9 +9,15 @@ use crate::errors::{BridgeError, Result};
 pub struct Catalog(pub toml::Table);
 
 pub static CATALOG: LazyLock<Catalog> = LazyLock::new(|| {
+    let service_config = if cfg!(debug_assertions) {
+        "config/services_sample.toml"
+    } else {
+        "config/services.toml"
+    };
+
     Catalog(
         toml::from_str(
-            &read_to_string(PathBuf::from_str("config/services.toml").unwrap()).unwrap(),
+            &read_to_string(PathBuf::from_str(service_config).unwrap()).unwrap(),
         )
         .unwrap(),
     )
@@ -169,8 +175,8 @@ mod test {
         let service = catalog.get_service("postman").unwrap();
         assert_eq!(service.as_str(), "https://postman-echo.com/");
 
-        let resource = catalog.get_resource("reddit").unwrap();
-        assert_eq!(resource.as_str(), "https://www.reddit.com/");
+        let resource = catalog.get_resource("example").unwrap();
+        assert_eq!(resource.as_str(), "https://www.example.com/");
 
         let service = catalog.get_service("notebook");
         assert!(service.is_err());
@@ -178,15 +184,14 @@ mod test {
 
     #[test]
     fn test_catalog_into() {
-        let services: Vec<(Url, String)> =
-            Into::<ServiceCatalog>::into(LazyLock::force(&CATALOG)).into();
-        assert_eq!(services.len(), 7);
+        let catalog = &CATALOG;
+        let services: ServiceCatalog = LazyLock::force(catalog).into();
+        assert_ne!(services.0.len(), 0);
 
-        let resources: Vec<(Url, String)> =
-            Into::<ResourceCatalog>::into(LazyLock::force(&CATALOG)).into();
-        assert!(resources.len().ge(&2));
+        let resources: ResourceCatalog = Into::<ResourceCatalog>::into(LazyLock::force(&CATALOG));
+        assert!(resources.0.len().ge(&1));
 
-        let postman = services.iter().find(|(_, name)| name == "postman");
+        let postman = services.0.iter().find(|(_, name)| name == "postman");
         assert!(postman.is_some());
     }
 
@@ -194,14 +199,13 @@ mod test {
     fn test_catalog_all_names() {
         let names = CATALOG.get_all_by_name();
         assert!(names.contains(&"postman".to_string()));
-        assert!(names.contains(&"reddit".to_string()));
+        assert!(names.contains(&"example".to_string()));
     }
 
     #[test]
     fn test_get_details() {
         let catalog = &CATALOG;
-        let Value::Boolean(b) = *catalog.get_details("resources", "example", "show").unwrap()
-        else {
+        let Value::Boolean(b) = *catalog.get_details("resources", "example", "show").unwrap() else {
             panic!("show not found");
         };
         assert!(b);

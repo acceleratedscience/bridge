@@ -1,12 +1,12 @@
-use std::future::{ready, Ready};
+use std::future::{Ready, ready};
 
 use actix_web::{
-    body::EitherBody,
-    dev::{forward_ready, Service, ServiceRequest, ServiceResponse, Transform},
-    http::header,
     Error, HttpResponse,
+    body::EitherBody,
+    dev::{Service, ServiceRequest, ServiceResponse, Transform, forward_ready},
+    http::header,
 };
-use futures::{future::LocalBoxFuture, FutureExt, TryFutureExt};
+use futures::{FutureExt, TryFutureExt, future::LocalBoxFuture};
 use parking_lot::RwLock;
 
 pub static MAINTENANCE_WINDOWS: RwLock<bool> = RwLock::new(false);

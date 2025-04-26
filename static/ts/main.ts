@@ -1,3 +1,5 @@
+const currentPath = window.location.pathname;
+
 interface menuLabels {
 	button: string;
 	big: string,
@@ -5,32 +7,92 @@ interface menuLabels {
 	open: string;
 	close: string;
 	menu_selected: string;
+	mobile_menu_selected: string;
 }
 
 class Menu {
 	menu_button: HTMLElement;
 	menu_big: NodeListOf<ChildNode>;
 	menu: HTMLElement;
+	menu_mobile: NodeListOf<ChildNode>;
 	menu_open: HTMLElement;
 	menu_close: HTMLElement;
+	main: NodeListOf<ChildNode>;
 
-	constructor(menu_labels: menuLabels) {
+	constructor(menu_labels: menuLabels, main: string) {
 		this.menu_button = document.getElementById(menu_labels.button);
 		this.menu_big = document.getElementById(menu_labels.big).childNodes;
 		this.menu = document.getElementById(menu_labels.menu);
+		this.menu_mobile = document.getElementById(menu_labels.menu).childNodes;
 		this.menu_open = document.getElementById(menu_labels.open);
 		this.menu_close = document.getElementById(menu_labels.close);
+		this.main = document.getElementById(main).childNodes;
 
-		// Menu item selection styling
+		const showById = (node: ChildNode, delimiter: string) => {
+			if (node instanceof HTMLElement) {
+				const element = node.id;
+				const id =  element.split(delimiter)[1];
+				const target = document.getElementById(id);
+				if (target instanceof HTMLElement) {
+					target.classList.remove("hidden");
+				}
+			}
+		};
+
+		const hideAllMain = () => {
+			this.main.forEach((node) => {
+				if (node instanceof HTMLElement) {
+					node.classList.add("hidden");
+				}
+			});
+		};
+
+		// Big menu item selection styling
 		this.menu_big.forEach((node) => {
 			node.addEventListener("click", () => {
+
+				hideAllMain();
+				showById(node, "_");
+
+				this.menu_big.forEach((node) => {
+					if (node instanceof HTMLElement) {
+						node.classList.remove(menu_labels.menu_selected);
+					}
+				});
+				this.menu_mobile.forEach((node) => {
+					if (node instanceof HTMLElement) {
+						node.classList.remove(menu_labels.mobile_menu_selected);
+					}
+				});
+				if (node instanceof HTMLElement) {
+					node.classList.add(menu_labels.menu_selected);
+					let mobile_target = node.id.replace("big_", "mobile_");
+					document.getElementById(mobile_target).classList.add(menu_labels.mobile_menu_selected);
+				}
+			});
+		});
+
+		// mobile menu item selection styling
+		this.menu_mobile.forEach((node) => {
+			node.addEventListener("click", () => {
+
+				hideAllMain();
+				showById(node, "_");
+
+				this.menu_mobile.forEach((node) => {
+					if (node instanceof HTMLElement) {
+						node.classList.remove(menu_labels.mobile_menu_selected);
+					}
+				});
 				this.menu_big.forEach((node) => {
 					if (node instanceof HTMLElement) {
 						node.classList.remove(menu_labels.menu_selected);
 					}
 				});
 				if (node instanceof HTMLElement) {
-					node.classList.add(menu_labels.menu_selected);
+					node.classList.add(menu_labels.mobile_menu_selected);
+					let big_target = node.id.replace("mobile_", "big_");
+					document.getElementById(big_target).classList.add(menu_labels.menu_selected);
 				}
 			});
 		});
@@ -62,16 +124,21 @@ class Menu {
 	}
 }
 
-window.addEventListener("DOMContentLoaded", () => {
+if (currentPath !== "/") {
+	window.addEventListener("DOMContentLoaded", () => {
+		const menu_labels: menuLabels = {
+			button: "menu_button",
+			big: "menu_big",
+			menu: "menu",
+			open: "menu_open",
+			close: "menu_close",
+			menu_selected: "menu_selected",
+			mobile_menu_selected: "mobile_menu_selected"
+		};
 
-	const menu_labels: menuLabels = {
-		button: "menu_button",
-		big: "menu_big",
-		menu: "menu",
-		open: "menu_open",
-		close: "menu_close",
-		menu_selected: "menu_selected"
-	};
+		new Menu(menu_labels, "main");
+	});
+}
 
-	const menu: Menu = new Menu(menu_labels);
-});
+// @ts-ignore
+htmx.config.includeIndicatorStyles = false;

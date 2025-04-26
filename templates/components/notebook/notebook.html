@@ -1,15 +1,18 @@
-{# Notebook #}
-
-<div id="notebook-wrapper">
-	<div  hx-ext='response-targets'>
-		{% if notebook.start_time == "None" %}
+<div class="grid bg-inherit xl:grid-cols-3 lg:grid-cols-2 grid-cols-1 min-h-60">
+	<div class="px-3 py-3 mx-3 mb-4 xl:my-0 rounded-md dark:bg-[#343a3f] bg-[#f4f4f4] flex flex-col"
+		hx-ext='response-targets'>
+		<p class="border-b font-bold">Your Workbench</p>
+		<div id="notebook_panel" class="flex flex-col flex-grow">
+			{% if notebook.start_time == "None" %}
+			{# No notebook up #}
 			{% include 'components/notebook/start.html' %}
-		{% else %}
-			{% if notebook.status == "Ready" %}
-				{% include 'components/notebook/ready.html' %}
 			{% else %}
-				{% include 'components/notebook/poll.html' %}
+			{% if notebook.status == "Ready" %}
+			{% include 'components/notebook/ready.html' %}
+			{% else %}
+			{% include 'components/notebook/poll.html' %}
 			{% endif %}
-		{% endif %}
+			{% endif %}
+		</div>
 	</div>
 </div>

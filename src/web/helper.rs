@@ -1,7 +1,7 @@
 use actix_web::web;
-use base64::{prelude::BASE64_STANDARD, Engine};
-use mongodb::bson::{to_bson, Bson};
-use rand::{rng, Rng};
+use base64::{Engine, prelude::BASE64_STANDARD};
+use mongodb::bson::{Bson, to_bson};
+use rand::{Rng, rng};
 use serde::Deserialize;
 use tera::Context;
 use tokio_stream::StreamExt;
@@ -10,7 +10,7 @@ use tracing::{error, info, warn};
 use crate::{
     auth::jwt::validate_token,
     config::CONFIG,
-    db::keydb::{MaintenanceMSG, CACHEDB},
+    db::keydb::{CACHEDB, MaintenanceMSG},
     errors::{BridgeError, Result},
 };
 
@@ -78,6 +78,15 @@ where
     }
 }
 
+/// Convert a vector of strings that are delimited by a character to a vector of strings
+///
+/// # Example
+/// ```ignore
+/// let s = vec!["a,b,c".to_string(), "d,e,f".to_string()];
+/// let delimiter = ",";
+/// let res = delimited_string_to_vec(s, delimiter);
+/// assert_eq!(res, vec!["a".to_string(), "b".to_string(), "c".to_string(), "d".to_string(),
+/// "e".to_string(), "f".to_string()]);
 pub fn delimited_string_to_vec(s: Vec<String>, delimiter: &str) -> Vec<String> {
     let col = Vec::new();
     (0..s.len()).fold(col, |mut acc, i| {
@@ -167,13 +176,14 @@ pub mod forwarding {
     use std::str::FromStr;
 
     use actix_web::{
+        HttpRequest, HttpResponse,
         cookie::Cookie,
         dev::PeerAddr,
         http::{
-            header::{HeaderName, HeaderValue},
             Method,
+            header::{HeaderName, HeaderValue},
         },
-        web, HttpRequest, HttpResponse,
+        web,
     };
     use futures::StreamExt;
     use reqwest::header::{
@@ -229,7 +239,7 @@ pub mod forwarding {
             _ => {
                 return Err(BridgeError::GeneralError(
                     "Unsupported HTTP method".to_string(),
-                ))
+                ));
             }
         };
 
@@ -306,13 +316,13 @@ pub mod utils {
     use std::{marker::PhantomData, ops::Deref};
 
     use k8s_openapi::api::core::v1::PersistentVolumeClaim;
-    use mongodb::bson::{doc, Bson, Document};
+    use mongodb::bson::{Bson, Document, doc};
 
     use crate::{
         db::{
-            models::{User, USER},
-            mongo::ObjectID,
             Database,
+            models::{USER, User},
+            mongo::ObjectID,
         },
         errors::Result,
         kube::{KubeAPI, Notebook},
@@ -331,13 +341,13 @@ pub mod utils {
     where
         O: Deref<Target = I>,
         I: for<'a> Database<
-            User,
-            Q = Document,
-            N<'a> = &'a str,
-            C = &'static str,
-            R2 = Bson,
-            R3 = u64,
-        >,
+                User,
+                Q = Document,
+                N<'a> = &'a str,
+                C = &'static str,
+                R2 = Bson,
+                R3 = u64,
+            >,
         // pub async fn notebook_destroy(db: &DB, subject: &str, pvc: bool, user: &str) -> Result<()>
     {
         let name = notebook_helper::make_notebook_name(subject);
@@ -373,9 +383,8 @@ pub mod utils {
 /// Websocket proxying utilities
 pub mod ws {
     use actix_web::{
-        rt,
+        HttpRequest, HttpResponse, rt,
         web::{self},
-        HttpRequest, HttpResponse,
     };
 
     use actix_ws::Item;

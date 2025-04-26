@@ -1,18 +1,21 @@
 #![allow(dead_code)]
 
-use std::{fs::read_to_string, path::PathBuf, str::FromStr, sync::OnceLock};
+use std::sync::OnceLock;
 
 use openidconnect::{
-    core::{self, CoreClient, CoreResponseType},
     AuthenticationFlow, AuthorizationCode, Client, ClientId, ClientSecret, CsrfToken,
     EmptyAdditionalClaims, EmptyExtraTokenFields, EndpointMaybeSet, EndpointNotSet, EndpointSet,
     IdTokenFields, IssuerUrl, Nonce, RedirectUrl, Scope, StandardErrorResponse,
     StandardTokenResponse,
+    core::{self, CoreClient, CoreResponseType},
 };
 use tracing::error;
 use url::Url;
 
-use crate::errors::{BridgeError, Result};
+use crate::{
+    config::CONFIG,
+    errors::{BridgeError, Result},
+};
 
 #[allow(clippy::upper_case_acronyms)]
 // LMFAO
@@ -101,43 +104,16 @@ pub static OPENID_IBM: OnceLock<OpenID> = OnceLock::new();
 
 impl OpenID {
     async fn new(table_name: OpenIDProvider) -> Result<Self> {
-        let table = toml::from_str::<toml::Table>(&read_to_string(PathBuf::from_str(
-            "config/configurations.toml",
-        )?)?)?;
-        let openid_table = table
-            .get(table_name.into())
+        let table_name: &str = table_name.into();
+        let oidc = CONFIG
+            .oidc
+            .get(table_name)
             .ok_or_else(|| BridgeError::TomlLookupError)?;
-
-        let url = openid_table
-            .get("url")
-            .ok_or_else(|| BridgeError::TomlLookupError)?
-            .as_str()
-            .ok_or_else(|| BridgeError::StringConversionError)?;
-        let redirect = openid_table
-            .get("redirect_url")
-            .ok_or_else(|| BridgeError::TomlLookupError)?
-            .as_str()
-            .ok_or_else(|| BridgeError::StringConversionError)?;
-
-        let client = openid_table
-            .get("client")
-            .ok_or_else(|| BridgeError::TomlLookupError)?;
-
-        let client_id = client
-            .get("client_id")
-            .ok_or_else(|| BridgeError::TomlLookupError)?
-            .as_str()
-            .ok_or_else(|| BridgeError::StringConversionError)?;
-        let client_secret = client
-            .get("client_secret")
-            .ok_or_else(|| BridgeError::TomlLookupError)?
-            .as_str()
-            .ok_or_else(|| BridgeError::StringConversionError)?;
 
         let reqwest_client = reqwest::Client::new();
 
         let provider_metadata = core::CoreProviderMetadata::discover_async(
-            IssuerUrl::new(url.to_owned())?,
+            IssuerUrl::new(oidc.url.to_owned())?,
             &reqwest_client,
         )
         .await
@@ -145,11 +121,11 @@ impl OpenID {
 
         let client = CoreClient::from_provider_metadata(
             provider_metadata,
-            ClientId::new(client_id.to_string()),
-            Some(ClientSecret::new(client_secret.to_string())),
+            ClientId::new(oidc.client_id.to_string()),
+            Some(ClientSecret::new(oidc.client_secret.to_string())),
         )
         .set_redirect_uri(
-            RedirectUrl::new(redirect.to_string())
+            RedirectUrl::new(oidc.redirect_url.to_string())
                 .map_err(|e| BridgeError::GeneralError(e.to_string()))?,
         );
 

@@ -1,11 +1,4 @@
-{% extends "base.html" %}
-
-{% block title %}Login successful{% endblock title %}
-
+{% extends 'base.html' %}
 {% block head %}
-<script nonce="login-redirect-bridge">
-	window.location.href = '/';
-</script>
+<meta http-equiv="refresh" content="0; URL='/'" />
 {% endblock head %}
-
-{% block htmx %}{% endblock htmx %}

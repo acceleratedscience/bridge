@@ -1,17 +1,14 @@
-{% extends "base_user.html" %}
+{% extends 'pages/nav_base.html' %}
 
-{% block body %}
+{% block title %}Pending Account{% endblock title %}
 
-<div>
-	<p class="soft-text">Welcome, {{name}}</p>
-	<p>Thank you for registering. Your account is pending to be added to a group.</p>
+{% block main %}
+<div class="container">
+	<p class="font-mono text-lg mb-4">{{ name }},</p>
+	<p>Thank you for registering! Your account is currently in the pending state. An admin will need to approve and pull
+		you into a group.
 </div>
+{% endblock main %}
 
-{% block tabbed %}
-{% block tabselection %}
-{% endblock tabselection %}
-{% block tabcontents %}
-{% endblock tabcontents %}
-{% endblock tabbed %}
-
-{% endblock body %}
+{% block footer %}
+{% endblock footer %}

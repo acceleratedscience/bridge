@@ -2,39 +2,39 @@
 //! notebook, we use the forward function from the helper module. But we also introduce to
 //! websocket endpoints.
 
-use std::{marker::PhantomData, str::FromStr};
+use std::{marker::PhantomData, str::FromStr, time::Duration};
 
-use k8s_openapi::api::core::v1::Pod;
+use k8s_openapi::api::core::v1::{PersistentVolumeClaim, Pod};
 use mongodb::bson::doc;
 use serde::Deserialize;
 
 use actix_web::{
+    HttpRequest, HttpResponse,
     cookie::{Cookie, SameSite},
     delete,
     dev::PeerAddr,
     get,
-    http::{header::ContentType, Method, StatusCode},
+    http::{Method, StatusCode, header::ContentType},
     post,
     web::{self, Data, ReqData},
-    HttpRequest, HttpResponse,
 };
 use tera::{Context, Tera};
 use tracing::{info, instrument, warn};
 use url::Url;
 
 use crate::{
-    auth::{jwt, COOKIE_NAME, NOTEBOOK_COOKIE_NAME, NOTEBOOK_STATUS_COOKIE_NAME},
+    auth::{COOKIE_NAME, NOTEBOOK_COOKIE_NAME, NOTEBOOK_STATUS_COOKIE_NAME, jwt},
     config::{AUD, CONFIG},
     db::{
-        models::{
-            BridgeCookie, Config, Group, NotebookCookie, NotebookInfo, NotebookStatusCookie, User,
-            UserNotebook, GROUP, USER,
-        },
-        mongo::{ObjectID, DB},
         Database,
+        models::{
+            BridgeCookie, Config, GROUP, Group, NotebookCookie, NotebookInfo, NotebookStatusCookie,
+            USER, User, UserNotebook,
+        },
+        mongo::{DB, ObjectID},
     },
     errors::{BridgeError, Result},
-    kube::{KubeAPI, Notebook, NotebookSpec, PVCSpec, NAMESPACE},
+    kube::{KubeAPI, NAMESPACE, Notebook, NotebookSpec, PVCSpec},
     web::{
         bridge_middleware::{CookieCheck, Htmx, NotebookCookieCheck},
         helper::{self, bson},
@@ -44,6 +44,7 @@ use crate::{
 pub const NOTEBOOK_SUB_NAME: &str = "notebook";
 const NOTEBOOK_PORT: &str = "8888";
 const NOTEBOOK_TOKEN_LIFETIME: usize = const { 60 * 60 * 24 * 30 };
+const PVC_DELETE_ATTEMPT: u8 = 9;
 
 #[get("{name}/api/events/subscribe")]
 async fn notebook_ws_subscribe(
@@ -59,7 +60,7 @@ async fn notebook_ws_subscribe(
                     "Notebook cookie not found".to_string(),
                 )),
                 error
-            )
+            );
         }
     };
     let url = notebook_helper::make_forward_url(
@@ -93,7 +94,7 @@ async fn notebook_ws_session(
                     "Notebook cookie not found".to_string(),
                 )),
                 error
-            )
+            );
         }
     };
 
@@ -116,8 +117,9 @@ async fn notebook_ws_session(
 
 #[post("/create")]
 async fn notebook_create(
+    req: HttpRequest,
     subject: Option<ReqData<BridgeCookie>>,
-    payload: web::Payload,
+    // payload: web::Payload,
     db: Data<&DB>,
     data: Data<Tera>,
 ) -> Result<HttpResponse> {
@@ -125,16 +127,22 @@ async fn notebook_create(
         let mut bridge_cookie = _subject.into_inner();
         let id = ObjectID::new(&bridge_cookie.subject);
 
-        let mut persist_pvc = false;
-        let pl = payload.to_bytes().await?;
-        if String::from_utf8_lossy(&pl).eq("volume=on") {
-            persist_pvc = true;
-        }
+        // Defaulting to true with ui update... this is to simiply the pvc option. Instead of
+        // giving the user the option to persist the pvc before start a workbench, we ask when the
+        // user want to terminate workbench whether they want to persist the pvc or not.
+        // To ensure we can continue to give this option despite the notebook lifecycle, we set
+        // this to true by default.
+        let persist_pvc = true;
+        // let pl = payload.to_bytes().await?;
+        // if String::from_utf8_lossy(&pl).eq("volume=on") {
+        //     persist_pvc = true;
+        // }
         bridge_cookie.config = Some(Config {
             notebook_persist_pvc: Some(persist_pvc),
         });
 
         // check if the user can create a notebook
+        // TODO: instead of two separate calls to the DB, do this in one call
         let user: User = helper::log_with_level!(
             db.find(
                 doc! {
@@ -195,12 +203,42 @@ async fn notebook_create(
         )?
         .is_some()
         {
-            info!("Namespace {} has been created", NAMESPACE)
+            info!("Namespace {} has been created", *NAMESPACE)
         }
 
         // User is allowed to create a notebook, but notebook does not exist... so create one
         // Create a PVC at 1Gi
         let pvc_name = notebook_helper::make_notebook_volume_name(&bridge_cookie.subject);
+
+        if req.query_string().contains("clear") {
+            helper::log_with_level!(
+                KubeAPI::<PersistentVolumeClaim>::delete(&pvc_name).await,
+                error
+            )?;
+
+            // PVC takes time to delete... loop and check it is gone
+            loop {
+                let mut loop_cnt = 0;
+                if KubeAPI::<PersistentVolumeClaim>::check_pvc_exists(&pvc_name).await? {
+                    tokio::time::sleep(Duration::from_secs(2)).await;
+                    loop_cnt += 1;
+                } else {
+                    break;
+                }
+
+                if loop_cnt > PVC_DELETE_ATTEMPT {
+                    let apx_time_elapsed = PVC_DELETE_ATTEMPT * loop_cnt;
+                    warn!(
+                        "PVC {} not deleted after {} seconds",
+                        pvc_name, apx_time_elapsed
+                    );
+                    return Err(BridgeError::GeneralError(
+                        "PVC not deleted after extended period of time".to_string(),
+                    ));
+                }
+            }
+        }
+
         let pvc = PVCSpec::new(pvc_name.clone(), 1);
         if let Err(e) = KubeAPI::new(pvc.spec).create().await {
             match e {
@@ -317,6 +355,7 @@ async fn notebook_create(
 
 #[delete("/delete")]
 async fn notebook_delete(
+    req: HttpRequest,
     subject: Option<ReqData<BridgeCookie>>,
     data: Data<Tera>,
     db: Data<&DB>,
@@ -330,7 +369,7 @@ async fn notebook_delete(
                     "Notebook cookie not found".to_string(),
                 )),
                 error
-            )
+            );
         }
     };
 
@@ -346,12 +385,7 @@ async fn notebook_delete(
         .await,
         error
     )?;
-    let persist_pvc = user
-        .notebook
-        .ok_or_else(|| {
-            BridgeError::NotebookExistsError("Notebook entry not found in DB".to_string())
-        })?
-        .persist_pvc;
+    let persist_pvc = req.query_string().contains("save");
 
     helper::utils::notebook_destroy(**db, &bridge_cookie.subject, persist_pvc, &user.email).await?;
 
@@ -374,10 +408,17 @@ async fn notebook_delete(
     let mut ctx = Context::new();
     ctx.insert("cooloff", &true);
     #[cfg(feature = "notebook")]
-    if let Some(ref conf) = bridge_cookie.config {
-        // TODO:: check if it's ok to pass in Option instead of bool
-        ctx.insert("pvc", &conf.notebook_persist_pvc);
+    {
+        if let Some(ref conf) = bridge_cookie.config {
+            // TODO:: check if it's ok to pass in Option instead of bool
+            ctx.insert("pvc", &conf.notebook_persist_pvc);
+        }
+        if persist_pvc {
+            ctx.insert("pvc_exists", &true);
+        }
     }
+
+    println!("Context: {:?}", ctx);
 
     let content =
         helper::log_with_level!(data.render("components/notebook/start.html", &ctx), error)?;
@@ -404,7 +445,7 @@ async fn notebook_status(
                     "Bridge cookie and or notebook_status_cookie not found".to_string(),
                 )),
                 error
-            )
+            );
         }
     };
 
@@ -594,7 +635,7 @@ async fn notebook_forward(
                     "Notebook cookie not found".to_string(),
                 )),
                 error
-            )
+            );
         }
     };
 
@@ -635,11 +676,11 @@ pub mod notebook_helper {
             return match path {
                 Some(p) => format!(
                     "{}://localhost:{}/notebook/{}/{}/{}",
-                    protocol, NOTEBOOK_PORT, NAMESPACE, name, p
+                    protocol, NOTEBOOK_PORT, *NAMESPACE, name, p
                 ),
                 None => format!(
                     "{}://localhost:{}/notebook/{}/{}",
-                    protocol, NOTEBOOK_PORT, NAMESPACE, name
+                    protocol, NOTEBOOK_PORT, *NAMESPACE, name
                 ),
             };
         }
@@ -647,19 +688,19 @@ pub mod notebook_helper {
             // TODO: This is super cumbersome... FIX IT FIX IT!
             Some(p) => format!(
                 "{}://{}:{}/notebook/{}/{}/{}",
-                protocol, ip, NOTEBOOK_PORT, NAMESPACE, name, p
+                protocol, ip, NOTEBOOK_PORT, *NAMESPACE, name, p
             ),
             None => format!(
                 "{}://{}:{}/notebook/{}/{}",
-                protocol, ip, NOTEBOOK_PORT, NAMESPACE, name
+                protocol, ip, NOTEBOOK_PORT, *NAMESPACE, name
             ),
         }
     }
 
     pub(super) fn make_path(name: &str, path: Option<&str>) -> String {
         match path {
-            Some(p) => format!("/notebook/{}/{}/{}", NAMESPACE, name, p),
-            None => format!("/notebook/{}/{}", NAMESPACE, name),
+            Some(p) => format!("/notebook/{}/{}/{}", *NAMESPACE, name, p),
+            None => format!("/notebook/{}/{}", *NAMESPACE, name),
         }
     }
 
@@ -715,7 +756,7 @@ pub mod notebook_helper {
 
 pub fn config_notebook(cfg: &mut web::ServiceConfig) {
     cfg.service(
-        web::scope(&("/notebook/".to_string() + NAMESPACE))
+        web::scope(&("/notebook/".to_string() + *NAMESPACE))
             .wrap(NotebookCookieCheck)
             .service(notebook_ws_subscribe)
             .service(notebook_ws_session)

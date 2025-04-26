@@ -1,12 +1,12 @@
 use std::{marker::PhantomData, str::FromStr};
 
 use actix_web::{
+    HttpRequest, HttpResponse,
     cookie::{Cookie, SameSite},
     get,
     http::header::{self, ContentType},
     post,
     web::{self, Data, ReqData},
-    HttpRequest, HttpResponse,
 };
 use mongodb::bson::{doc, oid::ObjectId};
 use tera::{Context, Tera};
@@ -14,13 +14,13 @@ use tera::{Context, Tera};
 use crate::{
     auth::{COOKIE_NAME, NOTEBOOK_COOKIE_NAME, NOTEBOOK_STATUS_COOKIE_NAME},
     db::{
-        models::{BridgeCookie, User, UserType, USER},
-        mongo::DB,
         Database,
+        models::{BridgeCookie, USER, User, UserPortalRep, UserType},
+        mongo::DB,
     },
     errors::{BridgeError, Result},
     web::{
-        bridge_middleware::{CookieCheck, Htmx, HTMX_ERROR_RES},
+        bridge_middleware::{CookieCheck, HTMX_ERROR_RES, Htmx},
         helper::log_with_level,
         services::CATALOG,
     },
@@ -147,12 +147,13 @@ async fn search_by_email(
                     }
                 },
             };
+            let res: Vec<UserPortalRep> = res.into_iter().map(|u| u.into()).collect();
 
             let mut ctx = Context::new();
             ctx.insert("users", &res);
 
             let template = match bridge_cookie.user_type {
-                UserType::SystemAdmin => "components/user_view_result_system.html",
+                UserType::SystemAdmin => "components/member_email_result_system.html",
                 UserType::GroupAdmin => {
                     let group = log_with_level!(
                         user.groups.first().ok_or(BridgeError::GeneralError(
@@ -164,7 +165,7 @@ async fn search_by_email(
 
                     ctx.insert("group", group);
                     ctx.insert("group_admin", &user.email);
-                    "components/user_view_result_group.html"
+                    "components/member_email_result_group.html"
                 }
                 _ => {
                     return Ok(HttpResponse::BadRequest()
@@ -187,6 +188,7 @@ async fn search_by_email(
 
 #[post("logout")]
 async fn logout() -> HttpResponse {
+    println!("Logging out user");
     // clear all the cookie
     let mut cookie_remove = Cookie::build(COOKIE_NAME, "")
         .same_site(SameSite::Strict)
@@ -228,12 +230,12 @@ pub fn config_portal(cfg: &mut web::ServiceConfig) {
                 web::scope("/hx")
                     .wrap(Htmx)
                     .service(token::get_token_for_user)
-                    .service(search_by_email)
-                    .service(logout),
+                    .service(search_by_email),
             )
             .service(index)
             .service(user::user)
             .configure(group_admin::config_group)
             .configure(system_admin::config_system),
-    );
+    )
+    .service(web::scope("/session").wrap(Htmx).service(logout));
 }
