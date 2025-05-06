@@ -19,10 +19,13 @@ use crate::kube::{LifecycleStream, Medium, notebook_lifecycle};
 use futures::future::select;
 
 use crate::{
-    auth::openid, config::CONFIG, db::{
-        keydb::{CacheDB, CACHEDB},
+    auth::openid,
+    config::CONFIG,
+    db::{
+        keydb::{CACHEDB, CacheDB},
         mongo::{DB, DBCONN, DBNAME},
-    }, logger, templating
+    },
+    logger, templating,
 };
 
 mod bridge_middleware;

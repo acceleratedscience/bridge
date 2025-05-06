@@ -16,10 +16,8 @@ pub static CATALOG: LazyLock<Catalog> = LazyLock::new(|| {
     };
 
     Catalog(
-        toml::from_str(
-            &read_to_string(PathBuf::from_str(service_config).unwrap()).unwrap(),
-        )
-        .unwrap(),
+        toml::from_str(&read_to_string(PathBuf::from_str(service_config).unwrap()).unwrap())
+            .unwrap(),
     )
 });
 pub static CATALOG_URLS: LazyLock<Vec<(Url, String)>> =
@@ -205,7 +203,8 @@ mod test {
     #[test]
     fn test_get_details() {
         let catalog = &CATALOG;
-        let Value::Boolean(b) = *catalog.get_details("resources", "example", "show").unwrap() else {
+        let Value::Boolean(b) = *catalog.get_details("resources", "example", "show").unwrap()
+        else {
             panic!("show not found");
         };
         assert!(b);

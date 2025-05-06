@@ -130,7 +130,6 @@ pub struct Group {
     pub last_updated_by: String,
 }
 
-
 #[derive(Debug, Deserialize, Serialize)]
 pub struct GroupPortalRep {
     pub _id: String,
