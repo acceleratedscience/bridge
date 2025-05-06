@@ -1,6 +1,6 @@
 [open_ad_workbench]
 name = "OpenAD Workbench"
-url = "quay.io/ibmdpdev/openad_workbench_prod:latest"
+url = "quay.io/ibmdpdev/openad_workbench_stage:latest"
 pull_policy = "Always"
 working_dir = "/opt/app-root/src"
 volume_mnt_path = "/opt/app-root/src"
