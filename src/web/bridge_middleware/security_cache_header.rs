@@ -55,6 +55,11 @@ where
                 )?,
             );
             header.insert(CACHE_CONTROL, HeaderValue::from_str("no-cache")?);
+            // add HSTS header
+            header.insert(
+                header::STRICT_TRANSPORT_SECURITY,
+                HeaderValue::from_str("max-age=31536000; includeSubDomains")?,
+            );
             Ok(res)
         })
     }
