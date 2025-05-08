@@ -41,7 +41,7 @@ pub use helper::utils;
 pub use route::notebook::notebook_helper;
 pub use route::proxy::services;
 
-use self::helper::maintenance_watch;
+use self::{bridge_middleware::HttpRedirect, helper::maintenance_watch};
 
 // One hour timeout for client requests
 // TODO: Make this configurable
@@ -170,6 +170,18 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
     });
 
     if with_tls {
+        // Application level https redirect, but only in release mode
+        let redirect_handle = if !cfg!(debug_assertions) {
+            Some(tokio::spawn(
+                HttpServer::new(move || App::new().wrap(HttpRedirect))
+                    .workers(1)
+                    .bind(("0.0.0.0", 8000))?
+                    .run(),
+            ))
+        } else {
+            None
+        };
+
         server
             .bind_rustls_0_23(
                 ("0.0.0.0", 8080),
@@ -177,6 +189,10 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
             )?
             .run()
             .await?;
+
+        if let Some(handler) = redirect_handle {
+            handler.await??;
+        }
     } else {
         server.bind(("0.0.0.0", 8080))?.run().await?;
     }

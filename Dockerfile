@@ -45,5 +45,6 @@ RUN chgrp -R 0 /app && \
 USER 1001
 
 EXPOSE 8080
+EXPOSE 8000 
 
 CMD ["./openbridge"]
