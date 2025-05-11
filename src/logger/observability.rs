@@ -4,7 +4,13 @@ use std::io::Write;
 
 use reqwest::Client;
 use tracing::level_filters::LevelFilter;
-use tracing_subscriber::{Layer, fmt::MakeWriter};
+use tracing_subscriber::{
+    Layer, Registry, filter,
+    fmt::{self, MakeWriter, format},
+    layer,
+};
+
+use crate::errors::Result;
 
 pub struct Observe {
     client: Client,
@@ -13,38 +19,28 @@ pub struct Observe {
     // sender: Sender<String>,
 }
 
-type LayerAlias = tracing_subscriber::filter::Filtered<
-    tracing_subscriber::fmt::Layer<
-        tracing_subscriber::layer::Layered<
-            tracing_subscriber::filter::Filtered<
-                tracing_subscriber::fmt::Layer<
-                    tracing_subscriber::Registry,
-                    tracing_subscriber::fmt::format::DefaultFields,
-                    tracing_subscriber::fmt::format::Format<
-                        tracing_subscriber::fmt::format::Compact,
-                    >,
-                >,
+type LayerAlias = filter::Filtered<
+    fmt::Layer<
+        layer::Layered<
+            filter::Filtered<
+                fmt::Layer<Registry, format::DefaultFields, format::Format<format::Compact>>,
                 LevelFilter,
-                tracing_subscriber::Registry,
+                Registry,
             >,
-            tracing_subscriber::Registry,
+            Registry,
         >,
-        tracing_subscriber::fmt::format::DefaultFields,
-        tracing_subscriber::fmt::format::Format<tracing_subscriber::fmt::format::Compact>,
+        format::DefaultFields,
+        format::Format<format::Compact>,
         Observe,
     >,
     LevelFilter,
-    tracing_subscriber::layer::Layered<
-        tracing_subscriber::filter::Filtered<
-            tracing_subscriber::fmt::Layer<
-                tracing_subscriber::Registry,
-                tracing_subscriber::fmt::format::DefaultFields,
-                tracing_subscriber::fmt::format::Format<tracing_subscriber::fmt::format::Compact>,
-            >,
+    layer::Layered<
+        filter::Filtered<
+            fmt::Layer<Registry, format::DefaultFields, format::Format<format::Compact>>,
             LevelFilter,
-            tracing_subscriber::Registry,
+            Registry,
         >,
-        tracing_subscriber::Registry,
+        Registry,
     >,
 >;
 
@@ -60,12 +56,16 @@ impl Observe {
     }
 
     pub fn wrap_layer(self, level: LevelFilter) -> LayerAlias {
-        tracing_subscriber::fmt::layer()
+        fmt::layer()
             .compact()
             .with_file(true)
             .with_line_number(true)
             .with_writer(self)
             .with_filter(level)
+    }
+
+    pub fn send_message<T: ToString>(&self, _msg: T) -> Result<()> {
+        Ok(())
     }
 }
 
