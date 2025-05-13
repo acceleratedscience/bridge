@@ -18,3 +18,9 @@
 	readiness = "/"
 	check = true
 	show = true
+
+	[resources.reddit]
+	url = "https://www.reddit.com"
+	readiness = "/"
+	check = true
+	show = false

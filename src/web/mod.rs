@@ -66,8 +66,7 @@ const SIGTERM_FREQ: Duration = Duration::from_secs(5);
 /// }
 /// ```
 pub async fn start_server(with_tls: bool) -> Result<()> {
-    // Not configurable by the caller
-    // Either DEBUG or INGO based on release mode
+    // Logger and this is not configurable by the caller
     if cfg!(debug_assertions) {
         logger::start_logger(LevelFilter::DEBUG);
     } else {
@@ -76,7 +75,7 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
 
     rustls::crypto::ring::default_provider()
         .install_default()
-        .expect("Cannot install default provider");
+        .expect("Cannot install default provider with ring");
 
     // Singletons
     openid::init_once().await;
@@ -98,6 +97,7 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
     #[cfg(feature = "notebook")]
     kube::init_once().await;
 
+    // Maintainence window impl
     let _ = maintenance_watch();
 
     // Lifecycle with "advisory lock"
@@ -171,7 +171,7 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
 
     if with_tls {
         // Application level https redirect, but only in release mode
-        let redirect_handle = if !cfg!(debug_assertions) {
+        let redirect_handle = if cfg!(not(debug_assertions)) {
             Some(tokio::spawn(
                 HttpServer::new(move || App::new().wrap(HttpRedirect))
                     .workers(1)
