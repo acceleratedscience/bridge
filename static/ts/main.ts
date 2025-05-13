@@ -81,6 +81,11 @@ class Menu {
 		this.menu_mobile.forEach((node) => {
 			node.addEventListener("click", () => {
 
+				// if the node name starts with "ignore" skip it
+				if (node instanceof HTMLElement && node.id.startsWith("ignore")) {
+					return;
+				}
+
 				hideAllMain();
 				showById(node, "_");
 

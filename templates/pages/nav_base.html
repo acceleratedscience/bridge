@@ -216,7 +216,7 @@
 	{% if resources %}
 	{% for resource in resources %}
 	{% if resource.1 %}
-	<a href="/resource/{{ resource.0 }}?token=true" id="mobile_members"
+	<a href="/resource/{{ resource.0 }}?token=true" id="ignore_{{ resource.0 }}_mobile"
 		class="block py-3 px-4 dark:hover:bg-[#4d5358] hover:bg-[#c6c6c6]" target="_blank">{{ resource.0 }}</a>
 	{% endif %}
 	{% endfor %}
