@@ -188,7 +188,6 @@ async fn search_by_email(
 
 #[post("logout")]
 async fn logout() -> HttpResponse {
-    println!("Logging out user");
     // clear all the cookie
     let mut cookie_remove = Cookie::build(COOKIE_NAME, "")
         .same_site(SameSite::Strict)

@@ -131,6 +131,8 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
         context.insert("application", "OpenBridge");
         context.insert("application_version", "v0.1.0");
         context.insert("app_name", &CONFIG.app_name);
+        context.insert("company", &CONFIG.company);
+        context.insert("description", &CONFIG.app_discription);
         let context = Data::new(context);
 
         let client_data = Data::new(
@@ -185,7 +187,7 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
         server
             .bind_rustls_0_23(
                 ("0.0.0.0", 8080),
-                tls::load_certs("certs/fullchain.cer", "certs/open.accelerator.cafe.key"),
+                tls::load_certs("certs/fullchain.cer", "certs/open.accelerate.science.key"),
             )?
             .run()
             .await?;
