@@ -1,1 +1,10 @@
-{% extends 'base.html' %}
+{% extends "base.html" %}
+{% block title %}403: Forbidden{% endblock title %}
+
+{% block body %}
+<div hx-trigger="load delay:3s" hx-post="/session/logout">
+	<h1>Error 403</h1>
+	<p>Forbidden</p>
+	<p>You are now being redirected to the login page.</p>
+</div>
+{% endblock body %}
