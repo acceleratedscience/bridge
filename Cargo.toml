@@ -62,8 +62,8 @@ redis = { version = "0.31", features = ["tokio-comp", "num-bigint"] }
 #macro
 utils = { path = "utils" }
 # Kubernetes
-kube = { version = "0.99", features = ["runtime", "derive"], optional = true }
-k8s-openapi = { version = "0.24", features = ["latest"], optional = true }
+kube = { version = "1.0", features = ["runtime", "derive"], optional = true }
+k8s-openapi = { version = "0.25", features = ["latest"], optional = true }
 schemars = { version = "0.8.21", optional = true }
 either = { version = "1.13.0", optional = true }
 # memory allocator
