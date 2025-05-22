@@ -9,13 +9,16 @@ use tracing_subscriber::{
     fmt::{self, MakeWriter, format},
     layer,
 };
+use url::Url;
 
-use crate::errors::Result;
+use crate::errors::{BridgeError, Result};
+
+pub const MESSAGE_DELIMITER: &str = "*~*~*";
 
 pub struct Observe {
     client: Client,
     api_key: String,
-    endpoint: String,
+    endpoint: Url,
     // sender: Sender<String>,
 }
 
@@ -45,14 +48,14 @@ type LayerAlias = filter::Filtered<
 >;
 
 impl Observe {
-    pub fn new(api_key: String, endpoint: String) -> Self {
-        let client = Client::new();
-        Observe {
+    pub fn new(api_key: String, endpoint: String, client: Client) -> Result<Self> {
+        Ok(Observe {
             client,
             api_key,
-            endpoint,
-            // sender,
-        }
+            // validate and sanitize that the endpoint is a proper url
+            endpoint: Url::parse(&endpoint)
+                .map_err(|_| BridgeError::GeneralError("Invalid URL".to_string()))?,
+        })
     }
 
     pub fn wrap_layer(self, level: LevelFilter) -> LayerAlias {
@@ -72,11 +75,9 @@ impl Observe {
 impl Write for &Observe {
     fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
         let message = String::from_utf8(buf.to_vec()).unwrap_or_default();
-        println!("!!!message: {}", message);
-        // if let Err(e) = self.sender.send(message) {
-        //     eprintln!("Failed to send message: {}", e);
-        // }
-        // let mut reference of stdout
+        if let Some(message) = message.split(MESSAGE_DELIMITER).nth(1) {
+            println!("!!!message: {}", message);
+        }
         Ok(buf.len())
     }
 

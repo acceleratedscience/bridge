@@ -66,11 +66,16 @@ const SIGTERM_FREQ: Duration = Duration::from_secs(5);
 /// }
 /// ```
 pub async fn start_server(with_tls: bool) -> Result<()> {
+    let client = reqwest::Client::builder()
+        .timeout(Duration::from_secs(TIMEOUT))
+        .build()
+        .expect("Cannot create reqwest client");
+
     // Logger and this is not configurable by the caller
     if cfg!(debug_assertions) {
-        logger::start_logger(LevelFilter::DEBUG);
+        logger::start_logger(LevelFilter::DEBUG, client.clone());
     } else {
-        logger::start_logger(LevelFilter::INFO);
+        logger::start_logger(LevelFilter::INFO, client.clone());
     }
 
     rustls::crypto::ring::default_provider()
@@ -135,12 +140,8 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
         context.insert("description", &CONFIG.app_discription);
         let context = Data::new(context);
 
-        let client_data = Data::new(
-            reqwest::Client::builder()
-                .timeout(Duration::from_secs(TIMEOUT))
-                .build()
-                .expect("Cannot create reqwest client"),
-        );
+        // clone needed due to HttpServer::new impl Fn trait and not FnOnce
+        let client_data = Data::new(client.clone());
         let db = Data::new(db);
         let cache = Data::new(CACHEDB.get());
 

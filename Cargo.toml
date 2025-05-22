@@ -13,6 +13,7 @@ members = ["utils"]
 [features]
 notebook = ["dep:kube", "dep:k8s-openapi", "dep:schemars", "dep:either"]
 lifecycle = ["notebook"]
+observe = []
 
 [dependencies]
 # Async dep

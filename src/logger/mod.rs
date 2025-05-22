@@ -1,21 +1,27 @@
+use reqwest::Client;
 use tracing_subscriber::{filter::LevelFilter, prelude::*};
 
 mod observability;
 
-pub fn start_logger(level: LevelFilter) {
+pub fn start_logger(level: LevelFilter, client: Client) {
     // let file = std::fs::File::create("./log").unwrap();
-    // let writer = observability::Observe::new("".to_string(), "".to_string());
 
-    tracing_subscriber::registry()
-        .with(
-            tracing_subscriber::fmt::layer()
-                .compact()
-                .with_file(true)
-                .with_line_number(true)
-                .with_thread_ids(true)
-                // .with_writer(Arc::new(file))
-                .with_filter(level),
-        )
-        // .with(writer.wrap_layer(level))
-        .init()
+    let ts = tracing_subscriber::registry().with(
+        tracing_subscriber::fmt::layer()
+            .compact()
+            .with_file(true)
+            .with_line_number(true)
+            .with_thread_ids(true)
+            // .with_writer(Arc::new(file))
+            .with_filter(level),
+    );
+
+    #[cfg(feature = "observe")]
+    let ts = {
+        let writer = observability::Observe::new("".to_string(), "".to_string(), client)
+            .expect("Failed to create observability for logger");
+        ts.with(writer.wrap_layer(level))
+    };
+
+    ts.init()
 }
