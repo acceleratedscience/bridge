@@ -79,6 +79,21 @@ impl Catalog {
         self.get_inner("services", service_name)
     }
 
+    #[cfg(feature = "mcp")]
+    pub fn is_servise_mcp(&self, service_name: &str) -> Result<bool> {
+        Ok(self
+            .0
+            .get("services")
+            .ok_or_else(|| {
+                BridgeError::GeneralError("services definition not found in config".to_string())
+            })?
+            .get(service_name)
+            .ok_or_else(|| BridgeError::ServiceDoesNotExist(service_name.to_string()))?
+            .get("mcp")
+            .and_then(Value::as_bool)
+            .unwrap_or(false))
+    }
+
     pub fn get_resource(&self, resource_name: &str) -> Result<Url> {
         self.get_inner("resources", resource_name)
     }
@@ -191,6 +206,13 @@ mod test {
 
         let postman = services.0.iter().find(|(_, name)| name == "postman");
         assert!(postman.is_some());
+    }
+
+    #[test]
+    fn test_mcp_bool() {
+        let catalog = &CATALOG;
+        let mcp = catalog.is_servise_mcp("postman").unwrap();
+        assert!(!mcp);
     }
 
     #[test]

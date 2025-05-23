@@ -19,6 +19,8 @@ pub mod notebook;
 pub mod portal;
 pub mod proxy;
 pub mod resource;
+#[cfg(feature = "mcp")]
+pub mod mcp;
 
 #[get("")]
 async fn index(data: Data<Tera>, ctx: Data<Context>, req: HttpRequest) -> Result<HttpResponse> {

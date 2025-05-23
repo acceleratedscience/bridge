@@ -3,7 +3,7 @@ use tracing_subscriber::{filter::LevelFilter, prelude::*};
 
 mod observability;
 
-pub fn start_logger(level: LevelFilter, client: Client) {
+pub fn start_logger(level: LevelFilter, _client: Client) {
     // let file = std::fs::File::create("./log").unwrap();
 
     let ts = tracing_subscriber::registry().with(
@@ -18,7 +18,7 @@ pub fn start_logger(level: LevelFilter, client: Client) {
 
     #[cfg(feature = "observe")]
     let ts = {
-        let writer = observability::Observe::new("".to_string(), "".to_string(), client)
+        let writer = observability::Observe::new("".to_string(), "".to_string(), _client)
             .expect("Failed to create observability for logger");
         ts.with(writer.wrap_layer(level))
     };

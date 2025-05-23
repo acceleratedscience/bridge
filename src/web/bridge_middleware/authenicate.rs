@@ -10,7 +10,7 @@ pub async fn validator(
     req: ServiceRequest,
     credentials: BearerAuth,
 ) -> Result<ServiceRequest, (Error, ServiceRequest)> {
-    let token = credentials.token().to_string();
+    let token = credentials.token();
 
     let config = req
         .app_data::<bearer::Config>()
@@ -19,7 +19,7 @@ pub async fn validator(
         .realm("proxy");
     let error = AuthenticationError::from(config);
 
-    match validate_token(&token, &CONFIG.decoder, &CONFIG.validation) {
+    match validate_token(token, &CONFIG.decoder, &CONFIG.validation) {
         Ok(claims) => {
             if let Some(r) = req.headers().get(INFERENCE_HEADER) {
                 // TODO: handle unwrap_or better

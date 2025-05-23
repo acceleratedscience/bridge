@@ -10,6 +10,15 @@ build-notebook:
 build-notebook-lifecycle:
 	podman build -t bridge --build-arg NOTEBOOK=true --build-arg LIFECYCLE=true .
 
+build-notebook-lifecycle-observe:
+	podman build -t bridge --build-arg NOTEBOOK=true --build-arg LIFECYCLE=true --build-arg OBSERVE=true .
+
+build-notebook-lifecycle-mcp:
+	podman build -t bridge --build-arg NOTEBOOK=true --build-arg LIFECYCLE=true --build-arg MCP=true .
+
+build-full:
+	podman build -t bridge --build-arg NOTEBOOK=true --build-arg LIFECYCLE=true --build-arg OBSERVE=true --build-arg MCP=true .
+
 mini-js:
 	uglifyjs ./static/js/main.js -o ./static/js/main.js -c -m
 

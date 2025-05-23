@@ -84,6 +84,9 @@ pub enum BridgeError {
     OpenIDError(#[from] openidconnect::ConfigurationError),
     #[error("{0}")]
     Argon2Error(#[from] argon2::Error),
+    #[error("Cannot parse MCP from URL")]
+    #[cfg(feature = "mcp")]
+    MCPParseIssue,
 }
 
 // Workaround for Infallible, which may get solved by rust-lang: https://github.com/rust-lang/rust/issues/64715
@@ -108,6 +111,8 @@ impl ResponseError for BridgeError {
             BridgeError::FormDeserializeError(_) => StatusCode::BAD_REQUEST,
             BridgeError::RecordSearchError(_) => StatusCode::BAD_REQUEST,
             BridgeError::IntrospectionError(_) => StatusCode::BAD_REQUEST,
+            #[cfg(feature = "mcp")]
+            BridgeError::MCPParseIssue => StatusCode::BAD_REQUEST,
 
             BridgeError::JsonWebTokenError(e) => {
                 match e.kind() {

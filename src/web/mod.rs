@@ -159,8 +159,8 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
             .service(actix_files::Files::new("/static", "static"));
         #[cfg(feature = "notebook")]
         let app = app.configure(route::notebook::config_notebook);
-        app.service(
-            web::scope("")
+        app.service({
+            let scope = web::scope("")
                 .wrap(bridge_middleware::SecurityCacheHeader)
                 .configure(route::auth::config_auth)
                 .configure(route::health::config_status)
@@ -168,8 +168,11 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
                 .configure(route::config_index)
                 .configure(route::portal::config_portal)
                 .configure(route::resource::config_resource)
-                .configure(route::foo::config_foo),
-        )
+                .configure(route::foo::config_foo);
+            #[cfg(feature = "mcp")]
+            let scope = scope.configure(route::mcp::config_mcp);
+            scope
+        })
     });
 
     if with_tls {

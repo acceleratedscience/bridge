@@ -53,7 +53,7 @@ async fn forward(
 pub fn config_proxy(cfg: &mut web::ServiceConfig) {
     let auth_validator = HttpAuthentication::bearer(validator);
     cfg.service(
-        web::scope("/proxy")
+        web::scope(BRIDGE_PREFIX)
             .wrap(auth_validator)
             .default_service(web::to(forward)),
     );

@@ -7,6 +7,8 @@ COPY . ./
 
 ARG NOTEBOOK=false
 ARG LIFECYCLE=false
+ARG OBSERVE=false
+ARG MCP=false
 
 RUN <<EOF
 #!/bin/bash
@@ -16,6 +18,12 @@ if [ "$NOTEBOOK" = "true" ]; then
 fi
 if [ "$LIFECYCLE" = "true" ]; then
 	flags+=("lifecycle")
+fi
+if [ "$OBSERVE" = "true" ]; then
+	flags+=("observe")
+fi
+if [ "$MCP" = "true" ]; then
+	flags+=("mcp")
 fi
 if [ ${#flags[@]} -eq 0 ]; then
 	echo "Building with no features..."
