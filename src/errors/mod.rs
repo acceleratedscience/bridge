@@ -1,4 +1,6 @@
 use std::convert::Infallible;
+#[cfg(feature = "observe")]
+use std::sync::mpsc;
 
 use actix_web::{ResponseError, http::StatusCode};
 use thiserror::Error;
@@ -87,6 +89,11 @@ pub enum BridgeError {
     #[error("Cannot parse MCP from URL")]
     #[cfg(feature = "mcp")]
     MCPParseIssue,
+    #[error("{0}")]
+    #[cfg(feature = "observe")]
+    MSGSendError(#[from] mpsc::SendError<String>),
+    #[error("{0}")]
+    TokioJoinError(#[from] tokio::task::JoinError),
 }
 
 // Workaround for Infallible, which may get solved by rust-lang: https://github.com/rust-lang/rust/issues/64715
@@ -102,6 +109,9 @@ impl ResponseError for BridgeError {
             BridgeError::GeneralError(_) => StatusCode::INTERNAL_SERVER_ERROR,
             BridgeError::TeraError(_) => StatusCode::INTERNAL_SERVER_ERROR,
             BridgeError::SystemTimeError(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            #[cfg(feature = "observe")]
+            BridgeError::MSGSendError(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            BridgeError::TokioJoinError(_) => StatusCode::INTERNAL_SERVER_ERROR,
 
             BridgeError::QueryDeserializeError(_) => StatusCode::BAD_REQUEST,
             BridgeError::InferenceServiceHeaderNotFound => StatusCode::BAD_REQUEST,

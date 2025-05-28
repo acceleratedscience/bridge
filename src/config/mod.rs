@@ -36,6 +36,7 @@ pub struct Configuration {
     pub app_discription: String,
     pub company: String,
     pub oidc: HashMap<String, OIDC>,
+    pub observability_cred: Option<(String, String)>,
 }
 
 pub struct Database {
@@ -188,6 +189,18 @@ pub fn init_once() -> Configuration {
     let company = app_conf["company"].as_str().unwrap().to_string();
     let notebook_namespace = app_conf["notebook_namespace"].as_str().unwrap().to_string();
 
+    let observability_cred = match (
+        app_conf["observability_refresh_token"]
+            .as_str()
+            .map(|s| s.to_string()),
+        app_conf["observability_refresh_token"]
+            .as_str()
+            .map(|s| s.to_string()),
+    ) {
+        (Some(token), Some(endpoint)) => Some((token, endpoint)),
+        _ => None,
+    };
+
     let notebooks: HashMap<String, Notebook> = toml::from_str(
         &read_to_string(PathBuf::from_str("config/notebook.toml").unwrap()).unwrap(),
     )
@@ -208,6 +221,7 @@ pub fn init_once() -> Configuration {
         app_discription,
         company,
         oidc: oidc_map,
+        observability_cred,
     }
 }
 
@@ -252,5 +266,14 @@ mod tests {
         let decoder = DecodingKey::from_ec_pem(pk.as_bytes()).unwrap();
 
         assert!(jwt::validate_token(&jwt, &decoder, &config.validation).is_ok());
+    }
+
+    #[test]
+    fn observability_refresh_token() {
+        let config = init_once();
+        assert!(config.observability_refresh_token.is_some());
+        let token = config.observability_refresh_token.as_ref().unwrap();
+        assert!(!token.is_empty());
+        assert!(token.len() > 10);
     }
 }
