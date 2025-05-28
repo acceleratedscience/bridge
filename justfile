@@ -1,23 +1,76 @@
-down-local-mongo:
-	podman stop mongodb
+# Default values for build arguments (can be overridden by Dockerfile if not provided here)
+NOTEBOOK_DEFAULT := "false"
+LIFECYCLE_DEFAULT := "false"
+OBSERVE_DEFAULT := "false"
+MCP_DEFAULT := "false"
+
+# Consolidated build recipe that accepts a comma-separated string of features
+# Usage examples:
+#   just build_features "notebook,lifecycle"
+#   just build_features "mcp,observe"
+#   just build_features "notebook"
+#   just build_features ""  # (or just `just build_features`) -> uses all defaults
+build-features features_string="":
+    #!/usr/bin/env bash
+    set -e -u -o pipefail
+
+    # Initialize all build args to their default values
+    # These will be overridden if the feature is present in features_string
+    current_notebook={{NOTEBOOK_DEFAULT}}
+    current_lifecycle={{LIFECYCLE_DEFAULT}}
+    current_observe={{OBSERVE_DEFAULT}}
+    current_mcp={{MCP_DEFAULT}}
+
+    # If features_string is not empty, parse it
+    if [[ -n "{{features_string}}" ]]; then
+        # Convert comma-separated string to an array (Bash specific)
+        IFS=',' read -r -a features_array <<< "{{features_string}}"
+
+        for feature in "${features_array[@]}"; do
+            # Trim whitespace (optional, but good for robustness)
+            trimmed_feature=$(echo "$feature" | xargs)
+            echo "Processing feature: $trimmed_feature" # Debugging
+            if [[ "$trimmed_feature" == "notebook" ]]; then
+                current_notebook="true"
+            elif [[ "$trimmed_feature" == "lifecycle" ]]; then
+                current_lifecycle="true"
+            elif [[ "$trimmed_feature" == "observe" ]]; then
+                current_observe="true"
+            elif [[ "$trimmed_feature" == "mcp" ]]; then
+                current_mcp="true"
+            elif [[ -n "$trimmed_feature" ]]; then # Check if trimmed_feature is not empty
+                echo "Warning: Unknown feature '$trimmed_feature' in '{{features_string}}'"
+            fi
+        done
+    fi
+
+    cmd="podman build -t bridge"
+    cmd="$cmd --build-arg NOTEBOOK=${current_notebook}"
+    cmd="$cmd --build-arg LIFECYCLE=${current_lifecycle}"
+    cmd="$cmd --build-arg OBSERVE=${current_observe}"
+    cmd="$cmd --build-arg MCP=${current_mcp}"
+    cmd="$cmd ."
+
+    echo "Executing: $cmd"
+    eval "$cmd"
 
 build:
-	podman build -t bridge .
+	build-features ""
 
 build-notebook:
-	podman build -t bridge --build-arg NOTEBOOK=true --build-arg LIFECYCLE=false .
+	build-features "notebook"
 
 build-notebook-lifecycle:
-	podman build -t bridge --build-arg NOTEBOOK=true --build-arg LIFECYCLE=true .
+	build-features "notebook,lifecycle"
 
 build-notebook-lifecycle-observe:
-	podman build -t bridge --build-arg NOTEBOOK=true --build-arg LIFECYCLE=true --build-arg OBSERVE=true .
+	build-features "notebook,lifecycle,observe"
 
 build-notebook-lifecycle-mcp:
-	podman build -t bridge --build-arg NOTEBOOK=true --build-arg LIFECYCLE=true --build-arg MCP=true .
+	build-features "notebook,lifecycle,mcp"
 
 build-full:
-	podman build -t bridge --build-arg NOTEBOOK=true --build-arg LIFECYCLE=true --build-arg OBSERVE=true --build-arg MCP=true .
+	build-features "notebook,lifecycle,observe,mcp"
 
 mini-js:
 	uglifyjs ./static/js/main.js -o ./static/js/main.js -c -m
@@ -44,6 +97,9 @@ local-keydb:
 	podman run -d --rm --name keydb \
 	-e KEYDB_PASSWORD="admin123456789" \
 	-p 6379:6379 bitnami/keydb:latest
+
+down-local-mongo:
+	podman stop mongodb
 
 down-local-keydb:
 	podman stop keydb

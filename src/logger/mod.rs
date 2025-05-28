@@ -1,8 +1,6 @@
 use reqwest::Client;
 use tracing_subscriber::{filter::LevelFilter, prelude::*};
 
-use crate::config::CONFIG;
-
 #[cfg(feature = "observe")]
 mod observability;
 
@@ -21,6 +19,8 @@ pub fn start_logger(level: LevelFilter, _client: Client) {
 
     #[cfg(feature = "observe")]
     let ts = {
+        use crate::config::CONFIG;
+
         if let Some((ref api_key, ref endpoint)) = CONFIG.observability_cred {
             let writer = observability::Observe::new(api_key, endpoint, _client)
                 .expect("Failed to create observability for logger");
