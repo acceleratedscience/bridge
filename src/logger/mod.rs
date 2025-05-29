@@ -3,6 +3,8 @@ use tracing_subscriber::{filter::LevelFilter, prelude::*};
 
 #[cfg(feature = "observe")]
 mod observability;
+#[cfg(feature = "observe")]
+pub use observability::MESSAGE_DELIMITER;
 
 pub fn start_logger(level: LevelFilter, _client: Client) {
     // let file = std::fs::File::create("./log").unwrap();

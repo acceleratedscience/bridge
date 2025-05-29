@@ -54,24 +54,19 @@ build-features features_string="":
     echo "Executing: $cmd"
     eval "$cmd"
 
-build:
-	build-features ""
+# --- Build Recipes ---
+# build: calls build-features with its default empty features_string, resulting in all default build args
+build-notebook: (build-features "notebook")
 
-build-notebook:
-	build-features "notebook"
+build-notebook-lifecycle: (build-features "notebook,lifecycle")
 
-build-notebook-lifecycle:
-	build-features "notebook,lifecycle"
+build-notebook-lifecycle-observe: (build-features "notebook,lifecycle,observe")
 
-build-notebook-lifecycle-observe:
-	build-features "notebook,lifecycle,observe"
+build-notebook-lifecycle-mcp: (build-features "notebook,lifecycle,mcp")
 
-build-notebook-lifecycle-mcp:
-	build-features "notebook,lifecycle,mcp"
+build-full: (build-features "notebook,lifecycle,observe,mcp")
 
-build-full:
-	build-features "notebook,lifecycle,observe,mcp"
-
+# --- Frontend & Minification ---
 mini-js:
 	uglifyjs ./static/js/main.js -o ./static/js/main.js -c -m
 
@@ -80,6 +75,7 @@ build-front:
 	tsc
 	uglifyjs ./static/js/main.js -o ./static/js/main.js -c -m
 
+# --- Local Development Services ---
 local-mongo:
 	podman run -d --rm --name mongodb \
 	-e MONGODB_ROOT_PASSWORD="admin123456789" \
@@ -104,6 +100,7 @@ down-local-mongo:
 down-local-keydb:
 	podman stop keydb
 
+# --- Watchers ---
 watch-tailwind:
 	tailwindcss -i ./static/css/input.css -o ./static/css/output.css --minify --watch
 
@@ -116,6 +113,7 @@ watch-backend:
 watch:
 	bacon --features "notebook lifecycle"
 
+# --- Certificates ---
 certs:
 	mkdir certs
 	@openssl req -x509 -newkey rsa:2048 -nodes -keyout certs/key.pem -out certs/cert.pem -days 365 -subj '/CN=open.accelerator.cafe'

@@ -9,6 +9,8 @@ use mongodb::bson::{doc, oid::ObjectId};
 use openidconnect::{EndUserEmail, Nonce};
 use serde::Deserialize;
 use tera::{Context, Tera};
+#[cfg(feature = "observe")]
+use tracing::info;
 use tracing::instrument;
 
 use crate::{
@@ -25,6 +27,8 @@ use crate::{
     errors::{BridgeError, Result},
     web::helper::{self},
 };
+#[cfg(feature = "observe")]
+use crate::{config::CONFIG, logger::MESSAGE_DELIMITER};
 
 use self::{
     deserialize::CallBackResponse,
@@ -93,6 +97,7 @@ async fn callback(
     code_to_response(callback_response.code, req, openid, data, db, cache).await
 }
 
+#[instrument(skip_all, parent = None)]
 async fn code_to_response(
     code: String,
     req: HttpRequest,
@@ -199,6 +204,18 @@ async fn code_to_response(
         }
         None => None,
     };
+
+    #[cfg(feature = "observe")]
+    info!(
+        "{}User: {} has successfully logged into {}",
+        MESSAGE_DELIMITER, id, CONFIG.company
+    );
+
+    tracing::info!(
+        "User: {} has successfully logged into {}",
+        id,
+        crate::config::CONFIG.company
+    );
 
     let bridge_cookie_json = BridgeCookie {
         subject: id,

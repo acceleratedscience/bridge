@@ -271,9 +271,9 @@ mod tests {
     #[test]
     fn observability_refresh_token() {
         let config = init_once();
-        assert!(config.observability_refresh_token.is_some());
-        let token = config.observability_refresh_token.as_ref().unwrap();
-        assert!(!token.is_empty());
-        assert!(token.len() > 10);
+        assert!(config.observability_cred.is_some());
+        let cred = config.observability_cred.as_ref().unwrap();
+        assert!(!cred.1.is_empty());
+        assert!(cred.1.len() > 10);
     }
 }

@@ -6,7 +6,7 @@ use tokio::{
     sync::mpsc::{Sender, channel},
     task::JoinHandle,
 };
-use tracing::level_filters::LevelFilter;
+use tracing::{error, level_filters::LevelFilter, warn};
 use tracing_subscriber::{
     Layer, Registry, filter,
     fmt::{self, MakeWriter, format},
@@ -92,8 +92,19 @@ impl Observe {
             .with_filter(level)
     }
 
-    pub fn send_message<T: ToString>(&self, msg: T) -> Result<()> {
-        Ok(self.sender.blocking_send(msg.to_string())?)
+    pub fn send_message<T: ToString>(&self, msg: T) {
+        if let Err(e) = self.sender.try_send(msg.to_string()) {
+            match e {
+                tokio::sync::mpsc::error::TrySendError::Full(_) => warn!(
+                    "Observability channel is full, dropping message: {}",
+                    msg.to_string()
+                ),
+                tokio::sync::mpsc::error::TrySendError::Closed(_) => error!(
+                    "Observability channel is closed, cannot send message: {}",
+                    msg.to_string()
+                ),
+            }
+        }
     }
 
     pub async fn close(mut self) -> Result<()> {
@@ -108,8 +119,7 @@ impl Write for &Observe {
         let message = String::from_utf8(buf.to_vec()).unwrap_or_default();
         if let Some(message) = message.split(MESSAGE_DELIMITER).nth(1) {
             if !message.is_empty() {
-                self.send_message(message)
-                    .map_err(|_| io::Error::other("Failed to send message for observability"))?;
+                self.send_message(message);
             }
         }
         Ok(buf.len())
