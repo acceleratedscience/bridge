@@ -15,6 +15,7 @@ notebook = ["dep:kube", "dep:k8s-openapi", "dep:schemars", "dep:either"]
 lifecycle = ["notebook"]
 observe = []
 mcp = []
+full = ["notebook", "lifecycle", "observe", "mcp"]
 
 [dependencies]
 # Async dep

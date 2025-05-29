@@ -190,10 +190,10 @@ pub fn init_once() -> Configuration {
     let notebook_namespace = app_conf["notebook_namespace"].as_str().unwrap().to_string();
 
     let observability_cred = match (
-        app_conf["observability_refresh_token"]
+        app_conf["observability_access_token"]
             .as_str()
             .map(|s| s.to_string()),
-        app_conf["observability_refresh_token"]
+        app_conf["observability_endpoint"]
             .as_str()
             .map(|s| s.to_string()),
     ) {

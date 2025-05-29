@@ -1,11 +1,11 @@
-use std::{
-    io::{self, Write},
-    sync::mpsc::{Sender, channel},
-};
+use std::io::{self, Write};
 
 use reqwest::{Client, header::CONTENT_TYPE};
 use serde_json::json;
-use tokio::task::JoinHandle;
+use tokio::{
+    sync::mpsc::{Sender, channel},
+    task::JoinHandle,
+};
 use tracing::level_filters::LevelFilter;
 use tracing_subscriber::{
     Layer, Registry, filter,
@@ -48,16 +48,18 @@ type LayerAlias = filter::Filtered<
     >,
 >;
 
+const CHANNEL_SIZE: usize = 100;
+
 impl Observe {
     pub fn new(api_key: &'static str, endpoint: &'static str, client: Client) -> Result<Self> {
-        let (sender, recv) = channel();
-        let endpoint = Url::parse(&endpoint)
+        let (sender, mut recv) = channel(CHANNEL_SIZE);
+        let endpoint = Url::parse(endpoint)
             .map_err(|_| BridgeError::GeneralError("Invalid URL".to_string()))?;
 
         let handler = tokio::spawn(async move {
             let endpoint = endpoint.as_str();
             let api_key = api_key;
-            while let Ok(msg) = recv.recv() {
+            while let Some(msg) = recv.recv().await {
                 println!("Sending observability message: {}", msg);
                 let msg = json!(
                     {
@@ -67,7 +69,7 @@ impl Observe {
                 .to_string();
                 let _ = client
                     .post(endpoint)
-                    .bearer_auth(&api_key)
+                    .bearer_auth(api_key)
                     .header(CONTENT_TYPE, "application/json")
                     .body(msg)
                     .send()
@@ -91,7 +93,7 @@ impl Observe {
     }
 
     pub fn send_message<T: ToString>(&self, msg: T) -> Result<()> {
-        Ok(self.sender.send(msg.to_string())?)
+        Ok(self.sender.blocking_send(msg.to_string())?)
     }
 
     pub async fn close(mut self) -> Result<()> {
@@ -133,11 +135,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_observability() {
-        let observe = Observe::new(
-            "api-key",
-            "https://api.slack.com/api",
-            Client::new(),
-        ).unwrap();
+        let observe = Observe::new("api-key", "https://api.slack.com/api", Client::new()).unwrap();
         let mut writer = &observe;
         let _ = writer
             .write(b"Nothing*~*~*Hello there from open bridge")

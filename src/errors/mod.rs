@@ -1,9 +1,9 @@
 use std::convert::Infallible;
-#[cfg(feature = "observe")]
-use std::sync::mpsc;
 
 use actix_web::{ResponseError, http::StatusCode};
 use thiserror::Error;
+#[cfg(feature = "observe")]
+use tokio::sync::mpsc;
 
 pub type Result<T> = std::result::Result<T, BridgeError>;
 
@@ -91,7 +91,7 @@ pub enum BridgeError {
     MCPParseIssue,
     #[error("{0}")]
     #[cfg(feature = "observe")]
-    MSGSendError(#[from] mpsc::SendError<String>),
+    MSGSendError(#[from] mpsc::error::SendError<String>),
     #[error("{0}")]
     TokioJoinError(#[from] tokio::task::JoinError),
 }
