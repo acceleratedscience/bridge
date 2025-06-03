@@ -10,7 +10,10 @@ use actix_web::{
 };
 use mongodb::bson::{doc, oid::ObjectId};
 use tera::{Context, Tera};
+use tracing::instrument;
 
+#[cfg(feature = "observe")]
+use crate::web::helper::observability_post;
 use crate::{
     auth::{COOKIE_NAME, NOTEBOOK_COOKIE_NAME, NOTEBOOK_STATUS_COOKIE_NAME},
     db::{
@@ -34,6 +37,7 @@ mod token;
 mod user;
 mod user_htmx;
 
+#[instrument(skip_all, parent = None)]
 #[get("")]
 async fn index(data: Option<ReqData<BridgeCookie>>, db: Data<&DB>) -> Result<HttpResponse> {
     // get cookie if it exists
@@ -69,6 +73,11 @@ async fn index(data: Option<ReqData<BridgeCookie>>, db: Data<&DB>) -> Result<Htt
                     .secure(true)
                     .finish();
                 resp.cookie(cookie);
+            }
+
+            #[cfg(feature = "observe")]
+            {
+                observability_post("has visited the main portal", &bridge_cookie);
             }
 
             match bridge_cookie.user_type {
@@ -187,7 +196,7 @@ async fn search_by_email(
 }
 
 #[post("logout")]
-async fn logout() -> HttpResponse {
+async fn logout(#[cfg(feature = "observe")] cookie: Option<ReqData<BridgeCookie>>) -> HttpResponse {
     // clear all the cookie
     let mut cookie_remove = Cookie::build(COOKIE_NAME, "")
         .same_site(SameSite::Strict)
@@ -212,6 +221,14 @@ async fn logout() -> HttpResponse {
         .secure(true)
         .finish();
     notebook_status_cookie.make_removal();
+
+    #[cfg(feature = "observe")]
+    {
+        if let Some(bc) = cookie {
+            let bridge_cookie = bc.into_inner();
+            observability_post("has logged out from the portal", &bridge_cookie);
+        }
+    }
 
     HttpResponse::Ok()
         .append_header(("HX-Redirect", "/"))

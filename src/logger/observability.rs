@@ -51,6 +51,8 @@ type LayerAlias = filter::Filtered<
 const CHANNEL_SIZE: usize = 100;
 
 impl Observe {
+    /// Warning! Ensure you don't instrustment this with sensitive data, as it will be sent to the
+    /// observability endpoint.
     pub fn new(api_key: &'static str, endpoint: &'static str, client: Client) -> Result<Self> {
         let (sender, mut recv) = channel(CHANNEL_SIZE);
         let endpoint = Url::parse(endpoint)
@@ -126,7 +128,7 @@ impl Write for &Observe {
     }
 
     fn flush(&mut self) -> io::Result<()> {
-        // Implement the flush logic here
+        // We write the data directly to the underlying sink, so no flush is needed.
         Ok(())
     }
 }

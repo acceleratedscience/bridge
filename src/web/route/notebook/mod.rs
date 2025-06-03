@@ -289,6 +289,12 @@ async fn notebook_create(
         )
         .await?;
 
+        #[cfg(feature = "observe")]
+        {
+            use crate::web::helper::observability_post;
+            observability_post("has created a workbench", &bridge_cookie);
+        }
+
         let bridge_cookie_json = serde_json::to_string(&bridge_cookie).map_err(|e| {
             BridgeError::GeneralError(format!("Could not serialize bridge cookie: {}", e))
         })?;
@@ -388,6 +394,12 @@ async fn notebook_delete(
     let persist_pvc = req.query_string().contains("save");
 
     helper::utils::notebook_destroy(**db, &bridge_cookie.subject, persist_pvc, &user.email).await?;
+
+    #[cfg(feature = "observe")]
+    {
+        use crate::web::helper::observability_post;
+        observability_post("has deleted their workbench", &bridge_cookie);
+    }
 
     // delete the cookies
     let mut notebook_cookie = Cookie::build(NOTEBOOK_COOKIE_NAME, "")
@@ -551,6 +563,12 @@ async fn notebook_enter(
             "Bridge cookie not found".to_string(),
         ))?
         .into_inner();
+
+    #[cfg(feature = "observe")]
+    {
+        use crate::web::helper::observability_post;
+        observability_post("is entering their workbench", &bridge_cookie);
+    }
 
     let new_nsc = NotebookStatusCookie {
         start_time: nsc.start_time.clone(),

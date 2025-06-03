@@ -211,12 +211,6 @@ async fn code_to_response(
         MESSAGE_DELIMITER, id, CONFIG.company
     );
 
-    tracing::info!(
-        "User: {} has successfully logged into {}",
-        id,
-        crate::config::CONFIG.company
-    );
-
     let bridge_cookie_json = BridgeCookie {
         subject: id,
         user_type,

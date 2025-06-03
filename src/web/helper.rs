@@ -5,8 +5,12 @@ use rand::{Rng, rng};
 use serde::Deserialize;
 use tera::Context;
 use tokio_stream::StreamExt;
+#[cfg(feature = "observe")]
+use tracing::instrument;
 use tracing::{error, info, warn};
 
+#[cfg(feature = "observe")]
+use crate::db::models::BridgeCookie;
 use crate::{
     auth::jwt::validate_token,
     config::CONFIG,
@@ -107,6 +111,20 @@ pub fn add_token_exp_to_tera(tera: &mut Context, token: &str) {
             tera.insert("token_exp", "Not a valid token");
         }
     }
+}
+
+#[instrument(skip_all, parent = None)]
+#[cfg(feature = "observe")]
+#[inline]
+pub fn observability_post(msg: &'static str, bc: &BridgeCookie) {
+    use crate::logger::MESSAGE_DELIMITER;
+
+    let user = &bc.subject;
+    let user_type = &bc.user_type;
+    info!(
+        "{}User: {} with type: {:?} {} for {}",
+        MESSAGE_DELIMITER, user, user_type, msg, CONFIG.company
+    );
 }
 
 pub(super) async fn payload_to_struct<T>(mut payload: web::Payload) -> Result<T>
