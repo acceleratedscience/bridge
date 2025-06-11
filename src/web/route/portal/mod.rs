@@ -196,7 +196,7 @@ async fn search_by_email(
 }
 
 #[post("logout")]
-async fn logout(#[cfg(feature = "observe")] cookie: Option<ReqData<BridgeCookie>>) -> HttpResponse {
+async fn logout(#[cfg(feature = "observe")] req: HttpRequest) -> HttpResponse {
     // clear all the cookie
     let mut cookie_remove = Cookie::build(COOKIE_NAME, "")
         .same_site(SameSite::Strict)
@@ -224,9 +224,10 @@ async fn logout(#[cfg(feature = "observe")] cookie: Option<ReqData<BridgeCookie>
 
     #[cfg(feature = "observe")]
     {
-        if let Some(bc) = cookie {
-            let bridge_cookie = bc.into_inner();
-            observability_post("has logged out from the portal", &bridge_cookie);
+        if let Some(cookie) = req.cookie(COOKIE_NAME).map(|c| c.value().to_string()) {
+            if let Ok(bridge_cookie) = serde_json::from_str::<BridgeCookie>(&cookie) {
+                observability_post("has logged out from the portal", &bridge_cookie);
+            }
         }
     }
 
