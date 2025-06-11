@@ -230,40 +230,51 @@ mod test {
             vec![],
         );
 
+        // TODO: Remove this test or refactor, so it doesn't break all the time the notebok config
+        // is updated
         let expected = json!({
             "template": {
                 "spec": {
                     "containers": [{
-                            "name": "notebook",
-                            "image": "quay.io/ibmdpdev/openad_workbench_stage:latest",
-                            "resources": {
-                                "requests": {
-                                    "cpu": "2",
-                                    "memory": "4Gi"
-                                },
-                                "limits": {
-                                    "cpu": "2",
-                                    "memory": "4Gi"
-                                }
+                        "name": "notebook",
+                        "image": "quay.io/ibmdpdev/openad_workbench_prod:latest",
+                        "resources": {
+                            "requests": {
+                                "cpu": "2",
+                                "memory": "4Gi"
                             },
-                            "workingDir": "/opt/app-root/src",
-                            "imagePullPolicy": "Always",
-                            "volumeMounts": [
-                                {
-                                    "name": "notebook-volume",
-                                    "mountPath": "/opt/app-root/src"
-                                }
-                            ],
-                            "command": null,
-                            "args": null,
-                            "env": [
-                                {
-                                    "name": "NOTEBOOK_ARGS",
-                                    "value": "--ServerApp.token='' --ServerApp.password='' --ServerApp.notebook_dir='/opt/app-root/src' --ServerApp.quit_button=False --LabApp.default_url='/lab/tree/start_menu.ipynb' --ServerApp.default_url='/lab/tree/start_menu.ipynb' --ServerApp.trust_xheaders=True --ServerApp.base_url='notebook/notebook/notebook'",
-                                }]}],
-                    "imagePullSecrets": [{
-                        "name": "ibmdpdev-openad-pull-secret"
+                            "limits": {
+                                "cpu": "2",
+                                "memory": "4Gi"
+                            }
+                        },
+                        "workingDir": "/opt/app-root/src",
+                        "imagePullPolicy": "Always",
+                        "volumeMounts": [
+                            {
+                                "name": "notebook-volume",
+                                "mountPath": "/opt/app-root/src"
+                            }
+                        ],
+                        "command": null,
+                        "args": null,
+                        "env": [
+                            {
+                                "name": "NOTEBOOK_ARGS",
+                                "value": "--ServerApp.token='' --ServerApp.password='' --ServerApp.notebook_dir='/opt/app-root/src' --ServerApp.quit_button=False --LabApp.default_url='/lab/tree/start_menu.ipynb' --ServerApp.default_url='/lab/tree/start_menu.ipynb' --ServerApp.trust_xheaders=True --ServerApp.base_url='notebook/notebook-openad/notebook'"
+                            },
+                            {
+
+                                "name":"PROXY_URL",
+                                "value": "https://open.accelerate.science/proxy"
+                            }
+                        ],
                     }],
+                    "imagePullSecrets": [
+                        {
+                            "name": "ibmdpdev-openad-pull-secret"
+                        }
+                    ],
                     "volumes": [{
                         "name": "notebook-volume",
                         "persistentVolumeClaim": {
