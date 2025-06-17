@@ -1,87 +1,134 @@
-#![allow(dead_code)]
+use std::io::{self, Write};
 
-use std::io::Write;
+use reqwest::{Client, header::CONTENT_TYPE};
+use serde_json::json;
+use tokio::{
+    sync::mpsc::{Sender, channel},
+    task::JoinHandle,
+};
+use tracing::{error, level_filters::LevelFilter, warn};
+use tracing_subscriber::{
+    Layer, Registry, filter,
+    fmt::{self, MakeWriter, format},
+    layer,
+};
+use url::Url;
 
-use reqwest::Client;
-use tracing::level_filters::LevelFilter;
-use tracing_subscriber::{Layer, fmt::MakeWriter};
+use crate::errors::{BridgeError, Result};
+
+pub const MESSAGE_DELIMITER: &str = "*~*~*";
 
 pub struct Observe {
-    client: Client,
-    api_key: String,
-    endpoint: String,
-    // sender: Sender<String>,
+    sender: Sender<String>,
+    handler: Option<JoinHandle<()>>,
 }
 
-type LayerAlias = tracing_subscriber::filter::Filtered<
-    tracing_subscriber::fmt::Layer<
-        tracing_subscriber::layer::Layered<
-            tracing_subscriber::filter::Filtered<
-                tracing_subscriber::fmt::Layer<
-                    tracing_subscriber::Registry,
-                    tracing_subscriber::fmt::format::DefaultFields,
-                    tracing_subscriber::fmt::format::Format<
-                        tracing_subscriber::fmt::format::Compact,
-                    >,
-                >,
+type LayerAlias = filter::Filtered<
+    fmt::Layer<
+        layer::Layered<
+            filter::Filtered<
+                fmt::Layer<Registry, format::DefaultFields, format::Format<format::Compact>>,
                 LevelFilter,
-                tracing_subscriber::Registry,
+                Registry,
             >,
-            tracing_subscriber::Registry,
+            Registry,
         >,
-        tracing_subscriber::fmt::format::DefaultFields,
-        tracing_subscriber::fmt::format::Format<tracing_subscriber::fmt::format::Compact>,
+        format::DefaultFields,
+        format::Format<format::Compact>,
         Observe,
     >,
     LevelFilter,
-    tracing_subscriber::layer::Layered<
-        tracing_subscriber::filter::Filtered<
-            tracing_subscriber::fmt::Layer<
-                tracing_subscriber::Registry,
-                tracing_subscriber::fmt::format::DefaultFields,
-                tracing_subscriber::fmt::format::Format<tracing_subscriber::fmt::format::Compact>,
-            >,
+    layer::Layered<
+        filter::Filtered<
+            fmt::Layer<Registry, format::DefaultFields, format::Format<format::Compact>>,
             LevelFilter,
-            tracing_subscriber::Registry,
+            Registry,
         >,
-        tracing_subscriber::Registry,
+        Registry,
     >,
 >;
 
+const CHANNEL_SIZE: usize = 100;
+
 impl Observe {
-    pub fn new(api_key: String, endpoint: String) -> Self {
-        let client = Client::new();
-        Observe {
-            client,
-            api_key,
-            endpoint,
-            // sender,
-        }
+    /// Warning! Ensure you don't instrustment this with sensitive data, as it will be sent to the
+    /// observability endpoint.
+    pub fn new(api_key: &'static str, endpoint: &'static str, client: Client) -> Result<Self> {
+        let (sender, mut recv) = channel(CHANNEL_SIZE);
+        let endpoint = Url::parse(endpoint)
+            .map_err(|_| BridgeError::GeneralError("Invalid URL".to_string()))?;
+
+        let handler = tokio::spawn(async move {
+            let endpoint = endpoint.as_str();
+            let api_key = api_key;
+            while let Some(msg) = recv.recv().await {
+                println!("Sending observability message: {}", msg);
+                let msg = json!(
+                    {
+                        "text": msg
+                    }
+                )
+                .to_string();
+                let _ = client
+                    .post(endpoint)
+                    .bearer_auth(api_key)
+                    .header(CONTENT_TYPE, "application/json")
+                    .body(msg)
+                    .send()
+                    .await;
+            }
+        });
+
+        Ok(Observe {
+            sender,
+            handler: Some(handler),
+        })
     }
 
     pub fn wrap_layer(self, level: LevelFilter) -> LayerAlias {
-        tracing_subscriber::fmt::layer()
+        fmt::layer()
             .compact()
             .with_file(true)
             .with_line_number(true)
             .with_writer(self)
             .with_filter(level)
     }
+
+    pub fn send_message<T: ToString>(&self, msg: T) {
+        if let Err(e) = self.sender.try_send(msg.to_string()) {
+            match e {
+                tokio::sync::mpsc::error::TrySendError::Full(_) => warn!(
+                    "Observability channel is full, dropping message: {}",
+                    msg.to_string()
+                ),
+                tokio::sync::mpsc::error::TrySendError::Closed(_) => error!(
+                    "Observability channel is closed, cannot send message: {}",
+                    msg.to_string()
+                ),
+            }
+        }
+    }
+
+    pub async fn close(mut self) -> Result<()> {
+        let handler = self.handler.take();
+        drop(self);
+        Ok(handler.unwrap().await?)
+    }
 }
 
 impl Write for &Observe {
-    fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
+    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
         let message = String::from_utf8(buf.to_vec()).unwrap_or_default();
-        println!("!!!message: {}", message);
-        // if let Err(e) = self.sender.send(message) {
-        //     eprintln!("Failed to send message: {}", e);
-        // }
-        // let mut reference of stdout
+        if let Some(message) = message.split(MESSAGE_DELIMITER).nth(1) {
+            if !message.is_empty() {
+                self.send_message(message);
+            }
+        }
         Ok(buf.len())
     }
 
-    fn flush(&mut self) -> std::io::Result<()> {
-        // Implement the flush logic here
+    fn flush(&mut self) -> io::Result<()> {
+        // We write the data directly to the underlying sink, so no flush is needed.
         Ok(())
     }
 }
@@ -91,5 +138,21 @@ impl<'a> MakeWriter<'a> for Observe {
 
     fn make_writer(&'a self) -> Self::Writer {
         self
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn test_observability() {
+        let observe = Observe::new("api-key", "https://api.slack.com/api", Client::new()).unwrap();
+        let mut writer = &observe;
+        let _ = writer
+            .write(b"Nothing*~*~*Hello there from open bridge")
+            .unwrap();
+
+        assert!(observe.close().await.is_ok());
     }
 }

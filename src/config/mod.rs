@@ -36,6 +36,7 @@ pub struct Configuration {
     pub app_discription: String,
     pub company: String,
     pub oidc: HashMap<String, OIDC>,
+    pub observability_cred: Option<(String, String)>,
 }
 
 pub struct Database {
@@ -54,7 +55,8 @@ pub struct Notebook {
     pub pull_policy: String,
     pub working_dir: Option<String>,
     pub volume_mnt_path: Option<String>,
-    pub env: Option<Vec<String>>,
+    pub notebook_env: Option<Vec<String>>,
+    pub env: Option<HashMap<String, String>>,
     pub secret: Option<String>,
     pub command: Option<Vec<String>>,
     pub args: Option<Vec<String>>,
@@ -120,10 +122,7 @@ pub fn init_once() -> Configuration {
     validation.leeway = 0;
 
     let (config_location_str, database_location_str) = if cfg!(debug_assertions) {
-        (
-            "config/configurations_sample.toml",
-            "config/database_sample.toml",
-        )
+        ("config/configurations_sample.toml", "config/database_sample.toml")
     } else {
         ("config/configurations.toml", "config/database.toml")
     };
@@ -190,6 +189,18 @@ pub fn init_once() -> Configuration {
     let company = app_conf["company"].as_str().unwrap().to_string();
     let notebook_namespace = app_conf["notebook_namespace"].as_str().unwrap().to_string();
 
+    let observability_cred = match (
+        app_conf["observability_access_token"]
+            .as_str()
+            .map(|s| s.to_string()),
+        app_conf["observability_endpoint"]
+            .as_str()
+            .map(|s| s.to_string()),
+    ) {
+        (Some(token), Some(endpoint)) => Some((token, endpoint)),
+        _ => None,
+    };
+
     let notebooks: HashMap<String, Notebook> = toml::from_str(
         &read_to_string(PathBuf::from_str("config/notebook.toml").unwrap()).unwrap(),
     )
@@ -210,6 +221,7 @@ pub fn init_once() -> Configuration {
         app_discription,
         company,
         oidc: oidc_map,
+        observability_cred,
     }
 }
 
@@ -254,5 +266,14 @@ mod tests {
         let decoder = DecodingKey::from_ec_pem(pk.as_bytes()).unwrap();
 
         assert!(jwt::validate_token(&jwt, &decoder, &config.validation).is_ok());
+    }
+
+    #[test]
+    fn observability_refresh_token() {
+        let config = init_once();
+        assert!(config.observability_cred.is_some());
+        let cred = config.observability_cred.as_ref().unwrap();
+        assert!(!cred.1.is_empty());
+        assert!(cred.1.len() > 10);
     }
 }

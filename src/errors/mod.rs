@@ -2,6 +2,8 @@ use std::convert::Infallible;
 
 use actix_web::{ResponseError, http::StatusCode};
 use thiserror::Error;
+#[cfg(feature = "observe")]
+use tokio::sync::mpsc;
 
 pub type Result<T> = std::result::Result<T, BridgeError>;
 
@@ -84,6 +86,14 @@ pub enum BridgeError {
     OpenIDError(#[from] openidconnect::ConfigurationError),
     #[error("{0}")]
     Argon2Error(#[from] argon2::Error),
+    #[error("Cannot parse MCP from URL")]
+    #[cfg(feature = "mcp")]
+    MCPParseIssue,
+    #[error("{0}")]
+    #[cfg(feature = "observe")]
+    MSGSendError(#[from] mpsc::error::SendError<String>),
+    #[error("{0}")]
+    TokioJoinError(#[from] tokio::task::JoinError),
 }
 
 // Workaround for Infallible, which may get solved by rust-lang: https://github.com/rust-lang/rust/issues/64715
@@ -99,6 +109,9 @@ impl ResponseError for BridgeError {
             BridgeError::GeneralError(_) => StatusCode::INTERNAL_SERVER_ERROR,
             BridgeError::TeraError(_) => StatusCode::INTERNAL_SERVER_ERROR,
             BridgeError::SystemTimeError(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            #[cfg(feature = "observe")]
+            BridgeError::MSGSendError(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            BridgeError::TokioJoinError(_) => StatusCode::INTERNAL_SERVER_ERROR,
 
             BridgeError::QueryDeserializeError(_) => StatusCode::BAD_REQUEST,
             BridgeError::InferenceServiceHeaderNotFound => StatusCode::BAD_REQUEST,
@@ -108,6 +121,8 @@ impl ResponseError for BridgeError {
             BridgeError::FormDeserializeError(_) => StatusCode::BAD_REQUEST,
             BridgeError::RecordSearchError(_) => StatusCode::BAD_REQUEST,
             BridgeError::IntrospectionError(_) => StatusCode::BAD_REQUEST,
+            #[cfg(feature = "mcp")]
+            BridgeError::MCPParseIssue => StatusCode::BAD_REQUEST,
 
             BridgeError::JsonWebTokenError(e) => {
                 match e.kind() {

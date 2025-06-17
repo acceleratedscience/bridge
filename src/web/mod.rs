@@ -19,10 +19,13 @@ use crate::kube::{LifecycleStream, Medium, notebook_lifecycle};
 use futures::future::select;
 
 use crate::{
-    auth::openid, config::CONFIG, db::{
-        keydb::{CacheDB, CACHEDB},
+    auth::openid,
+    config::CONFIG,
+    db::{
+        keydb::{CACHEDB, CacheDB},
         mongo::{DB, DBCONN, DBNAME},
-    }, logger, templating
+    },
+    logger, templating,
 };
 
 mod bridge_middleware;
@@ -38,7 +41,7 @@ pub use helper::utils;
 pub use route::notebook::notebook_helper;
 pub use route::proxy::services;
 
-use self::helper::maintenance_watch;
+use self::{bridge_middleware::HttpRedirect, helper::maintenance_watch};
 
 // One hour timeout for client requests
 // TODO: Make this configurable
@@ -63,17 +66,21 @@ const SIGTERM_FREQ: Duration = Duration::from_secs(5);
 /// }
 /// ```
 pub async fn start_server(with_tls: bool) -> Result<()> {
-    // Not configurable by the caller
-    // Either DEBUG or INGO based on release mode
+    let client = reqwest::Client::builder()
+        .timeout(Duration::from_secs(TIMEOUT))
+        .build()
+        .expect("Cannot create reqwest client");
+
+    // Logger and this is not configurable by the caller
     if cfg!(debug_assertions) {
-        logger::start_logger(LevelFilter::DEBUG);
+        logger::start_logger(LevelFilter::DEBUG, client.clone());
     } else {
-        logger::start_logger(LevelFilter::INFO);
+        logger::start_logger(LevelFilter::INFO, client.clone());
     }
 
     rustls::crypto::ring::default_provider()
         .install_default()
-        .expect("Cannot install default provider");
+        .expect("Cannot install default provider with ring");
 
     // Singletons
     openid::init_once().await;
@@ -95,6 +102,7 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
     #[cfg(feature = "notebook")]
     kube::init_once().await;
 
+    // Maintainence window impl
     let _ = maintenance_watch();
 
     // Lifecycle with "advisory lock"
@@ -128,14 +136,12 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
         context.insert("application", "OpenBridge");
         context.insert("application_version", "v0.1.0");
         context.insert("app_name", &CONFIG.app_name);
+        context.insert("company", &CONFIG.company);
+        context.insert("description", &CONFIG.app_discription);
         let context = Data::new(context);
 
-        let client_data = Data::new(
-            reqwest::Client::builder()
-                .timeout(Duration::from_secs(TIMEOUT))
-                .build()
-                .expect("Cannot create reqwest client"),
-        );
+        // clone needed due to HttpServer::new impl Fn trait and not FnOnce
+        let client_data = Data::new(client.clone());
         let db = Data::new(db);
         let cache = Data::new(CACHEDB.get());
 
@@ -153,8 +159,8 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
             .service(actix_files::Files::new("/static", "static"));
         #[cfg(feature = "notebook")]
         let app = app.configure(route::notebook::config_notebook);
-        app.service(
-            web::scope("")
+        app.service({
+            let scope = web::scope("")
                 .wrap(bridge_middleware::SecurityCacheHeader)
                 .configure(route::auth::config_auth)
                 .configure(route::health::config_status)
@@ -162,18 +168,37 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
                 .configure(route::config_index)
                 .configure(route::portal::config_portal)
                 .configure(route::resource::config_resource)
-                .configure(route::foo::config_foo),
-        )
+                .configure(route::foo::config_foo);
+            #[cfg(feature = "mcp")]
+            let scope = scope.configure(route::mcp::config_mcp);
+            scope
+        })
     });
 
     if with_tls {
+        // Application level https redirect, but only in release mode
+        let redirect_handle = if cfg!(not(debug_assertions)) {
+            Some(tokio::spawn(
+                HttpServer::new(move || App::new().wrap(HttpRedirect))
+                    .workers(1)
+                    .bind(("0.0.0.0", 8000))?
+                    .run(),
+            ))
+        } else {
+            None
+        };
+
         server
             .bind_rustls_0_23(
                 ("0.0.0.0", 8080),
-                tls::load_certs("certs/fullchain.cer", "certs/open.accelerator.cafe.key"),
+                tls::load_certs("certs/fullchain.cer", "certs/open.accelerate.science.key"),
             )?
             .run()
             .await?;
+
+        if let Some(handler) = redirect_handle {
+            handler.await??;
+        }
     } else {
         server.bind(("0.0.0.0", 8080))?.run().await?;
     }

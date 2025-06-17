@@ -31,7 +31,7 @@ class Menu {
 		const showById = (node: ChildNode, delimiter: string) => {
 			if (node instanceof HTMLElement) {
 				const element = node.id;
-				const id =  element.split(delimiter)[1];
+				const id = element.split(delimiter)[1];
 				const target = document.getElementById(id);
 				if (target instanceof HTMLElement) {
 					target.classList.remove("hidden");
@@ -50,6 +50,11 @@ class Menu {
 		// Big menu item selection styling
 		this.menu_big.forEach((node) => {
 			node.addEventListener("click", () => {
+
+				// if the node name starts with "ignore" skip it
+				if (node instanceof HTMLElement && node.id.startsWith("ignore")) {
+					return;
+				}
 
 				hideAllMain();
 				showById(node, "_");
@@ -75,6 +80,11 @@ class Menu {
 		// mobile menu item selection styling
 		this.menu_mobile.forEach((node) => {
 			node.addEventListener("click", () => {
+
+				// if the node name starts with "ignore" skip it
+				if (node instanceof HTMLElement && node.id.startsWith("ignore")) {
+					return;
+				}
 
 				hideAllMain();
 				showById(node, "_");

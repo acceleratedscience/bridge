@@ -1,5 +1,5 @@
 # Stage 1 build
-FROM rust:1.86.0 AS builder
+FROM rust:1.87.0 AS builder
 
 WORKDIR /app
 
@@ -7,6 +7,8 @@ COPY . ./
 
 ARG NOTEBOOK=false
 ARG LIFECYCLE=false
+ARG OBSERVE=false
+ARG MCP=false
 
 RUN <<EOF
 #!/bin/bash
@@ -16,6 +18,12 @@ if [ "$NOTEBOOK" = "true" ]; then
 fi
 if [ "$LIFECYCLE" = "true" ]; then
 	flags+=("lifecycle")
+fi
+if [ "$OBSERVE" = "true" ]; then
+	flags+=("observe")
+fi
+if [ "$MCP" = "true" ]; then
+	flags+=("mcp")
 fi
 if [ ${#flags[@]} -eq 0 ]; then
 	echo "Building with no features..."
@@ -45,5 +53,6 @@ RUN chgrp -R 0 /app && \
 USER 1001
 
 EXPOSE 8080
+EXPOSE 8000 
 
 CMD ["./openbridge"]

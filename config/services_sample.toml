@@ -4,12 +4,20 @@
 	url = "https://postman-echo.com"
 	readiness = "/get"
 	check = true
+	mcp = false
+
+	[services.postman-mcp]
+	url = "https://postman-echo.com"
+	readiness = "/get"
+	check = true
+	mcp = true
 
 	# Not a service with a readiness check, see services.rs for more details
 	[services.notebook]
 	url = ""
 	readiness = ""
 	check = false
+	mcp = false
 
 [resources]
 
@@ -18,3 +26,9 @@
 	readiness = "/"
 	check = true
 	show = true
+
+	[resources.reddit]
+	url = "https://www.reddit.com"
+	readiness = "/"
+	check = true
+	show = false

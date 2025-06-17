@@ -16,10 +16,8 @@ pub static CATALOG: LazyLock<Catalog> = LazyLock::new(|| {
     };
 
     Catalog(
-        toml::from_str(
-            &read_to_string(PathBuf::from_str(service_config).unwrap()).unwrap(),
-        )
-        .unwrap(),
+        toml::from_str(&read_to_string(PathBuf::from_str(service_config).unwrap()).unwrap())
+            .unwrap(),
     )
 });
 pub static CATALOG_URLS: LazyLock<Vec<(Url, String)>> =
@@ -79,6 +77,21 @@ impl Catalog {
 
     pub fn get_service(&self, service_name: &str) -> Result<Url> {
         self.get_inner("services", service_name)
+    }
+
+    #[cfg(feature = "mcp")]
+    pub fn is_service_mcp(&self, service_name: &str) -> Result<bool> {
+        Ok(self
+            .0
+            .get("services")
+            .ok_or_else(|| {
+                BridgeError::GeneralError("services definition not found in config".to_string())
+            })?
+            .get(service_name)
+            .ok_or_else(|| BridgeError::ServiceDoesNotExist(service_name.to_string()))?
+            .get("mcp")
+            .and_then(Value::as_bool)
+            .unwrap_or(false))
     }
 
     pub fn get_resource(&self, resource_name: &str) -> Result<Url> {
@@ -195,6 +208,14 @@ mod test {
         assert!(postman.is_some());
     }
 
+    #[cfg(feature = "mcp")]
+    #[test]
+    fn test_mcp_bool() {
+        let catalog = &CATALOG;
+        let mcp = catalog.is_service_mcp("postman").unwrap();
+        assert!(!mcp);
+    }
+
     #[test]
     fn test_catalog_all_names() {
         let names = CATALOG.get_all_by_name();
@@ -205,7 +226,8 @@ mod test {
     #[test]
     fn test_get_details() {
         let catalog = &CATALOG;
-        let Value::Boolean(b) = *catalog.get_details("resources", "example", "show").unwrap() else {
+        let Value::Boolean(b) = *catalog.get_details("resources", "example", "show").unwrap()
+        else {
             panic!("show not found");
         };
         assert!(b);

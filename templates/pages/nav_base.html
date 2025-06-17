@@ -112,12 +112,12 @@
 				{% if notebook %}
 				<a href="#" id="big_notebook" class="block py-2 px-4 dark:hover:bg-[#4d5358] hover:bg-[#c6c6c6]">
 					<div class="flex">
-						<svg preserveAspectRatio="xMidYMid meet" fill="currentColor" width="32" height="32"
-							viewBox="0 0 32 32" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
-							<path d="M19 10H26V12H19zM19 15H26V17H19zM19 20H26V22H19z"></path>
+						<svg focusable="false" preserveAspectRatio="xMidYMid meet" fill="currentColor" width="32"
+							height="32" viewBox="0 0 32 32" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
 							<path
-								d="M28,5H4A2.002,2.002,0,0,0,2,7V25a2.0023,2.0023,0,0,0,2,2H28a2.0027,2.0027,0,0,0,2-2V7A2.0023,2.0023,0,0,0,28,5ZM4,7H15V25H4ZM17,25V7H28l.002,18Z">
+								d="M26.0766 3.5878a1.69 1.69 0 11-1.76-1.5853 1.67 1.67 0 011.76 1.5853zM16.2191 23.1113c-4.4866 0-8.43-1.61-10.4688-3.9882a11.1618 11.1618 0 0020.9377 0C24.6541 21.5011 20.7257 23.1113 16.2191 23.1113zM16.2191 7.6483c4.4867 0 8.43 1.61 10.4689 3.9881a11.1618 11.1618 0 00-20.9377 0C7.7892 9.2535 11.7126 7.6483 16.2191 7.6483zM10.0427 27.7388a2.1085 2.1085 0 11-.2031-.7976 2.1278 2.1278 0 01.2031.7976zM6.26 7.1064A1.2263 1.2263 0 117.4517 5.83 1.2415 1.2415 0 016.26 7.1064z">
 							</path>
+							<title>Notebook</title>
 						</svg>
 						<p class="self-center grow pl-4">Notebook</p>
 					</div>
@@ -157,6 +157,25 @@
 				</a>
 				{% endif %}
 				{% endif %}
+				{% if resources %}
+				{% for resource in resources %}
+				{% if resource.1 %}
+				<a href="/resource/{{ resource.0 }}?token=true" id="ignore_{{ resource.0 }}_big"
+					class="block py-2 px-4 dark:hover:bg-[#4d5358] hover:bg-[#c6c6c6]" target="_blank">
+					<div class="flex">
+						<svg focusable="false" preserveAspectRatio="xMidYMid meet" fill="currentColor" width="32"
+							height="32" viewBox="0 0 32 32" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+							<path
+								d="M26,28H6a2.0027,2.0027,0,0,1-2-2V6A2.0027,2.0027,0,0,1,6,4H16V6H6V26H26V16h2V26A2.0027,2.0027,0,0,1,26,28Z">
+							</path>
+							<path d="M20 2L20 4 26.586 4 18 12.586 19.414 14 28 5.414 28 12 30 12 30 2 20 2z"></path>
+						</svg>
+						<p class="self-center grow pl-4">{{ resource.0 }}</p>
+					</div>
+				</a>
+				{% endif %}
+				{% endfor %}
+				{% endif %}
 			</div>
 			<div class="flex flex-col grow justify-end items-center">
 				<p class="pb-4 text-xs">Powered by {{ application }} {{ application_version }}</p>
@@ -193,6 +212,14 @@
 	<a href="#" id="mobile_members" class="block py-3 px-4 dark:hover:bg-[#4d5358] hover:bg-[#c6c6c6]">Member
 		Management</a>
 	{% endif %}
+	{% endif %}
+	{% if resources %}
+	{% for resource in resources %}
+	{% if resource.1 %}
+	<a href="/resource/{{ resource.0 }}?token=true" id="ignore_{{ resource.0 }}_mobile"
+		class="block py-3 px-4 dark:hover:bg-[#4d5358] hover:bg-[#c6c6c6]" target="_blank">{{ resource.0 }}</a>
+	{% endif %}
+	{% endfor %}
 	{% endif %}
 	<div class="grow flex flex-col justify-end">
 		<p class="text-xs self-center pb-0.5">Powered by {{ application }} {{ application_version }}</p>

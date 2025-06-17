@@ -22,13 +22,13 @@
 <table class="w-full text-sm text-left">
 	<thead class="text-xs">
 		<tr>
-			<th scope="col" class="py-3 px-1">
+			<th scope="col" class="py-3 px-1 max-lg:hidden">
 				Name
 			</th>
 			<th scope="col" class="py-3 px-1">
 				Email
 			</th>
-			<th scope="col" class="py-3 px-1">
+			<th scope="col" class="py-3 px-1 max-sm:hidden">
 				Updated
 			</th>
 			<th scope="col" class="py-3 px-1">
@@ -39,14 +39,14 @@
 	<tbody>
 		{% if group_members %}
 		{% for user in group_members %}
-		<tr class="{% if loop.index is even and group_members | length > 1 %}border-t{% endif %}">
-			<td class="py-3 px-1">
+		<tr class="{% if loop.index is even and group_members | length > 1 %}border-t border-b{% endif %}">
+			<td class="py-3 px-1 max-lg:hidden">
 				{{ user.user_name }}
 			</td>
 			<td class="py-3 px-1">
 				{{ user.email }}
 			</td>
-			<td class="py-3 px-1" title="{{ user.updated_at }}">
+			<td class="py-3 px-1 max-sm:hidden" title="{{ user.updated_at }}">
 				{{ user.updated_at | truncate(length=16) }}
 			</td>
 			<td id="_{{ user.sub | slugify }}_remove" class="py-3 px-1">

@@ -13,6 +13,9 @@ members = ["utils"]
 [features]
 notebook = ["dep:kube", "dep:k8s-openapi", "dep:schemars", "dep:either"]
 lifecycle = ["notebook"]
+observe = []
+mcp = []
+full = ["notebook", "lifecycle", "observe", "mcp"]
 
 [dependencies]
 # Async dep
@@ -28,7 +31,7 @@ time = { version = "0.3.36", features = ["serde"] }
 parking_lot = "~0.12"
 num-bigint = "~0.4"
 # Web deps
-actix-web = { version = "~4.10", features = ["rustls-0_23", "cookies"] }
+actix-web = { version = "~4.11", features = ["rustls-0_23", "cookies"] }
 actix-web-httpauth = "0.8"
 actix-files = "0.6.6"
 tera = { version = "1.20.0", features= ["builtins"] }
@@ -37,7 +40,7 @@ url = "2.5.0"
 toml = "0.8.14"
 urlencoding = "2.1.3"
 actix-ws = "0.3.0"
-tokio-tungstenite = { version = "0.26", features = ["url", "rustls-tls-native-roots"] }
+tokio-tungstenite = { version = "0.27", features = ["url", "rustls-tls-native-roots"] }
 # Auth deps
 rust-argon2 = "~2.1"
 sha2 = "~0.10"
@@ -58,12 +61,12 @@ regex = "~1.11"
 thiserror = "2"
 # DB
 mongodb = "~3.2"
-redis = { version = "0.30", features = ["tokio-comp", "num-bigint"] }
+redis = { version = "0.32", features = ["tokio-comp", "num-bigint"] }
 #macro
 utils = { path = "utils" }
 # Kubernetes
-kube = { version = "0.99", features = ["runtime", "derive"], optional = true }
-k8s-openapi = { version = "0.24", features = ["latest"], optional = true }
+kube = { version = "~1.1", features = ["runtime", "derive"], optional = true }
+k8s-openapi = { version = "0.25", features = ["latest"], optional = true }
 schemars = { version = "0.8.21", optional = true }
 either = { version = "1.13.0", optional = true }
 # memory allocator
@@ -71,7 +74,7 @@ mimalloc = "~0.1"
 # security
 base64 = "~0.22.1"
 rand = "~0.9"
-uuid = { version = "~1.16", features = ["v4"] }
+uuid = { version = "~1.17", features = ["v4"] }
 
 [dev-dependencies]
 jsonwebkey = { version = "~0.3", features = ["jwt-convert"] }
