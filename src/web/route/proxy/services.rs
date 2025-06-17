@@ -80,7 +80,7 @@ impl Catalog {
     }
 
     #[cfg(feature = "mcp")]
-    pub fn is_servise_mcp(&self, service_name: &str) -> Result<bool> {
+    pub fn is_service_mcp(&self, service_name: &str) -> Result<bool> {
         Ok(self
             .0
             .get("services")
@@ -208,10 +208,11 @@ mod test {
         assert!(postman.is_some());
     }
 
+    #[cfg(feature = "mcp")]
     #[test]
     fn test_mcp_bool() {
         let catalog = &CATALOG;
-        let mcp = catalog.is_servise_mcp("postman").unwrap();
+        let mcp = catalog.is_service_mcp("postman").unwrap();
         assert!(!mcp);
     }
 

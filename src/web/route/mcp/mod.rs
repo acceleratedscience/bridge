@@ -30,7 +30,7 @@ async fn forward(
     if let Some(mcp) = path.split('/').next() {
         let path = path.strip_prefix(mcp).unwrap_or(path);
 
-        if !CATALOG.is_servise_mcp(mcp)? {
+        if !CATALOG.is_service_mcp(mcp)? {
             return Err(BridgeError::ServiceDoesNotExist(mcp.to_string()));
         }
 

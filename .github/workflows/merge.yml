@@ -47,7 +47,7 @@ jobs:
       run: cargo install just
 
     - name: Build
-      run: cargo build --verbose
+      run: cargo build --features full
 
     - name: Run Lint
       run: |
@@ -57,4 +57,4 @@ jobs:
 
     - name: Run tests
       run: |
-        cargo test --verbose --features notebook,lifecycle
+        cargo test --features full
