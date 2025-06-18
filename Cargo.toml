@@ -12,10 +12,11 @@ members = ["utils"]
 
 [features]
 notebook = ["dep:kube", "dep:k8s-openapi", "dep:schemars", "dep:either"]
+openwebui = ["dep:kube", "dep:k8s-openapi", "dep:schemars", "dep:either"]
 lifecycle = ["notebook"]
 observe = []
 mcp = []
-full = ["notebook", "lifecycle", "observe", "mcp"]
+full = ["notebook", "lifecycle", "observe", "mcp", "openwebui"]
 
 [dependencies]
 # Async dep

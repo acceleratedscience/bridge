@@ -343,7 +343,7 @@ pub mod utils {
             mongo::ObjectID,
         },
         errors::Result,
-        kube::{KubeAPI, Notebook},
+        kube::{KubeAPI, NOTEBOOK_NAMESPACE, Notebook},
         web::{helper::bson, notebook_helper},
     };
 
@@ -370,10 +370,13 @@ pub mod utils {
     {
         let name = notebook_helper::make_notebook_name(subject);
         let pvc_name = notebook_helper::make_notebook_volume_name(subject);
-        log_with_level!(KubeAPI::<Notebook>::delete(&name).await, error)?;
+        log_with_level!(
+            KubeAPI::<Notebook>::delete(&name, *NOTEBOOK_NAMESPACE).await,
+            error
+        )?;
         if !persist_pvc {
             log_with_level!(
-                KubeAPI::<PersistentVolumeClaim>::delete(&pvc_name).await,
+                KubeAPI::<PersistentVolumeClaim>::delete(&pvc_name, *NOTEBOOK_NAMESPACE).await,
                 error
             )?;
         }

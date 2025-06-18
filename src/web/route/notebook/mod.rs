@@ -34,7 +34,7 @@ use crate::{
         mongo::{DB, ObjectID},
     },
     errors::{BridgeError, Result},
-    kube::{KubeAPI, NAMESPACE, Notebook, NotebookSpec, PVCSpec},
+    kube::{KubeAPI, NOTEBOOK_NAMESPACE, Notebook, NotebookSpec, PVCSpec},
     web::{
         bridge_middleware::{CookieCheck, Htmx, NotebookCookieCheck},
         helper::{self, bson},
@@ -203,7 +203,7 @@ async fn notebook_create(
         )?
         .is_some()
         {
-            info!("Namespace {} has been created", *NAMESPACE)
+            info!("Namespace {} has been created", *NOTEBOOK_NAMESPACE)
         }
 
         // User is allowed to create a notebook, but notebook does not exist... so create one
@@ -212,14 +212,19 @@ async fn notebook_create(
 
         if req.query_string().contains("clear") {
             helper::log_with_level!(
-                KubeAPI::<PersistentVolumeClaim>::delete(&pvc_name).await,
+                KubeAPI::<PersistentVolumeClaim>::delete(&pvc_name, *NOTEBOOK_NAMESPACE).await,
                 error
             )?;
 
             // PVC takes time to delete... loop and check it is gone
             loop {
                 let mut loop_cnt = 0;
-                if KubeAPI::<PersistentVolumeClaim>::check_pvc_exists(&pvc_name).await? {
+                if KubeAPI::<PersistentVolumeClaim>::check_pvc_exists(
+                    &pvc_name,
+                    *NOTEBOOK_NAMESPACE,
+                )
+                .await?
+                {
                     tokio::time::sleep(Duration::from_secs(2)).await;
                     loop_cnt += 1;
                 } else {
@@ -240,7 +245,7 @@ async fn notebook_create(
         }
 
         let pvc = PVCSpec::new(pvc_name.clone(), 1);
-        if let Err(e) = KubeAPI::new(pvc.spec).create().await {
+        if let Err(e) = KubeAPI::new(pvc.spec).create(*NOTEBOOK_NAMESPACE).await {
             match e {
                 BridgeError::NotebookExistsError(_) => info!(
                     "PVC {} already exists, most likely persisted from last session, reusing",
@@ -264,7 +269,10 @@ async fn notebook_create(
                 vec![("PROXY_KEY".to_string(), notebook_token)],
             ),
         );
-        helper::log_with_level!(KubeAPI::new(notebook).create().await, error)?;
+        helper::log_with_level!(
+            KubeAPI::new(notebook).create(*NOTEBOOK_NAMESPACE).await,
+            error
+        )?;
 
         let current_time = time::OffsetDateTime::now_utc();
         db.update(
@@ -464,12 +472,14 @@ async fn notebook_status(
     // check status on k8s
     let ready = KubeAPI::<Pod>::check_pod_running(
         &(notebook_helper::make_notebook_name(&bridge_cookie.subject) + "-0"),
+        *NOTEBOOK_NAMESPACE,
     )
     .await?;
 
     if ready {
         let ip = KubeAPI::<Pod>::get_pod_ip(
             &(notebook_helper::make_notebook_name(&bridge_cookie.subject) + "-0"),
+            *NOTEBOOK_NAMESPACE,
         )
         .await?;
 
@@ -672,7 +682,7 @@ async fn notebook_forward(
 pub mod notebook_helper {
     use crate::{
         db::models::{BridgeCookie, NotebookInfo, NotebookStatusCookie, User, UserNotebook},
-        kube::NAMESPACE,
+        kube::NOTEBOOK_NAMESPACE,
         web::route::notebook::NOTEBOOK_PORT,
     };
 
@@ -694,11 +704,11 @@ pub mod notebook_helper {
             return match path {
                 Some(p) => format!(
                     "{}://localhost:{}/notebook/{}/{}/{}",
-                    protocol, NOTEBOOK_PORT, *NAMESPACE, name, p
+                    protocol, NOTEBOOK_PORT, *NOTEBOOK_NAMESPACE, name, p
                 ),
                 None => format!(
                     "{}://localhost:{}/notebook/{}/{}",
-                    protocol, NOTEBOOK_PORT, *NAMESPACE, name
+                    protocol, NOTEBOOK_PORT, *NOTEBOOK_NAMESPACE, name
                 ),
             };
         }
@@ -706,19 +716,19 @@ pub mod notebook_helper {
             // TODO: This is super cumbersome... FIX IT FIX IT!
             Some(p) => format!(
                 "{}://{}:{}/notebook/{}/{}/{}",
-                protocol, ip, NOTEBOOK_PORT, *NAMESPACE, name, p
+                protocol, ip, NOTEBOOK_PORT, *NOTEBOOK_NAMESPACE, name, p
             ),
             None => format!(
                 "{}://{}:{}/notebook/{}/{}",
-                protocol, ip, NOTEBOOK_PORT, *NAMESPACE, name
+                protocol, ip, NOTEBOOK_PORT, *NOTEBOOK_NAMESPACE, name
             ),
         }
     }
 
     pub(super) fn make_path(name: &str, path: Option<&str>) -> String {
         match path {
-            Some(p) => format!("/notebook/{}/{}/{}", *NAMESPACE, name, p),
-            None => format!("/notebook/{}/{}", *NAMESPACE, name),
+            Some(p) => format!("/notebook/{}/{}/{}", *NOTEBOOK_NAMESPACE, name, p),
+            None => format!("/notebook/{}/{}", *NOTEBOOK_NAMESPACE, name),
         }
     }
 
@@ -774,7 +784,7 @@ pub mod notebook_helper {
 
 pub fn config_notebook(cfg: &mut web::ServiceConfig) {
     cfg.service(
-        web::scope(&("/notebook/".to_string() + *NAMESPACE))
+        web::scope(&("/notebook/".to_string() + *NOTEBOOK_NAMESPACE))
             .wrap(NotebookCookieCheck)
             .service(notebook_ws_subscribe)
             .service(notebook_ws_session)

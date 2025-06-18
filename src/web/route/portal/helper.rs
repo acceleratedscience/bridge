@@ -111,8 +111,11 @@ where
                 user_notebook.status = nsc.status;
             }
             None => {
+                use crate::kube::NOTEBOOK_NAMESPACE;
+
                 let pvc = notebook_helper::make_notebook_volume_name(&user._id.to_string());
-                if let Ok(true) = KubeAPI::<Pod>::check_pvc_exists(&pvc).await {
+                if let Ok(true) = KubeAPI::<Pod>::check_pvc_exists(&pvc, *NOTEBOOK_NAMESPACE).await
+                {
                     bc.config = Some(crate::db::models::Config {
                         notebook_persist_pvc: Some(true),
                     });
@@ -124,13 +127,20 @@ where
                 // notebook_cookie isn't there either...
                 if let Some(nb_start) = &user.notebook {
                     let sub = notebook_helper::make_notebook_name(&user._id.to_string());
-                    match KubeAPI::<Pod>::check_pod_running(&(sub.clone() + "-0")).await {
+                    match KubeAPI::<Pod>::check_pod_running(
+                        &(sub.clone() + "-0"),
+                        *NOTEBOOK_NAMESPACE,
+                    )
+                    .await
+                    {
                         Ok(running) => {
                             if running {
                                 user_notebook.status = "Ready".to_string();
                                 ctx.insert("notebook", &user_notebook);
 
-                                let ip = KubeAPI::<Pod>::get_pod_ip(&(sub + "-0")).await?;
+                                let ip =
+                                    KubeAPI::<Pod>::get_pod_ip(&(sub + "-0"), *NOTEBOOK_NAMESPACE)
+                                        .await?;
                                 let notebook_cookie = NotebookCookie {
                                     subject: user._id.to_string(),
                                     ip,
