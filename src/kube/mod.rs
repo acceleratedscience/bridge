@@ -9,4 +9,5 @@ pub use notebook::{
     notebook_lifecycle,
 };
 
+#[cfg(feature = "openwebui")]
 mod openwebui;
