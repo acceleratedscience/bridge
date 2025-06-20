@@ -18,11 +18,11 @@ pub mod health;
 pub mod mcp;
 #[cfg(feature = "notebook")]
 pub mod notebook;
+#[cfg(feature = "openwebui")]
+pub mod openwebui;
 pub mod portal;
 pub mod proxy;
 pub mod resource;
-#[cfg(feature = "openwebui")]
-pub mod openwebui;
 
 #[get("")]
 async fn index(data: Data<Tera>, ctx: Data<Context>, req: HttpRequest) -> Result<HttpResponse> {

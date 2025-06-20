@@ -6,7 +6,10 @@ use actix_web::{
 };
 use tracing::instrument;
 
-use crate::{errors::Result, web::helper};
+use crate::{
+    errors::Result,
+    web::{helper, notebook_helper},
+};
 
 async fn openwebui_ws() {}
 
@@ -27,17 +30,7 @@ async fn openwebui_forward(
         New URL with query: http://localhost:8888/notebook/notebook/675fe4d56881c0dbd5cc2960-notebook/static/lab/main.79b385776e13e3f97005.js?v=79b385776e13e3f97005
     */
 
-    let notebook_cookie = match notebook_cookie {
-        Some(cookie) => cookie.into_inner(),
-        None => {
-            return helper::log_with_level!(
-                Err(BridgeError::NotebookAccessError(
-                    "Notebook cookie not found".to_string(),
-                )),
-                error
-            );
-        }
-    };
+    // check for some auth here
 
     let mut new_url = Url::from_str(&notebook_helper::make_forward_url(
         &notebook_cookie.ip,

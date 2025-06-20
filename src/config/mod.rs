@@ -122,7 +122,10 @@ pub fn init_once() -> Configuration {
     validation.leeway = 0;
 
     let (config_location_str, database_location_str) = if cfg!(debug_assertions) {
-        ("config/configurations_sample.toml", "config/database_sample.toml")
+        (
+            "config/configurations_sample.toml",
+            "config/database_sample.toml",
+        )
     } else {
         ("config/configurations.toml", "config/database.toml")
     };
