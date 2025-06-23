@@ -7,9 +7,12 @@ use actix_web::{
 use tracing::instrument;
 
 use crate::{
+    db::models::BridgeCookie,
     errors::Result,
     web::{helper, notebook_helper},
 };
+
+const OWUI: &str = "owui";
 
 async fn openwebui_ws() {}
 
@@ -19,22 +22,15 @@ async fn openwebui_forward(
     payload: web::Payload,
     method: Method,
     peer_addr: Option<PeerAddr>,
-    // notebook_cookie: Option<ReqData<NotebookCookie>>,
+    bridge_cookie: Option<ReqData<BridgeCookie>>,
     client: web::Data<reqwest::Client>,
 ) -> Result<HttpResponse> {
     let path = req.uri().path();
-    /* Example
-        Path: /notebook/notebook/675fe4d56881c0dbd5cc2960-notebook/static/lab/main.79b385776e13e3f97005.js
-        New URL: http://localhost:8888/notebook/notebook/675fe4d56881c0dbd5cc2960-notebook
-        New URL with path: http://localhost:8888/notebook/notebook/675fe4d56881c0dbd5cc2960-notebook/static/lab/main.79b385776e13e3f97005.js
-        New URL with query: http://localhost:8888/notebook/notebook/675fe4d56881c0dbd5cc2960-notebook/static/lab/main.79b385776e13e3f97005.js?v=79b385776e13e3f97005
-    */
-
-    // check for some auth here
+    //  TODO: check for some auth here
 
     let mut new_url = Url::from_str(&notebook_helper::make_forward_url(
-        &notebook_cookie.ip,
-        &notebook_helper::make_notebook_name(&notebook_cookie.subject),
+        &bridge_cookie.ip,
+        &notebook_helper::make_notebook_name(&bridge_cookie.subject),
         "http",
         None,
     ))?;
