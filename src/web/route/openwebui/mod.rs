@@ -1,6 +1,7 @@
 use actix_web::{
     HttpRequest, HttpResponse,
     dev::PeerAddr,
+    get,
     http::Method,
     web::{self, ReqData},
 };
@@ -14,7 +15,17 @@ use crate::{
 
 const OWUI: &str = "owui";
 
-async fn openwebui_ws() {}
+#[get("ws/socket.io/")]
+async fn openwebui_ws(
+    req: HttpRequest,
+    pl: web::Payload,
+    bridge_cookie: Option<ReqData<BridgeCookie>>,
+) -> Result<HttpResponse> {
+    // ws://localhost:8000/ws/socket.io/?EIO=4&transport=websocket
+    Ok(HttpResponse::SwitchingProtocols()
+        .header("Sec-WebSocket-Protocol", "websocket")
+        .finish())
+}
 
 #[instrument(skip(payload))]
 async fn openwebui_forward(

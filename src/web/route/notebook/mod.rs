@@ -46,6 +46,7 @@ const NOTEBOOK_PORT: &str = "8888";
 const NOTEBOOK_TOKEN_LIFETIME: usize = const { 60 * 60 * 24 * 30 };
 const PVC_DELETE_ATTEMPT: u8 = 9;
 
+// TODO: name is not needed... look into removing them if possible
 #[get("{name}/api/events/subscribe")]
 async fn notebook_ws_subscribe(
     req: HttpRequest,
