@@ -26,6 +26,18 @@ pub mod resource;
 
 #[get("")]
 async fn index(data: Data<Tera>, ctx: Data<Context>, req: HttpRequest) -> Result<HttpResponse> {
+    // subdomain
+    let subdomain = req
+        .headers()
+        .get(header::HOST)
+        .and_then(|h| h.to_str().ok())
+        .unwrap_or("")
+        .split('.')
+        .next()
+        .unwrap_or("")
+        .to_string()
+        .to_lowercase();
+
     // if cookie exists, redirect to portal
     if req.cookie(COOKIE_NAME).is_some() {
         return Ok(HttpResponse::SeeOther()
