@@ -286,13 +286,10 @@ pub mod forwarding {
 
         let forwarded_req = forwarded_req.headers(headers);
 
-        let res = log_with_level!(
-            forwarded_req
-                .send()
-                .await
-                .map_err(|e| { BridgeError::GeneralError(e.to_string()) }),
-            error
-        )?;
+        let res = forwarded_req.send().await.map_err(|e| {
+            error!("{:?}", e);
+            BridgeError::GeneralError(e.to_string())
+        })?;
 
         let status = res.status().as_u16();
         let status =
