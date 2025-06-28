@@ -36,6 +36,7 @@ redirect_url = "https://open.accelerate.science/auth/callback/ibm"
 
 [app-config]
 name = "Open Accelerated Discovery"
+openweb_url = "oweb.open.accelerate.science"
 description = "This is your gateway to the future of scientific discovery"
 company = "IBM Research"
 notebook_namespace = "notebook"

@@ -41,6 +41,8 @@ pub struct Configuration {
     pub observability_cred: Option<(String, String)>,
     #[cfg(feature = "openwebui")]
     pub owui_namespace: String,
+    #[cfg(feature = "openwebui")]
+    pub openweb_url: String,
 }
 
 pub struct Database {
@@ -217,7 +219,12 @@ pub fn init_once() -> Configuration {
     .unwrap();
 
     #[cfg(feature = "openwebui")]
-    let owui_namespace = app_conf["owui_namespace"].as_str().unwrap().to_string();
+    let (owui_namespace, openweb_url) = {
+        (
+            app_conf["owui_namespace"].as_str().unwrap().to_string(),
+            app_conf["openweb_url"].as_str().unwrap().to_string(),
+        )
+    };
 
     Configuration {
         encoder,
@@ -239,6 +246,8 @@ pub fn init_once() -> Configuration {
         observability_cred,
         #[cfg(feature = "openwebui")]
         owui_namespace,
+        #[cfg(feature = "openwebui")]
+        openweb_url,
     }
 }
 

@@ -1,13 +1,14 @@
 use actix_web::{
     HttpRequest, HttpResponse,
     dev::PeerAddr,
-    get,
+    get, guard,
     http::Method,
     web::{self, ReqData},
 };
 use tracing::instrument;
 
 use crate::{
+    config::CONFIG,
     db::models::BridgeCookie,
     errors::Result,
     web::{helper, notebook_helper},
@@ -36,17 +37,10 @@ async fn openwebui_forward(
     bridge_cookie: Option<ReqData<BridgeCookie>>,
     client: web::Data<reqwest::Client>,
 ) -> Result<HttpResponse> {
-    let path = req.uri().path();
-    //  TODO: check for some auth here
+    todo!()
+}
 
-    let mut new_url = Url::from_str(&notebook_helper::make_forward_url(
-        &bridge_cookie.ip,
-        &notebook_helper::make_notebook_name(&bridge_cookie.subject),
-        "http",
-        None,
-    ))?;
-    new_url.set_path(path);
-    new_url.set_query(req.uri().query());
-
-    helper::forwarding::forward(req, payload, method, peer_addr, client, new_url, None).await
+pub fn config_openwebui(cfg: &mut web::ServiceConfig) {
+    cfg.service(openwebui_ws)
+        .default_service(web::to(openwebui_forward));
 }

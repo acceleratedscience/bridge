@@ -102,10 +102,7 @@ async fn notebook_ws_session(
     let kernel_id = kernel.into_inner().1;
     let session_id = session_id.session_id.clone();
 
-    let path = format!(
-        "api/kernels/{}/channels?session_id={}",
-        kernel_id, session_id
-    );
+    let path = format!("api/kernels/{kernel_id}/channels?session_id={session_id}");
     let url = notebook_helper::make_forward_url(
         &notebook_cookie.ip,
         &notebook_helper::make_notebook_name(&notebook_cookie.subject),
@@ -305,7 +302,7 @@ async fn notebook_create(
         }
 
         let bridge_cookie_json = serde_json::to_string(&bridge_cookie).map_err(|e| {
-            BridgeError::GeneralError(format!("Could not serialize bridge cookie: {}", e))
+            BridgeError::GeneralError(format!("Could not serialize bridge cookie: {e}"))
         })?;
         let notebook_cookie = NotebookCookie {
             subject: bridge_cookie.subject,
@@ -317,10 +314,10 @@ async fn notebook_create(
             start_url: start_up_url,
         };
         let notebook_json = serde_json::to_string(&notebook_cookie).map_err(|e| {
-            BridgeError::GeneralError(format!("Could not serialize notebook cookie: {}", e))
+            BridgeError::GeneralError(format!("Could not serialize notebook cookie: {e}"))
         })?;
         let notebook_status_json = serde_json::to_string(&notebook_status_cookie).map_err(|e| {
-            BridgeError::GeneralError(format!("Could not serialize notebook status cookie: {}", e))
+            BridgeError::GeneralError(format!("Could not serialize notebook status cookie: {e}"))
         })?;
 
         // Create notebook cookies
@@ -439,8 +436,6 @@ async fn notebook_delete(
         }
     }
 
-    println!("Context: {:?}", ctx);
-
     let content =
         helper::log_with_level!(data.render("components/notebook/start.html", &ctx), error)?;
 
@@ -514,12 +509,11 @@ async fn notebook_status(
         let notebook_status_json =
             serde_json::to_string(&notebook_status_cookie).map_err(|er| {
                 BridgeError::GeneralError(format!(
-                    "Could not serialize notebook status cookie: {}",
-                    er
+                    "Could not serialize notebook status cookie: {er}"
                 ))
             })?;
         let notebook_cookie_json = serde_json::to_string(&notebook_cookie).map_err(|er| {
-            BridgeError::GeneralError(format!("Could not serialize notebook cookie: {}", er))
+            BridgeError::GeneralError(format!("Could not serialize notebook cookie: {er}"))
         })?;
 
         // TODO: We are leveraing cookies to avoid DB calls... but look into not doing this anymore
@@ -688,11 +682,11 @@ pub mod notebook_helper {
     };
 
     pub(crate) fn make_notebook_name(subject: &str) -> String {
-        format!("{}-notebook", subject)
+        format!("{subject}-notebook")
     }
 
     pub(crate) fn make_notebook_volume_name(subject: &str) -> String {
-        format!("{}-notebook-volume-pvc", subject)
+        format!("{subject}-notebook-volume-pvc")
     }
 
     pub(crate) fn make_forward_url(
@@ -804,8 +798,25 @@ pub fn config_notebook(cfg: &mut web::ServiceConfig) {
 
 #[cfg(test)]
 mod test {
+    use crate::config::init_once;
+
     #[tokio::test]
     async fn test_notebook_forward() {
         // assert!(true);
+    }
+
+    #[test]
+    fn test_make_forward_url() {
+        init_once();
+        let url =
+            super::notebook_helper::make_forward_url("0.0.0.0", "test-notebook", "http", None);
+        assert_eq!(
+            url,
+            format!(
+                "http://localhost:{}/notebook/{}/test-notebook",
+                super::NOTEBOOK_PORT,
+                *super::NOTEBOOK_NAMESPACE
+            )
+        );
     }
 }

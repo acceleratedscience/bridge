@@ -157,8 +157,21 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
             .wrap(middleware::Compress::default())
             .wrap(bridge_middleware::Maintainence)
             .service(actix_files::Files::new("/static", "static"));
+
         #[cfg(feature = "notebook")]
         let app = app.configure(route::notebook::config_notebook);
+
+        #[cfg(feature = "openwebui")]
+        let app = {
+            use actix_web::guard;
+            let openwebui_host = &CONFIG.openweb_url;
+            app.service(
+                web::scope("/")
+                    .guard(guard::Host(openwebui_host))
+                    .configure(route::openwebui::config_openwebui),
+            )
+        };
+
         app.service({
             let scope = web::scope("")
                 .wrap(bridge_middleware::SecurityCacheHeader)
