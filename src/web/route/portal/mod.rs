@@ -137,7 +137,7 @@ async fn search_by_email(
             };
             let email = urlencoding::decode(email).map_err(|e| {
                 tracing::error!("{}", e);
-                BridgeError::GeneralError(format!("Error parsing query string: {}", e))
+                BridgeError::GeneralError(format!("Error parsing query string: {e}"))
             })?;
 
             let res = match db.search_users(&email, USER, PhantomData::<User>).await {
@@ -147,7 +147,7 @@ async fn search_by_email(
                         return Ok(HttpResponse::BadRequest()
                             .append_header((
                                 HTMX_ERROR_RES,
-                                format!("No email found for {}", email),
+                                format!("No email found for {email}"),
                             ))
                             .finish());
                     }

@@ -183,7 +183,7 @@ async fn system_create_group(
     // TODO: check if group already exists, and not rely one dup key from DB
     let result = helper::log_with_level!(db.insert(group, GROUP).await, error);
     let content = match result {
-        Ok(r) => format!("<p>Group created with id: {}</p>", r),
+        Ok(r) => format!("<p>Group created with id: {r}</p>"),
         Err(e) if e.to_string().contains("dup key") => {
             return Ok(HttpResponse::BadRequest()
                 .append_header((

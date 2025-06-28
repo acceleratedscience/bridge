@@ -221,7 +221,7 @@ async fn code_to_response(
     };
 
     let content = serde_json::to_string(&bridge_cookie_json).map_err(|e| {
-        BridgeError::GeneralError(format!("Could not serialize bridge cookie: {}", e))
+        BridgeError::GeneralError(format!("Could not serialize bridge cookie: {e}"))
     })?;
 
     // create cookie for all routes for this user

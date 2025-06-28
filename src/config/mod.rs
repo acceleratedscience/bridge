@@ -261,6 +261,7 @@ mod tests {
     #[test]
     fn test_config_init_once() {
         let config = init_once();
+        #[cfg(feature = "notebook")]
         let workbench = config.notebooks.get("open_ad_workbench").unwrap();
         assert_eq!(workbench.pull_policy, "Always");
         assert_eq!(workbench.working_dir, Some("/opt/app-root/src".to_string()));

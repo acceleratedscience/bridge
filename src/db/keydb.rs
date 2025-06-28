@@ -44,7 +44,7 @@ impl CacheDB {
         let sub = sub.as_ref();
         let _: () = self
             .get_connection()
-            .set_ex(format!("session:{}", sub), session_id, expiration)
+            .set_ex(format!("session:{sub}"), session_id, expiration)
             .await?;
         Ok(())
     }
@@ -53,7 +53,7 @@ impl CacheDB {
         let sub = sub.as_ref();
         let session_id: String = self
             .get_connection()
-            .get(format!("session:{}", sub))
+            .get(format!("session:{sub}"))
             .await?;
         Ok(session_id)
     }
@@ -62,7 +62,7 @@ impl CacheDB {
         let sub = sub.as_ref();
         let _: () = self
             .get_connection()
-            .del(format!("session:{}", sub))
+            .del(format!("session:{sub}"))
             .await?;
         Ok(())
     }
