@@ -262,13 +262,17 @@ mod tests {
     fn test_config_init_once() {
         let config = init_once();
         #[cfg(feature = "notebook")]
-        let workbench = config.notebooks.get("open_ad_workbench").unwrap();
-        assert_eq!(workbench.pull_policy, "Always");
-        assert_eq!(workbench.working_dir, Some("/opt/app-root/src".to_string()));
-        assert_eq!(
-            workbench.start_up_url,
-            Some("lab/tree/start_menu.ipynb".to_string())
-        );
+        {
+            let workbench = config.notebooks.get("open_ad_workbench").unwrap();
+            assert_eq!(workbench.pull_policy, "Always");
+            assert_eq!(workbench.working_dir, Some("/opt/app-root/src".to_string()));
+            assert_eq!(
+                workbench.start_up_url,
+                Some("lab/tree/start_menu.ipynb".to_string())
+            );
+        }
+
+        assert_eq!(config.app_name, "Open Accelerated Discovery");
     }
 
     #[test]

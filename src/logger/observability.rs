@@ -62,7 +62,6 @@ impl Observe {
             let endpoint = endpoint.as_str();
             let api_key = api_key;
             while let Some(msg) = recv.recv().await {
-                println!("Sending observability message: {}", msg);
                 let msg = json!(
                     {
                         "text": msg

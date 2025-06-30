@@ -2,7 +2,7 @@ use actix_web::{
     HttpRequest, HttpResponse,
     dev::PeerAddr,
     get, guard,
-    http::Method,
+    http::{Method, header::SEC_WEBSOCKET_PROTOCOL},
     web::{self, ReqData},
 };
 use tracing::instrument;
@@ -15,6 +15,7 @@ use crate::{
 };
 
 const OWUI: &str = "owui";
+pub const OUWI_COOKIE_NAME: &str = "owui-cookie";
 
 #[get("ws/socket.io/")]
 async fn openwebui_ws(
@@ -22,9 +23,10 @@ async fn openwebui_ws(
     pl: web::Payload,
     bridge_cookie: Option<ReqData<BridgeCookie>>,
 ) -> Result<HttpResponse> {
+    let query = req.query_string();
     // ws://localhost:8000/ws/socket.io/?EIO=4&transport=websocket
     Ok(HttpResponse::SwitchingProtocols()
-        .header("Sec-WebSocket-Protocol", "websocket")
+        .append_header((SEC_WEBSOCKET_PROTOCOL, "websocket"))
         .finish())
 }
 

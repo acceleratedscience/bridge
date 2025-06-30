@@ -164,10 +164,9 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
         #[cfg(feature = "openwebui")]
         let app = {
             use actix_web::guard;
-            let openwebui_host = &CONFIG.openweb_url;
             app.service(
                 web::scope("/")
-                    .guard(guard::Host(openwebui_host))
+                    .guard(guard::Host(&CONFIG.openweb_url))
                     .configure(route::openwebui::config_openwebui),
             )
         };

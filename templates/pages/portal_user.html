@@ -25,6 +25,12 @@ Portal Admin
 </div>
 {% endif %}
 
+{% if owui %}
+<div id="owui" class="hidden">
+	{% include 'components/owui/owui.html' %}
+</div>
+{% endif %}
+
 {% if user_type == "group" %}
 <div id="members" class="hidden">
 	{% include 'components/members.html' %}

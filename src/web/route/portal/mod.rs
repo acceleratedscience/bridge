@@ -16,6 +16,7 @@ use tracing::instrument;
 use crate::web::helper::observability_post;
 use crate::{
     auth::{COOKIE_NAME, NOTEBOOK_COOKIE_NAME, NOTEBOOK_STATUS_COOKIE_NAME},
+    config::CONFIG,
     db::{
         Database,
         models::{BridgeCookie, USER, User, UserPortalRep, UserType},
@@ -25,6 +26,7 @@ use crate::{
     web::{
         bridge_middleware::{CookieCheck, HTMX_ERROR_RES, Htmx},
         helper::log_with_level,
+        route::openwebui::OUWI_COOKIE_NAME,
         services::CATALOG,
     },
 };
@@ -145,10 +147,7 @@ async fn search_by_email(
                 Err(e) => match e {
                     BridgeError::RecordSearchError(_) => {
                         return Ok(HttpResponse::BadRequest()
-                            .append_header((
-                                HTMX_ERROR_RES,
-                                format!("No email found for {email}"),
-                            ))
+                            .append_header((HTMX_ERROR_RES, format!("No email found for {email}")))
                             .finish());
                     }
                     _ => {
@@ -214,6 +213,15 @@ async fn logout(#[cfg(feature = "observe")] req: HttpRequest) -> HttpResponse {
         .finish();
     notebook_cookie.make_removal();
 
+    let mut openwebui_cookie = Cookie::build(OUWI_COOKIE_NAME, "")
+        .domain(&CONFIG.openweb_url)
+        .same_site(SameSite::Strict)
+        .path("/")
+        .http_only(true)
+        .secure(true)
+        .finish();
+    openwebui_cookie.make_removal();
+
     let mut notebook_status_cookie = Cookie::build(NOTEBOOK_STATUS_COOKIE_NAME, "")
         .same_site(SameSite::Strict)
         .path("/")
@@ -236,6 +244,7 @@ async fn logout(#[cfg(feature = "observe")] req: HttpRequest) -> HttpResponse {
         .cookie(cookie_remove)
         .cookie(notebook_cookie)
         .cookie(notebook_status_cookie)
+        .cookie(openwebui_cookie)
         .finish()
 }
 
