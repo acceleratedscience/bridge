@@ -164,9 +164,12 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
         #[cfg(feature = "openwebui")]
         let app = {
             use actix_web::guard;
+
+            use self::bridge_middleware::OWUICookieCheck;
             app.service(
                 web::scope("/")
                     .guard(guard::Host(&CONFIG.openweb_url))
+                    .wrap(OWUICookieCheck)
                     .configure(route::openwebui::config_openwebui),
             )
         };

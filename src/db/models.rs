@@ -220,7 +220,7 @@ pub struct BridgeCookie {
 #[cfg(feature = "openwebui")]
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct OWUICookie {
-    subject: String,
+    pub subject: String,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]

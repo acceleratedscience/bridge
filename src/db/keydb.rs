@@ -51,19 +51,13 @@ impl CacheDB {
 
     pub async fn get_session_id<T: AsRef<str>>(&self, sub: T) -> Result<String> {
         let sub = sub.as_ref();
-        let session_id: String = self
-            .get_connection()
-            .get(format!("session:{sub}"))
-            .await?;
+        let session_id: String = self.get_connection().get(format!("session:{sub}")).await?;
         Ok(session_id)
     }
 
     pub async fn del_session_id<T: AsRef<str>>(&self, sub: T) -> Result<()> {
         let sub = sub.as_ref();
-        let _: () = self
-            .get_connection()
-            .del(format!("session:{sub}"))
-            .await?;
+        let _: () = self.get_connection().del(format!("session:{sub}")).await?;
         Ok(())
     }
 }

@@ -11,3 +11,5 @@ pub use notebook::{
 
 #[cfg(feature = "openwebui")]
 mod openwebui;
+#[cfg(feature = "openwebui")]
+pub use openwebui::OWUI;

@@ -61,7 +61,7 @@ regex = "~1.11"
 # Error handling
 thiserror = "2"
 # DB
-mongodb = "~3.2"
+mongodb = "=3.2"
 redis = { version = "0.32", features = ["tokio-comp", "num-bigint"] }
 #macro
 utils = { path = "utils" }
