@@ -21,7 +21,8 @@ use crate::{
         Database,
         models::{
             AdminTab, AdminTabs, BridgeCookie, GROUP, Group, GroupForm, GroupPortalRep,
-            NotebookStatusCookie, USER, User, UserDeleteForm, UserForm, UserPortalRep, UserType,
+            NotebookStatusCookie, OWUICookie, USER, User, UserDeleteForm, UserForm, UserPortalRep,
+            UserType,
         },
         mongo::DB,
     },
@@ -51,6 +52,7 @@ pub(super) async fn system(
     context: Data<Context>,
     subject: Option<ReqData<BridgeCookie>>,
     nsc: Option<ReqData<NotebookStatusCookie>>,
+    oc: Option<ReqData<OWUICookie>>,
     db: Data<&DB>,
 ) -> Result<HttpResponse> {
     // get the subject id from middleware
@@ -109,6 +111,14 @@ pub(super) async fn system(
     ctx.insert("token", &user.token);
     if let Some(token) = &user.token {
         helper::add_token_exp_to_tera(&mut ctx, token);
+    }
+
+    #[cfg(feature = "openwebui")]
+    if let Some(owui_cookie) = oc {
+        use crate::config::CONFIG;
+
+        ctx.insert("openwebui", &owui_cookie.subject);
+        ctx.insert("owui_url", &CONFIG.openweb_url);
     }
 
     // add notebook tab if user has a notebook subscription

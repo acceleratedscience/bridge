@@ -75,8 +75,8 @@ async fn index(data: Option<ReqData<BridgeCookie>>, db: Data<&DB>) -> Result<Htt
                                             })
                                         {
                                             let cookie =
-                                                Cookie::build(OWUI_COOKIE_NAME, owui_cookie)
-                                                    .domain(&CONFIG.openweb_url)
+                                                Cookie::build(OWUI_COOKIE_NAME, &owui_cookie)
+                                                    .domain(&CONFIG.bridge_url)
                                                     .same_site(SameSite::Lax)
                                                     .path("/")
                                                     .http_only(true)
@@ -239,8 +239,8 @@ async fn logout(#[cfg(feature = "observe")] req: HttpRequest) -> HttpResponse {
     notebook_cookie.make_removal();
 
     let mut openwebui_cookie = Cookie::build(OWUI_COOKIE_NAME, "")
-        .domain(&CONFIG.openweb_url)
-        .same_site(SameSite::Strict)
+        .domain(&CONFIG.bridge_url)
+        .same_site(SameSite::Lax)
         .path("/")
         .http_only(true)
         .secure(true)

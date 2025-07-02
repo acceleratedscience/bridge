@@ -43,6 +43,8 @@ pub struct Configuration {
     pub owui_namespace: String,
     #[cfg(feature = "openwebui")]
     pub openweb_url: String,
+    #[cfg(feature = "openwebui")]
+    pub bridge_url: String,
 }
 
 pub struct Database {
@@ -226,6 +228,8 @@ pub fn init_once() -> Configuration {
         )
     };
 
+    let bridge_url = app_conf["bridge_url"].as_str().unwrap().to_string();
+
     Configuration {
         encoder,
         decoder,
@@ -248,6 +252,7 @@ pub fn init_once() -> Configuration {
         owui_namespace,
         #[cfg(feature = "openwebui")]
         openweb_url,
+        bridge_url,
     }
 }
 

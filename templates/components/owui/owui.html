@@ -7,9 +7,8 @@
 			<div class="flex flex-col flex-grow pt-2 text-center justify-center items-center">
 				<a id="notebook_open_button"
 					class="lg:w-[300px] w-[220px] h-[50px] py-2 flex justify-center items-center cb_button cursor-pointer"
-					href="{{ notebook.url }}{% if notebook.start_up_url %}/{{ notebook.start_up_url }}{% endif %}"
-					hx-post="/notebook_manage/hx/enter" hx-target="#notebook_panel" hx-swap="innerhtml" target="_blank"
-					_="on click
+					href="https://{{ owui_url }}"
+					target="_blank" _="on click
           call window.open(me.href, '_blank')" tabindex="0">
 					Open Web UI
 				</a>
