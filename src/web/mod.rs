@@ -4,7 +4,7 @@ use std::{io::Result, process::exit, time::Duration};
 use std::pin::pin;
 
 use actix_web::{
-    App, HttpServer,
+    App, HttpServer, guard,
     middleware::{self},
     web::{self, Data},
 };
@@ -155,24 +155,23 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
             .wrap(bridge_middleware::custom_code_handle(tera_data, context))
             .wrap(middleware::NormalizePath::trim())
             .wrap(middleware::Compress::default())
-            .wrap(bridge_middleware::Maintainence)
-            .service(actix_files::Files::new("/static", "static"));
-
-        #[cfg(feature = "notebook")]
-        let app = app.configure(route::notebook::config_notebook);
+            .wrap(bridge_middleware::Maintainence);
 
         #[cfg(feature = "openwebui")]
         let app = {
-            use actix_web::guard;
-
             use self::bridge_middleware::OWUICookieCheck;
             app.service(
-                web::scope("/")
+                web::scope("")
                     .guard(guard::Host(&CONFIG.openweb_url))
                     .wrap(OWUICookieCheck)
                     .configure(route::openwebui::config_openwebui),
             )
         };
+
+        let app = app.service(actix_files::Files::new("/static", "static"));
+
+        #[cfg(feature = "notebook")]
+        let app = app.configure(route::notebook::config_notebook);
 
         app.service({
             let scope = web::scope("")

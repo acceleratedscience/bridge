@@ -411,7 +411,10 @@ pub mod ws {
     use tokio_tungstenite::tungstenite::{
         self,
         handshake::client::Request,
-        protocol::frame::coding::{Data, OpCode},
+        protocol::{
+            WebSocketConfig,
+            frame::coding::{Data, OpCode},
+        },
     };
     use tracing::{error, warn};
 
@@ -439,7 +442,13 @@ pub mod ws {
         }
         let request = request.body(()).unwrap();
 
-        let (stream, res) = tokio_tungstenite::connect_async(request).await.unwrap();
+        let (stream, res) = tokio_tungstenite::connect_async_with_config(
+            request,
+            Some(WebSocketConfig::default()),
+            false,
+        )
+        .await
+        .unwrap();
         if !res.status().eq(&StatusCode::SWITCHING_PROTOCOLS) {
             return Err(BridgeError::GeneralError(
                 "Failed to establish websocket connection".to_string(),
