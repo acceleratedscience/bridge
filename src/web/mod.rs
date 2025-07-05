@@ -152,7 +152,6 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
             .app_data(client_data)
             .app_data(db)
             .app_data(cache)
-            .wrap(bridge_middleware::custom_code_handle(tera_data, context))
             .wrap(middleware::NormalizePath::trim())
             .wrap(middleware::Compress::default())
             .wrap(bridge_middleware::Maintainence);
@@ -176,6 +175,7 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
         app.service({
             let scope = web::scope("")
                 .wrap(bridge_middleware::SecurityCacheHeader)
+                .wrap(bridge_middleware::custom_code_handle(tera_data, context))
                 .configure(route::auth::config_auth)
                 .configure(route::health::config_status)
                 .configure(route::proxy::config_proxy)

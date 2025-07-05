@@ -13,7 +13,11 @@ use tracing::instrument;
 use crate::{
     auth::COOKIE_NAME,
     db::{
-        models::{BridgeCookie, Group, NotebookStatusCookie, OWUICookie, User, UserType, GROUP, USER}, mongo::DB, Database
+        Database,
+        models::{
+            BridgeCookie, GROUP, Group, NotebookStatusCookie, OWUICookie, USER, User, UserType,
+        },
+        mongo::DB,
     },
     errors::{BridgeError, Result},
     web::{helper, route::portal::user_htmx::Profile},

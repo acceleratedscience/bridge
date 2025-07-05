@@ -46,10 +46,7 @@ where
     forward_ready!(service);
 
     fn call(&self, req: ServiceRequest) -> Self::Future {
-        match req
-            .cookie(OWUI_COOKIE_NAME)
-            .map(|c| c.value().to_string())
-        {
+        match req.cookie(OWUI_COOKIE_NAME).map(|c| c.value().to_string()) {
             Some(v) => {
                 let bridge_cookie_result = serde_json::from_str::<OWUICookie>(&v);
                 match bridge_cookie_result {
@@ -70,10 +67,10 @@ where
                 }
             }
             None => {
-                warn!(
-                    "OWUI cookie not found from ip {:?}",
-                    req.connection_info().realip_remote_addr()
-                );
+                // warn!(
+                //     "OWUI cookie not found from ip {:?}",
+                //     req.connection_info().realip_remote_addr()
+                // );
                 let res = HttpResponse::Forbidden().finish().map_into_right_body();
                 Box::pin(async { Ok(req.into_response(res)) })
             }

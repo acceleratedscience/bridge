@@ -187,6 +187,6 @@ mod tests {
         init_once().await;
         let openid = OPENID_W3.get().unwrap();
         let (u, c, n) = openid.get_client_resources();
-        println!("{:?} {:?} {:?}", u, c, n);
+        println!("{u:?} {c:?} {n:?}");
     }
 }

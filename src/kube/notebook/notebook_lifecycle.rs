@@ -373,7 +373,6 @@ mod tests {
     async fn test(client: Client) -> Result<()> {
         // ping postman echo
         let resp = client.get("https://postman-echo.com/get").send().await?;
-        println!("{:?}", resp);
         assert!(resp.status().is_success());
         Ok(())
     }

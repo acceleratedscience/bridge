@@ -217,6 +217,7 @@ pub mod forwarding {
     use crate::errors::{BridgeError, Result};
 
     // No inline needed... generic are inherently inlined
+    #[allow(clippy::too_many_arguments)]
     pub async fn forward<T>(
         req: HttpRequest,
         mut payload: web::Payload,
@@ -225,6 +226,7 @@ pub mod forwarding {
         client: web::Data<reqwest::Client>,
         new_url: T,
         updated_cookie: Option<Cookie<'_>>,
+        inference: bool,
     ) -> Result<HttpResponse>
     where
         T: AsRef<str> + Send + Sync,
@@ -273,9 +275,13 @@ pub mod forwarding {
                 headers.insert("X-Forwarded-For", ip);
             }
         }
+        headers.insert(
+            "X-Forwarded-Proto",
+            ReqwestHeaderValue::from_static("https"),
+        );
 
         for (header_name, header_value) in req.headers().iter() {
-            if header_name == "authorization" || header_name == "inference-service" {
+            if inference && (header_name == "authorization" || header_name == "inference-service") {
                 continue;
             }
             headers.insert(
@@ -305,11 +311,11 @@ pub mod forwarding {
         // https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Connection#Directives
         // Also removing "content-length" since we are streaming the response, and content-length
         // is not necessarily needed.
-        for (header_name, header_value) in res
-            .headers()
-            .iter()
-            .filter(|(h, _)| *h != "connection" && *h != "keep-alive" && *h != "content-length")
-        {
+        for (header_name, header_value) in res.headers().iter().filter(|(h, _)| {
+            h.as_str().to_lowercase() != "connection"
+                && h.as_str().to_lowercase() != "keep-alive"
+                && h.as_str().to_lowercase() != "content-length"
+        }) {
             // Again copy over seem incredibly inefficient. It sure is, but like before, we do this
             // because actix-web and reqwest use different versions of http. Once Actix-web
             // updates their http version, we can remove this.
@@ -444,7 +450,7 @@ pub mod ws {
 
         let (stream, res) = tokio_tungstenite::connect_async_with_config(
             request,
-            Some(WebSocketConfig::default()),
+            Some(WebSocketConfig::default().accept_unmasked_frames(true)),
             false,
         )
         .await

@@ -57,7 +57,8 @@ async fn forward(
         }
         new_url.set_query(req.uri().query());
 
-        helper::forwarding::forward(req, payload, method, peer_addr, client, new_url, None).await
+        helper::forwarding::forward(req, payload, method, peer_addr, client, new_url, None, true)
+            .await
     } else {
         warn!("MCP service not found in url request");
         Err(BridgeError::MCPParseIssue)

@@ -103,10 +103,10 @@ mod tests {
         let data_out: String = conn.get("test").await.unwrap();
         let data_out_value: serde_json::Value = serde_json::from_str(&data_out).unwrap();
         assert_eq!(data_in, data_out_value);
-        println!("data_out: {}", data_out);
+        println!("data_out: {data_out}");
 
         let not_exist: Option<String> = conn.get("nothing").await.unwrap();
-        println!("{:?}", not_exist);
+        println!("{not_exist:?}");
 
         // let mut stream = cache.get_async_sub("maintenance").await.unwrap();
         // let msg = stream.next().await.unwrap();

@@ -17,6 +17,7 @@ use crate::{
 };
 
 const OWUI_PORT: &str = "8080";
+const WHITELIST_ENDPOINTS: [&str; 5] = ["auths", "channels", "folders", "tools", "chats"];
 
 #[get("ws/socket.io")]
 async fn openwebui_ws(
@@ -34,9 +35,8 @@ async fn openwebui_ws(
     };
 
     let mut url = Url::from_str(&make_forward_url("ws", &owui_cookie.subject))?;
+    url.set_path("ws/socket.io/");
     url.set_query(req.uri().query());
-
-    tracing::info!("Forwarding OpenWebUI WebSocket request to {}", url);
 
     helper::ws::manage_connection(req, pl, url).await
 }
@@ -60,18 +60,27 @@ async fn openwebui_forward(
     };
 
     let mut url = Url::from_str(&make_forward_url("http", &owui_cookie.subject))?;
-    url.set_path(req.path());
+    let path = req.path();
+    url.set_path(path);
+
+    if WHITELIST_ENDPOINTS
+        .iter()
+        .any(|&endpoint| path.ends_with(endpoint))
+    {
+        if let Ok(ref mut p) = url.path_segments_mut() {
+            p.push("");
+        }
+    }
+
     url.set_query(req.uri().query());
 
-    helper::forwarding::forward(req, payload, method, peer_addr, client, url, None).await
+    helper::forwarding::forward(req, payload, method, peer_addr, client, url, None, false).await
 }
 
 #[inline]
 pub(crate) fn make_forward_url(protocol: &str, subject: &str) -> String {
     // TODO: see if you can get away without forward slash at the end
-    format!(
-        "{protocol}://u{subject}-openwebui.openwebui.svc.cluster.local:{OWUI_PORT}/ws/socket.io/"
-    )
+    format!("{protocol}://u{subject}-openwebui.openwebui.svc.cluster.local:{OWUI_PORT}")
 }
 
 pub fn config_openwebui(cfg: &mut web::ServiceConfig) {

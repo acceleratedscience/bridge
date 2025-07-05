@@ -89,6 +89,7 @@ async fn resource_http(
         client,
         new_url,
         updated_cookie,
+        false,
     )
     .await
 }
