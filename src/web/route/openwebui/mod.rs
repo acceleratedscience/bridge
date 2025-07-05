@@ -1,4 +1,4 @@
-use std::str::FromStr;
+use std::{collections::HashSet, str::FromStr, sync::LazyLock};
 
 use actix_web::{
     HttpRequest, HttpResponse,
@@ -17,7 +17,21 @@ use crate::{
 };
 
 const OWUI_PORT: &str = "8080";
-const WHITELIST_ENDPOINTS: [&str; 5] = ["auths", "channels", "folders", "tools", "chats"];
+static WHITELIST_ENDPOINTS: LazyLock<HashSet<&str>> = LazyLock::new(|| {
+    HashSet::from([
+        "/api/v1/auths",
+        "/api/v1/channels",
+        "/api/v1/folders",
+        "/api/v1/tools",
+        "/api/v1/chats",
+        "/api/v1/knowledge",
+        "/api/v1/models",
+        "/api/v1/groups",
+        "/api/v1/prompts",
+        "/api/v1/users",
+        "/api/v1/functions",
+    ])
+});
 
 #[get("ws/socket.io")]
 async fn openwebui_ws(
@@ -63,13 +77,10 @@ async fn openwebui_forward(
     let path = req.path();
     url.set_path(path);
 
-    if WHITELIST_ENDPOINTS
-        .iter()
-        .any(|&endpoint| path.ends_with(endpoint))
+    if WHITELIST_ENDPOINTS.contains(path)
+        && let Ok(ref mut p) = url.path_segments_mut()
     {
-        if let Ok(ref mut p) = url.path_segments_mut() {
-            p.push("");
-        }
+        p.push("");
     }
 
     url.set_query(req.uri().query());
