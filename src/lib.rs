@@ -2,8 +2,8 @@ pub mod auth;
 pub mod config;
 pub mod db;
 pub mod errors;
-// feature notebook or openwebui
-#[cfg(any(feature = "notebook", feature = "openwebui"))]
+// TODO: change to notebook to kubernetes
+#[cfg(feature = "kubernetes")]
 pub mod kube;
 pub mod logger;
 pub mod templating;

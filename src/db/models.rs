@@ -217,7 +217,6 @@ pub struct BridgeCookie {
     pub session_id: Option<String>,
 }
 
-#[cfg(feature = "openwebui")]
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct OWUICookie {
     pub subject: String,

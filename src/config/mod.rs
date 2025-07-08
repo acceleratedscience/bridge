@@ -43,7 +43,6 @@ pub struct Configuration {
     pub owui_namespace: String,
     #[cfg(feature = "openwebui")]
     pub openweb_url: String,
-    #[cfg(feature = "openwebui")]
     pub bridge_url: String,
 }
 

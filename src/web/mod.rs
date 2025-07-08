@@ -4,10 +4,11 @@ use std::{io::Result, process::exit, time::Duration};
 use std::pin::pin;
 
 use actix_web::{
-    App, HttpServer, guard,
-    middleware::{self},
+    App, HttpServer, middleware::{self},
     web::{self, Data},
 };
+#[cfg(feature = "openwebui")]
+use actix_web::guard;
 use tera::Context;
 use tracing::{error, level_filters::LevelFilter, warn};
 
