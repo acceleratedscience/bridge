@@ -11,12 +11,14 @@ use tracing::instrument;
 use url::Url;
 
 use crate::{
+    config::CONFIG,
     db::models::OWUICookie,
     errors::{BridgeError, Result},
     web::helper,
 };
 
 const OWUI_PORT: &str = "8080";
+pub static OWUI_NAMESPACE: LazyLock<&str> = LazyLock::new(|| &CONFIG.owui_namespace);
 static WHITELIST_ENDPOINTS: LazyLock<HashSet<&str>> = LazyLock::new(|| {
     HashSet::from([
         "/api/v1/auths",
@@ -90,7 +92,8 @@ async fn openwebui_forward(
 
 #[inline]
 pub(crate) fn make_forward_url(protocol: &str, subject: &str) -> String {
-    format!("{protocol}://u{subject}-openwebui.openwebui.svc.cluster.local:{OWUI_PORT}")
+    let namespace = *OWUI_NAMESPACE;
+    format!("{protocol}://u{subject}-openwebui.{namespace}.svc.cluster.local:{OWUI_PORT}")
 }
 
 pub fn config_openwebui(cfg: &mut web::ServiceConfig) {
@@ -102,10 +105,13 @@ pub fn config_openwebui(cfg: &mut web::ServiceConfig) {
 mod tests {
     #[test]
     fn test_make_forward_url() {
+        // kind of a silly test; can be used as a contract on how url is set
         let protocol = "http";
         let subject = "test-subject";
+        let namespace = "openwebui";
+        let port = "8080";
         let expected_url =
-            format!("{protocol}://u{subject}-openwebui.openwebui.svc.cluster.local:8080");
+            format!("{protocol}://u{subject}-openwebui.{namespace}.svc.cluster.local:{port}");
         assert_eq!(super::make_forward_url(protocol, subject), expected_url);
     }
 }
