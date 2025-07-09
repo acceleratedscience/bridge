@@ -6,7 +6,6 @@ pub mod openid;
 pub static COOKIE_NAME: &str = "bridge-user";
 pub static NOTEBOOK_COOKIE_NAME: &str = "bridge-notebook";
 pub static NOTEBOOK_STATUS_COOKIE_NAME: &str = "bridge-notebook-status";
-// pub static OWUI_COOKIE_NAME_MAIN: &str = "owui-cookie-main";
 pub static OWUI_COOKIE_NAME: &str = "owui-cookie";
 
 /// Convert SEC1 to PKCS8

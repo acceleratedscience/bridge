@@ -4,7 +4,7 @@
 			"adapter": "CodeLLDB",
 			"configuration": {
 				"request": "launch",
-				"program": "./target/debug/guardian"
+				"program": "./target/debug/bridge"
 			}
 		}
 	}

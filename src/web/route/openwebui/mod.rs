@@ -90,7 +90,6 @@ async fn openwebui_forward(
 
 #[inline]
 pub(crate) fn make_forward_url(protocol: &str, subject: &str) -> String {
-    // TODO: see if you can get away without forward slash at the end
     format!("{protocol}://u{subject}-openwebui.openwebui.svc.cluster.local:{OWUI_PORT}")
 }
 
