@@ -71,6 +71,19 @@ where
                             }
                         }
 
+                        #[cfg(feature = "openwebui")]
+                        {
+                            use crate::{auth::OWUI_COOKIE_NAME, db::models::OWUICookie};
+
+                            if let Some(owui_cookie) = req.cookie(OWUI_COOKIE_NAME) {
+                                if let Ok(oc) =
+                                    serde_json::from_str::<OWUICookie>(owui_cookie.value())
+                                {
+                                    req.extensions_mut().insert(oc);
+                                }
+                            }
+                        }
+
                         req.extensions_mut().insert(gcs.clone());
 
                         let service = self.service.clone();

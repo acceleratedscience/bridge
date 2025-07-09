@@ -96,10 +96,9 @@ impl ListBuilder<'_> {
         };
 
         self.inner_body.push_str(&format!(
-            r##"<div><b>{}</b></div>
-				<div>Service is currently {}.</div>
-				<div class="{}">{} ms</div>"##,
-            name, status, state, elapsed
+            r##"<div><b>{name}</b></div>
+				<div>Service is currently {status}.</div>
+				<div class="{state}">{elapsed} ms</div>"##
         ));
     }
 

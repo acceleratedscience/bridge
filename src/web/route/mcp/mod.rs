@@ -10,6 +10,7 @@ use crate::{
 };
 
 const MCP_PREFIX: &str = "/mcp/";
+const MCP_SUFFIX: &str = "-s";
 
 #[instrument(skip(payload))]
 async fn forward(
@@ -48,10 +49,16 @@ async fn forward(
         }
 
         let mut new_url = helper::log_with_level!(CATALOG.get_service(mcp), error)?;
-        new_url.set_path(path);
+        // fastmcp temp(?) fix
+        if mcp.ends_with(MCP_SUFFIX) {
+            new_url.set_path(&format!("{path}/"));
+        } else {
+            new_url.set_path(path);
+        }
         new_url.set_query(req.uri().query());
 
-        helper::forwarding::forward(req, payload, method, peer_addr, client, new_url, None).await
+        helper::forwarding::forward(req, payload, method, peer_addr, client, new_url, None, true)
+            .await
     } else {
         warn!("MCP service not found in url request");
         Err(BridgeError::MCPParseIssue)

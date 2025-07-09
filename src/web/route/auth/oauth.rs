@@ -103,7 +103,7 @@ pub async fn register_app(
     pl: web::Payload,
     db: Data<&DB>,
 ) -> Result<HttpResponse> {
-    // check the content type is jpon
+    // check the content type is json
     if !req.content_type().eq(ContentType::json().as_ref()) {
         return Ok(HttpResponse::UnsupportedMediaType().finish());
     }

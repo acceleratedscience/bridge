@@ -18,6 +18,8 @@ pub mod health;
 pub mod mcp;
 #[cfg(feature = "notebook")]
 pub mod notebook;
+#[cfg(feature = "openwebui")]
+pub mod openwebui;
 pub mod portal;
 pub mod proxy;
 pub mod resource;
