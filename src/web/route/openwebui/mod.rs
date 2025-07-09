@@ -105,7 +105,7 @@ mod tests {
         let protocol = "http";
         let subject = "test-subject";
         let expected_url =
-            format!("{protocol}://u{subject}-openwebui.openwebui.svc.cluster.local:8080/");
+            format!("{protocol}://u{subject}-openwebui.openwebui.svc.cluster.local:8080");
         assert_eq!(super::make_forward_url(protocol, subject), expected_url);
     }
 }
