@@ -188,7 +188,7 @@ async fn notebook_create(
 
         if user.notebook.is_some() {
             warn!("Notebook already exists for user {}", bridge_cookie.subject);
-            return Err(BridgeError::NotebookExistsError(
+            return Err(BridgeError::CRDExistsError(
                 "Notebook already exists".to_string(),
             ));
         };
@@ -245,7 +245,7 @@ async fn notebook_create(
         let pvc = PVCSpec::new(pvc_name.clone(), 1);
         if let Err(e) = KubeAPI::new(pvc.spec).create(*NOTEBOOK_NAMESPACE).await {
             match e {
-                BridgeError::NotebookExistsError(_) => info!(
+                BridgeError::CRDExistsError(_) => info!(
                     "PVC {} already exists, most likely persisted from last session, reusing",
                     pvc_name
                 ),

@@ -56,7 +56,7 @@ where
             Err(e) => match e {
                 kube::Error::Api(ref error_response) => {
                     if error_response.reason == "AlreadyExists" {
-                        return Err(BridgeError::NotebookExistsError(
+                        return Err(BridgeError::CRDExistsError(
                             "AlreadyExists".to_string(),
                         ));
                     }
