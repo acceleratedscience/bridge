@@ -454,7 +454,10 @@ pub mod ws {
             false,
         )
         .await
-        .unwrap();
+        .map_err(|e| {
+            error!("WebSocket connection error: {:?}", e);
+            BridgeError::GeneralError(e.to_string())
+        })?;
         if !res.status().eq(&StatusCode::SWITCHING_PROTOCOLS) {
             return Err(BridgeError::GeneralError(
                 "Failed to establish websocket connection".to_string(),

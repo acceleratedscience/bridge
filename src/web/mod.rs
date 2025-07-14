@@ -103,7 +103,7 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
     #[cfg(feature = "notebook")]
     kube::init_once().await;
 
-    // Maintainence window impl
+    // Launch maintainence window watcher if cache is available
     let _ = maintenance_watch();
 
     // Lifecycle with "advisory lock"
