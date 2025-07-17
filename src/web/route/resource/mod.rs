@@ -62,7 +62,7 @@ async fn resource_http(
 
         bridge_cookie.token = Some(token);
         let content = serde_json::to_string(&bridge_cookie).map_err(|e| {
-            BridgeError::GeneralError(format!("Could not serialize bridge cookie: {}", e))
+            BridgeError::GeneralError(format!("Could not serialize bridge cookie: {e}"))
         })?;
         Some(
             Cookie::build(COOKIE_NAME, content)
@@ -89,6 +89,7 @@ async fn resource_http(
         client,
         new_url,
         updated_cookie,
+        false,
     )
     .await
 }

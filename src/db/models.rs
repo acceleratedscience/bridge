@@ -218,6 +218,11 @@ pub struct BridgeCookie {
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct OWUICookie {
+    pub subject: String,
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct Config {
     pub notebook_persist_pvc: Option<bool>,
 }
