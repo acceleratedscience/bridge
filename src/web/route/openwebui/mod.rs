@@ -32,6 +32,7 @@ static WHITELIST_ENDPOINTS: LazyLock<HashSet<&str>> = LazyLock::new(|| {
         "/api/v1/prompts",
         "/api/v1/users",
         "/api/v1/functions",
+        "/api/v1/files",
     ])
 });
 
