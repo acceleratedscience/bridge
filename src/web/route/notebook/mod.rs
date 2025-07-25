@@ -34,7 +34,7 @@ use crate::{
         mongo::{DB, ObjectID},
     },
     errors::{BridgeError, Result},
-    kube::{KubeAPI, NAMESPACE, Notebook, NotebookSpec, PVCSpec},
+    kube::{KubeAPI, NOTEBOOK_NAMESPACE, Notebook, NotebookSpec, PVCSpec},
     web::{
         bridge_middleware::{CookieCheck, Htmx, NotebookCookieCheck},
         helper::{self, bson},
@@ -46,6 +46,7 @@ const NOTEBOOK_PORT: &str = "8888";
 const NOTEBOOK_TOKEN_LIFETIME: usize = const { 60 * 60 * 24 * 30 };
 const PVC_DELETE_ATTEMPT: u8 = 9;
 
+// TODO: name is not needed... look into removing them if possible
 #[get("{name}/api/events/subscribe")]
 async fn notebook_ws_subscribe(
     req: HttpRequest,
@@ -101,10 +102,7 @@ async fn notebook_ws_session(
     let kernel_id = kernel.into_inner().1;
     let session_id = session_id.session_id.clone();
 
-    let path = format!(
-        "api/kernels/{}/channels?session_id={}",
-        kernel_id, session_id
-    );
+    let path = format!("api/kernels/{kernel_id}/channels?session_id={session_id}");
     let url = notebook_helper::make_forward_url(
         &notebook_cookie.ip,
         &notebook_helper::make_notebook_name(&notebook_cookie.subject),
@@ -190,7 +188,7 @@ async fn notebook_create(
 
         if user.notebook.is_some() {
             warn!("Notebook already exists for user {}", bridge_cookie.subject);
-            return Err(BridgeError::NotebookExistsError(
+            return Err(BridgeError::CRDExistsError(
                 "Notebook already exists".to_string(),
             ));
         };
@@ -203,7 +201,7 @@ async fn notebook_create(
         )?
         .is_some()
         {
-            info!("Namespace {} has been created", *NAMESPACE)
+            info!("Namespace {} has been created", *NOTEBOOK_NAMESPACE)
         }
 
         // User is allowed to create a notebook, but notebook does not exist... so create one
@@ -212,14 +210,19 @@ async fn notebook_create(
 
         if req.query_string().contains("clear") {
             helper::log_with_level!(
-                KubeAPI::<PersistentVolumeClaim>::delete(&pvc_name).await,
+                KubeAPI::<PersistentVolumeClaim>::delete(&pvc_name, *NOTEBOOK_NAMESPACE).await,
                 error
             )?;
 
             // PVC takes time to delete... loop and check it is gone
             loop {
                 let mut loop_cnt = 0;
-                if KubeAPI::<PersistentVolumeClaim>::check_pvc_exists(&pvc_name).await? {
+                if KubeAPI::<PersistentVolumeClaim>::check_pvc_exists(
+                    &pvc_name,
+                    *NOTEBOOK_NAMESPACE,
+                )
+                .await?
+                {
                     tokio::time::sleep(Duration::from_secs(2)).await;
                     loop_cnt += 1;
                 } else {
@@ -240,9 +243,9 @@ async fn notebook_create(
         }
 
         let pvc = PVCSpec::new(pvc_name.clone(), 1);
-        if let Err(e) = KubeAPI::new(pvc.spec).create().await {
+        if let Err(e) = KubeAPI::new(pvc.spec).create(*NOTEBOOK_NAMESPACE).await {
             match e {
-                BridgeError::NotebookExistsError(_) => info!(
+                BridgeError::CRDExistsError(_) => info!(
                     "PVC {} already exists, most likely persisted from last session, reusing",
                     pvc_name
                 ),
@@ -264,7 +267,10 @@ async fn notebook_create(
                 vec![("PROXY_KEY".to_string(), notebook_token)],
             ),
         );
-        helper::log_with_level!(KubeAPI::new(notebook).create().await, error)?;
+        helper::log_with_level!(
+            KubeAPI::new(notebook).create(*NOTEBOOK_NAMESPACE).await,
+            error
+        )?;
 
         let current_time = time::OffsetDateTime::now_utc();
         db.update(
@@ -296,7 +302,7 @@ async fn notebook_create(
         }
 
         let bridge_cookie_json = serde_json::to_string(&bridge_cookie).map_err(|e| {
-            BridgeError::GeneralError(format!("Could not serialize bridge cookie: {}", e))
+            BridgeError::GeneralError(format!("Could not serialize bridge cookie: {e}"))
         })?;
         let notebook_cookie = NotebookCookie {
             subject: bridge_cookie.subject,
@@ -308,10 +314,10 @@ async fn notebook_create(
             start_url: start_up_url,
         };
         let notebook_json = serde_json::to_string(&notebook_cookie).map_err(|e| {
-            BridgeError::GeneralError(format!("Could not serialize notebook cookie: {}", e))
+            BridgeError::GeneralError(format!("Could not serialize notebook cookie: {e}"))
         })?;
         let notebook_status_json = serde_json::to_string(&notebook_status_cookie).map_err(|e| {
-            BridgeError::GeneralError(format!("Could not serialize notebook status cookie: {}", e))
+            BridgeError::GeneralError(format!("Could not serialize notebook status cookie: {e}"))
         })?;
 
         // Create notebook cookies
@@ -430,8 +436,6 @@ async fn notebook_delete(
         }
     }
 
-    println!("Context: {:?}", ctx);
-
     let content =
         helper::log_with_level!(data.render("components/notebook/start.html", &ctx), error)?;
 
@@ -464,12 +468,14 @@ async fn notebook_status(
     // check status on k8s
     let ready = KubeAPI::<Pod>::check_pod_running(
         &(notebook_helper::make_notebook_name(&bridge_cookie.subject) + "-0"),
+        *NOTEBOOK_NAMESPACE,
     )
     .await?;
 
     if ready {
         let ip = KubeAPI::<Pod>::get_pod_ip(
             &(notebook_helper::make_notebook_name(&bridge_cookie.subject) + "-0"),
+            *NOTEBOOK_NAMESPACE,
         )
         .await?;
 
@@ -503,12 +509,11 @@ async fn notebook_status(
         let notebook_status_json =
             serde_json::to_string(&notebook_status_cookie).map_err(|er| {
                 BridgeError::GeneralError(format!(
-                    "Could not serialize notebook status cookie: {}",
-                    er
+                    "Could not serialize notebook status cookie: {er}"
                 ))
             })?;
         let notebook_cookie_json = serde_json::to_string(&notebook_cookie).map_err(|er| {
-            BridgeError::GeneralError(format!("Could not serialize notebook cookie: {}", er))
+            BridgeError::GeneralError(format!("Could not serialize notebook cookie: {er}"))
         })?;
 
         // TODO: We are leveraing cookies to avoid DB calls... but look into not doing this anymore
@@ -666,22 +671,25 @@ async fn notebook_forward(
     new_url.set_path(path);
     new_url.set_query(req.uri().query());
 
-    helper::forwarding::forward(req, payload, method, peer_addr, client, new_url, None).await
+    helper::forwarding::forward(
+        req, payload, method, peer_addr, client, new_url, None, false,
+    )
+    .await
 }
 
 pub mod notebook_helper {
     use crate::{
         db::models::{BridgeCookie, NotebookInfo, NotebookStatusCookie, User, UserNotebook},
-        kube::NAMESPACE,
+        kube::NOTEBOOK_NAMESPACE,
         web::route::notebook::NOTEBOOK_PORT,
     };
 
     pub(crate) fn make_notebook_name(subject: &str) -> String {
-        format!("{}-notebook", subject)
+        format!("{subject}-notebook")
     }
 
     pub(crate) fn make_notebook_volume_name(subject: &str) -> String {
-        format!("{}-notebook-volume-pvc", subject)
+        format!("{subject}-notebook-volume-pvc")
     }
 
     pub(crate) fn make_forward_url(
@@ -694,11 +702,11 @@ pub mod notebook_helper {
             return match path {
                 Some(p) => format!(
                     "{}://localhost:{}/notebook/{}/{}/{}",
-                    protocol, NOTEBOOK_PORT, *NAMESPACE, name, p
+                    protocol, NOTEBOOK_PORT, *NOTEBOOK_NAMESPACE, name, p
                 ),
                 None => format!(
                     "{}://localhost:{}/notebook/{}/{}",
-                    protocol, NOTEBOOK_PORT, *NAMESPACE, name
+                    protocol, NOTEBOOK_PORT, *NOTEBOOK_NAMESPACE, name
                 ),
             };
         }
@@ -706,19 +714,19 @@ pub mod notebook_helper {
             // TODO: This is super cumbersome... FIX IT FIX IT!
             Some(p) => format!(
                 "{}://{}:{}/notebook/{}/{}/{}",
-                protocol, ip, NOTEBOOK_PORT, *NAMESPACE, name, p
+                protocol, ip, NOTEBOOK_PORT, *NOTEBOOK_NAMESPACE, name, p
             ),
             None => format!(
                 "{}://{}:{}/notebook/{}/{}",
-                protocol, ip, NOTEBOOK_PORT, *NAMESPACE, name
+                protocol, ip, NOTEBOOK_PORT, *NOTEBOOK_NAMESPACE, name
             ),
         }
     }
 
     pub(super) fn make_path(name: &str, path: Option<&str>) -> String {
         match path {
-            Some(p) => format!("/notebook/{}/{}/{}", *NAMESPACE, name, p),
-            None => format!("/notebook/{}/{}", *NAMESPACE, name),
+            Some(p) => format!("/notebook/{}/{}/{}", *NOTEBOOK_NAMESPACE, name, p),
+            None => format!("/notebook/{}/{}", *NOTEBOOK_NAMESPACE, name),
         }
     }
 
@@ -774,7 +782,7 @@ pub mod notebook_helper {
 
 pub fn config_notebook(cfg: &mut web::ServiceConfig) {
     cfg.service(
-        web::scope(&("/notebook/".to_string() + *NAMESPACE))
+        web::scope(&("/notebook/".to_string() + *NOTEBOOK_NAMESPACE))
             .wrap(NotebookCookieCheck)
             .service(notebook_ws_subscribe)
             .service(notebook_ws_session)
@@ -793,8 +801,25 @@ pub fn config_notebook(cfg: &mut web::ServiceConfig) {
 
 #[cfg(test)]
 mod test {
+    use crate::config::init_once;
+
     #[tokio::test]
     async fn test_notebook_forward() {
         // assert!(true);
+    }
+
+    #[test]
+    fn test_make_forward_url() {
+        init_once();
+        let url =
+            super::notebook_helper::make_forward_url("0.0.0.0", "test-notebook", "http", None);
+        assert_eq!(
+            url,
+            format!(
+                "http://localhost:{}/notebook/{}/test-notebook",
+                super::NOTEBOOK_PORT,
+                *super::NOTEBOOK_NAMESPACE
+            )
+        );
     }
 }

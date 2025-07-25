@@ -5,7 +5,7 @@ use actix_web::{
 use tera::{Context, Tera};
 
 use crate::{
-    db::models::{BridgeCookie, NotebookStatusCookie, User},
+    db::models::{BridgeCookie, NotebookStatusCookie, OWUICookie, User},
     errors::Result,
     web::services::CATALOG,
 };
@@ -45,6 +45,7 @@ impl<'p> Profile<'p> {
         tera: Data<Tera>,
         context: Data<Context>,
         nsc: Option<ReqData<NotebookStatusCookie>>,
+        oc: Option<ReqData<OWUICookie>>,
         bc: &mut BridgeCookie,
         t_exp: impl FnOnce(&mut Context, &str),
     ) -> Result<(String, Option<[Cookie; 2]>)> {
@@ -77,6 +78,14 @@ impl<'p> Profile<'p> {
                 })
                 .collect();
             context.insert("resources", &resources);
+        }
+
+        #[cfg(feature = "openwebui")]
+        if let Some(owui_cookie) = oc {
+            use crate::config::CONFIG;
+
+            context.insert("openwebui", &owui_cookie.subject);
+            context.insert("owui_url", &CONFIG.openweb_url);
         }
 
         #[cfg(feature = "notebook")]

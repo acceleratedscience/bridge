@@ -3,6 +3,8 @@ use std::{io::Result, process::exit, time::Duration};
 #[cfg(all(feature = "notebook", feature = "lifecycle"))]
 use std::pin::pin;
 
+#[cfg(feature = "openwebui")]
+use actix_web::guard;
 use actix_web::{
     App, HttpServer,
     middleware::{self},
@@ -102,7 +104,7 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
     #[cfg(feature = "notebook")]
     kube::init_once().await;
 
-    // Maintainence window impl
+    // Launch maintainence window watcher if cache is available
     let _ = maintenance_watch();
 
     // Lifecycle with "advisory lock"
@@ -152,16 +154,36 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
             .app_data(client_data)
             .app_data(db)
             .app_data(cache)
-            .wrap(bridge_middleware::custom_code_handle(tera_data, context))
             .wrap(middleware::NormalizePath::trim())
             .wrap(middleware::Compress::default())
-            .wrap(bridge_middleware::Maintainence)
-            .service(actix_files::Files::new("/static", "static"));
+            .wrap(bridge_middleware::Maintainence);
+
+        #[cfg(feature = "openwebui")]
+        let app = {
+            use self::bridge_middleware::OWUICookieCheck;
+            app.service(
+                web::scope("")
+                    .guard(guard::Host(&CONFIG.openweb_url))
+                    .wrap(OWUICookieCheck)
+                    .configure(route::openwebui::config_openwebui),
+            )
+            .service(
+                web::scope("")
+                    .guard(guard::Host(&CONFIG.moleviewer_url))
+                    .wrap(OWUICookieCheck)
+                    .configure(route::openwebui::config_moleviewer),
+            )
+        };
+
+        let app = app.service(actix_files::Files::new("/static", "static"));
+
         #[cfg(feature = "notebook")]
         let app = app.configure(route::notebook::config_notebook);
+
         app.service({
             let scope = web::scope("")
                 .wrap(bridge_middleware::SecurityCacheHeader)
+                .wrap(bridge_middleware::custom_code_handle(tera_data, context))
                 .configure(route::auth::config_auth)
                 .configure(route::health::config_status)
                 .configure(route::proxy::config_proxy)

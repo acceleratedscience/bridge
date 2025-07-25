@@ -2,7 +2,7 @@ pub mod auth;
 pub mod config;
 pub mod db;
 pub mod errors;
-#[cfg(feature = "notebook")]
+#[cfg(feature = "kubernetes")]
 pub mod kube;
 pub mod logger;
 pub mod templating;

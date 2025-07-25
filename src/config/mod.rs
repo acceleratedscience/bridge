@@ -30,13 +30,22 @@ pub struct Configuration {
     pub argon_config: argon2::Config<'static>,
     pub db: Database,
     pub cache: CacheDB,
+    #[cfg(feature = "notebook")]
     pub notebooks: HashMap<String, Notebook>,
+    #[cfg(feature = "notebook")]
     pub notebook_namespace: String,
     pub app_name: String,
     pub app_discription: String,
     pub company: String,
     pub oidc: HashMap<String, OIDC>,
     pub observability_cred: Option<(String, String)>,
+    #[cfg(feature = "openwebui")]
+    pub owui_namespace: String,
+    #[cfg(feature = "openwebui")]
+    pub openweb_url: String,
+    #[cfg(feature = "openwebui")]
+    pub moleviewer_url: String,
+    pub bridge_url: String,
 }
 
 pub struct Database {
@@ -117,12 +126,22 @@ pub fn init_once() -> Configuration {
     let public_key = fs::read("certs/public-key.pem").unwrap();
     let decoder = DecodingKey::from_ec_pem(&public_key).unwrap();
 
+    // JWK
+    let mut hasher = sha2::Sha256::new();
+    hasher.update(&public_key);
+    let kid = BASE64_URL_SAFE_NO_PAD.encode(hasher.finalize());
+    let key = p256::PublicKey::from_public_key_pem(&String::from_utf8_lossy(&public_key)).unwrap();
+    let jwk = JWK::new(key.to_jwk(), kid.clone());
+
     let mut validation = Validation::new(Algorithm::ES256);
     validation.set_audience(&AUD);
     validation.leeway = 0;
 
     let (config_location_str, database_location_str) = if cfg!(debug_assertions) {
-        ("config/configurations_sample.toml", "config/database_sample.toml")
+        (
+            "config/configurations_sample.toml",
+            "config/database_sample.toml",
+        )
     } else {
         ("config/configurations.toml", "config/database.toml")
     };
@@ -130,12 +149,6 @@ pub fn init_once() -> Configuration {
     let conf_table: toml::Table =
         toml::from_str(&read_to_string(PathBuf::from_str(config_location_str).unwrap()).unwrap())
             .unwrap();
-    let mut hasher = sha2::Sha256::new();
-    hasher.update(&public_key);
-    let kid = BASE64_URL_SAFE_NO_PAD.encode(hasher.finalize());
-
-    let key = p256::PublicKey::from_public_key_pem(&String::from_utf8_lossy(&public_key)).unwrap();
-    let jwk = JWK::new(key.to_jwk(), kid.clone());
 
     let db_table: toml::Table =
         toml::from_str(&read_to_string(PathBuf::from_str(database_location_str).unwrap()).unwrap())
@@ -187,7 +200,6 @@ pub fn init_once() -> Configuration {
     let app_name = app_conf["name"].as_str().unwrap().to_string();
     let app_discription = app_conf["description"].as_str().unwrap().to_string();
     let company = app_conf["company"].as_str().unwrap().to_string();
-    let notebook_namespace = app_conf["notebook_namespace"].as_str().unwrap().to_string();
 
     let observability_cred = match (
         app_conf["observability_access_token"]
@@ -201,10 +213,24 @@ pub fn init_once() -> Configuration {
         _ => None,
     };
 
+    #[cfg(feature = "notebook")]
+    let notebook_namespace = app_conf["notebook_namespace"].as_str().unwrap().to_string();
+    #[cfg(feature = "notebook")]
     let notebooks: HashMap<String, Notebook> = toml::from_str(
         &read_to_string(PathBuf::from_str("config/notebook.toml").unwrap()).unwrap(),
     )
     .unwrap();
+
+    #[cfg(feature = "openwebui")]
+    let (owui_namespace, openweb_url, moleviewer_url) = {
+        (
+            app_conf["owui_namespace"].as_str().unwrap().to_string(),
+            app_conf["openweb_url"].as_str().unwrap().to_string(),
+            app_conf["moleviewer_url"].as_str().unwrap().to_string(),
+        )
+    };
+
+    let bridge_url = app_conf["bridge_url"].as_str().unwrap().to_string();
 
     Configuration {
         encoder,
@@ -215,13 +241,22 @@ pub fn init_once() -> Configuration {
         argon_config: argon2::Config::default(),
         db,
         cache,
+        #[cfg(feature = "notebook")]
         notebooks,
+        #[cfg(feature = "notebook")]
         notebook_namespace,
         app_name,
         app_discription,
         company,
         oidc: oidc_map,
         observability_cred,
+        #[cfg(feature = "openwebui")]
+        owui_namespace,
+        #[cfg(feature = "openwebui")]
+        openweb_url,
+        #[cfg(feature = "openwebui")]
+        moleviewer_url,
+        bridge_url,
     }
 }
 
@@ -235,13 +270,18 @@ mod tests {
     #[test]
     fn test_config_init_once() {
         let config = init_once();
-        let workbench = config.notebooks.get("open_ad_workbench").unwrap();
-        assert_eq!(workbench.pull_policy, "Always");
-        assert_eq!(workbench.working_dir, Some("/opt/app-root/src".to_string()));
-        assert_eq!(
-            workbench.start_up_url,
-            Some("lab/tree/start_menu.ipynb".to_string())
-        );
+        #[cfg(feature = "notebook")]
+        {
+            let workbench = config.notebooks.get("open_ad_workbench").unwrap();
+            assert_eq!(workbench.pull_policy, "Always");
+            assert_eq!(workbench.working_dir, Some("/opt/app-root/src".to_string()));
+            assert_eq!(
+                workbench.start_up_url,
+                Some("lab/tree/start_menu.ipynb".to_string())
+            );
+        }
+
+        assert_eq!(config.app_name, "Open Accelerated Discovery");
     }
 
     #[test]
