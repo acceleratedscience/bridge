@@ -43,6 +43,8 @@ pub struct Configuration {
     pub owui_namespace: String,
     #[cfg(feature = "openwebui")]
     pub openweb_url: String,
+    #[cfg(feature = "openwebui")]
+    pub moleviewer_url: String,
     pub bridge_url: String,
 }
 
@@ -220,10 +222,11 @@ pub fn init_once() -> Configuration {
     .unwrap();
 
     #[cfg(feature = "openwebui")]
-    let (owui_namespace, openweb_url) = {
+    let (owui_namespace, openweb_url, moleviewer_url) = {
         (
             app_conf["owui_namespace"].as_str().unwrap().to_string(),
             app_conf["openweb_url"].as_str().unwrap().to_string(),
+            app_conf["moleviewer_url"].as_str().unwrap().to_string(),
         )
     };
 
@@ -251,6 +254,8 @@ pub fn init_once() -> Configuration {
         owui_namespace,
         #[cfg(feature = "openwebui")]
         openweb_url,
+        #[cfg(feature = "openwebui")]
+        moleviewer_url,
         bridge_url,
     }
 }

@@ -3,12 +3,13 @@ use std::{io::Result, process::exit, time::Duration};
 #[cfg(all(feature = "notebook", feature = "lifecycle"))]
 use std::pin::pin;
 
-use actix_web::{
-    App, HttpServer, middleware::{self},
-    web::{self, Data},
-};
 #[cfg(feature = "openwebui")]
 use actix_web::guard;
+use actix_web::{
+    App, HttpServer,
+    middleware::{self},
+    web::{self, Data},
+};
 use tera::Context;
 use tracing::{error, level_filters::LevelFilter, warn};
 
@@ -165,6 +166,12 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
                     .guard(guard::Host(&CONFIG.openweb_url))
                     .wrap(OWUICookieCheck)
                     .configure(route::openwebui::config_openwebui),
+            )
+            .service(
+                web::scope("")
+                    .guard(guard::Host(&CONFIG.moleviewer_url))
+                    .wrap(OWUICookieCheck)
+                    .configure(route::openwebui::config_moleviewer),
             )
         };
 
