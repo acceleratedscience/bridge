@@ -11,6 +11,7 @@ use actix_web::{
     web::{self, Data},
 };
 use tera::Context;
+use tokio::sync::broadcast::channel;
 use tracing::{error, level_filters::LevelFilter, warn};
 
 #[cfg(feature = "notebook")]
@@ -73,13 +74,6 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
         .build()
         .expect("Cannot create reqwest client");
 
-    // Logger and this is not configurable by the caller
-    if cfg!(debug_assertions) {
-        logger::start_logger(LevelFilter::DEBUG, client.clone());
-    } else {
-        logger::start_logger(LevelFilter::INFO, client.clone());
-    }
-
     rustls::crypto::ring::default_provider()
         .install_default()
         .expect("Cannot install default provider with ring");
@@ -87,22 +81,48 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
     // Singletons
     openid::init_once().await;
     if let Err(e) = DB::init_once(&DBNAME).await {
-        error!("{e}");
+        eprintln!("{e}");
         exit(1);
     }
     if let Err(e) = CacheDB::init_once().await {
         // we don't want to make caching a hard requirement for now
-        warn!("{e}: continuing without caching");
+        eprintln!("{e}: continuing without caching");
     }
     let db = match DBCONN.get() {
         Some(db) => db,
         None => {
-            error!("DB Connection not found... Is the DB running?");
+            eprintln!("DB Connection not found... Is the DB running?");
             exit(1);
         }
     };
     #[cfg(feature = "notebook")]
     kube::init_once().await;
+
+    let (sender, mut recv) = channel::<()>(1);
+    let tx = sender.clone();
+    tokio::spawn(async move {
+        select(
+            pin!(
+                tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate())
+                    .expect("Cannot establish SIGTERM signal")
+                    .recv()
+            ),
+            pin!(
+                tokio::signal::unix::signal(tokio::signal::unix::SignalKind::interrupt())
+                    .expect("Cannot establish SIGINT signal")
+                    .recv()
+            ),
+        )
+        .await;
+        let _ = sender.send(());
+    });
+
+    // Logger and this is not configurable by the caller
+    if cfg!(debug_assertions) {
+        logger::start_logger(LevelFilter::DEBUG, client.clone(), tx);
+    } else {
+        logger::start_logger(LevelFilter::INFO, client.clone(), tx);
+    }
 
     // Launch maintainence window watcher if cache is available
     let _ = maintenance_watch();
@@ -111,25 +131,7 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
     #[cfg(all(feature = "notebook", feature = "lifecycle"))]
     let handle = tokio::spawn(async move {
         let stream = LifecycleStream::new(notebook_lifecycle);
-        Medium::new(
-            LIFECYCLE_TIME,
-            SIGTERM_FREQ,
-            db,
-            stream,
-            select(
-                pin!(
-                    tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate())
-                        .expect("Cannot establish SIGTERM signal")
-                        .recv()
-                ),
-                pin!(
-                    tokio::signal::unix::signal(tokio::signal::unix::SignalKind::interrupt())
-                        .expect("Cannot establish SIGINT signal")
-                        .recv()
-                ),
-            ),
-        )
-        .await;
+        Medium::new(LIFECYCLE_TIME, SIGTERM_FREQ, db, stream, recv.recv()).await;
     });
 
     let server = HttpServer::new(move || {

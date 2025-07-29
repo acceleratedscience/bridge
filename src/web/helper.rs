@@ -1,6 +1,6 @@
 use actix_web::web;
 use base64::{Engine, prelude::BASE64_STANDARD};
-use mongodb::bson::{Bson, to_bson};
+use mongodb::bson::{self, Bson, to_bson};
 use rand::{Rng, rng};
 use serde::Deserialize;
 use tera::Context;

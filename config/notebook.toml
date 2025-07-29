@@ -9,8 +9,8 @@ notebook_env = [
 	"--ServerApp.password=''",
 	"--ServerApp.notebook_dir='/opt/app-root/src'",
 	"--ServerApp.quit_button=False",
-	"--LabApp.default_url='/lab/tree/start_menu.ipynb'",
-	"--ServerApp.default_url='/lab/tree/start_menu.ipynb'",
+	"--LabApp.default_url='/lab/tree/ranking-ensemble-model-examples.ipynb'",
+	"--ServerApp.default_url='/lab/tree/ranking-ensemble-model-examples.ipynb'",
 	"--ServerApp.trust_xheaders=True",
 	# base-url is taken care by bridge
 ]

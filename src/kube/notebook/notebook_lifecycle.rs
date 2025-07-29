@@ -86,6 +86,12 @@ where
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
         let mut this = self.project();
 
+        // check if we need to shutdown
+        if this.sigterm.poll(cx).is_ready() {
+            info!("Shutting down lifecycle");
+            return Poll::Ready(());
+        }
+
         if !*this.slept {
             match this.sleep.as_mut().poll(cx) {
                 Poll::Ready(_) => {
@@ -95,12 +101,6 @@ where
                     return Poll::Pending;
                 }
             }
-        }
-
-        // check if we need to shutdown
-        if this.sigterm.poll(cx).is_ready() {
-            info!("Shutting down lifecycle");
-            return Poll::Ready(());
         }
 
         let now = OffsetDateTime::now_utc();

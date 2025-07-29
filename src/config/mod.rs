@@ -139,7 +139,7 @@ pub fn init_once() -> Configuration {
 
     let (config_location_str, database_location_str) = if cfg!(debug_assertions) {
         (
-            "config/configurations_sample.toml",
+            "config/configurations.toml",
             "config/database_sample.toml",
         )
     } else {

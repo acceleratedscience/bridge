@@ -184,6 +184,18 @@ pub struct AppPayload {
     pub password: String,
 }
 
+pub static OBSERVE: &str = "observe";
+#[derive(Debug, Deserialize, Serialize)]
+pub struct ObserveEventEntry {
+    pub sub: String,
+    pub group: String,
+    pub property: String,
+    #[serde(rename = "requestDate")]
+    pub request_date: time::OffsetDateTime,
+    #[serde(rename = "expireSoonAfter")]
+    pub expire_soon_after: time::OffsetDateTime,
+}
+
 /// This is the form verison of the Group struct
 #[derive(Debug)]
 pub struct GroupForm {
