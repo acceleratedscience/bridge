@@ -12,8 +12,8 @@ use tokio::{
     time::{Sleep, sleep},
 };
 
-static MAX_CAP: usize = 10;
-static WAIT: u64 = 30;
+static MAX_CAP: usize = 100;
+static WAIT: u64 = 60 * 60;
 
 #[pin_project]
 pub struct FutureRace<T, F> {

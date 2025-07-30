@@ -192,6 +192,7 @@ impl ObserveEvents {
         }
     }
 
+    #[allow(dead_code)]
     pub async fn close(&mut self) -> Result<()> {
         let handler = self.handler.take();
         Ok(handler.unwrap().await?)

@@ -1,8 +1,5 @@
 use std::{io::Result, process::exit, time::Duration};
 
-#[cfg(all(feature = "notebook", feature = "lifecycle"))]
-use std::pin::pin;
-
 #[cfg(feature = "openwebui")]
 use actix_web::guard;
 use actix_web::{
@@ -12,14 +9,12 @@ use actix_web::{
 };
 use tera::Context;
 use tokio::sync::broadcast::channel;
-use tracing::{error, level_filters::LevelFilter, warn};
+use tracing::level_filters::LevelFilter;
 
 #[cfg(feature = "notebook")]
 use crate::kube::{self};
 #[cfg(all(feature = "notebook", feature = "lifecycle"))]
 use crate::kube::{LifecycleStream, Medium, notebook_lifecycle};
-#[cfg(all(feature = "notebook", feature = "lifecycle"))]
-use futures::future::select;
 
 use crate::{
     auth::openid,

@@ -1,6 +1,6 @@
 [open_ad_workbench]
 name = "OpenAD Workbench"
-url = "quay.io/ibmdpdev/openad_workbench_bi:latest"
+url = "quay.io/ibmdpdev/openad_workbench_prod:latest"
 pull_policy = "Always"
 working_dir = "/opt/app-root/src"
 volume_mnt_path = "/opt/app-root/src"
@@ -9,16 +9,16 @@ notebook_env = [
 	"--ServerApp.password=''",
 	"--ServerApp.notebook_dir='/opt/app-root/src'",
 	"--ServerApp.quit_button=False",
-	"--LabApp.default_url='/lab/tree/ranking-ensemble-model-examples.ipynb'",
-	"--ServerApp.default_url='/lab/tree/ranking-ensemble-model-examples.ipynb'",
+	"--LabApp.default_url='/lab/tree/start_menu.ipynb'",
+	"--ServerApp.default_url='/lab/tree/start_menu.ipynb'",
 	"--ServerApp.trust_xheaders=True",
 	# base-url is taken care by bridge
 ]
 secret = "ibmdpdev-openad-pull-secret"
-start_up_url = "lab/tree/ranking-ensemble-model-examples.ipynb"
+start_up_url = "lab/tree/start_menu.ipynb"
 max_idle_time = 86400
 [open_ad_workbench.env]
-PROXY_URL = "https://bi.open.accelerate.science/proxy"
+PROXY_URL = "https://open.accelerate.science/proxy"
 
 [datascience_notebook]
 name = "Data Science Notebook"
@@ -36,3 +36,5 @@ notebook_env = [
 	# base-url is taken care by bridge
 ]
 max_idle_time = 86400
+[datascience_notebook.env]
+PROXY_URL = ""
