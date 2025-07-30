@@ -139,8 +139,9 @@ impl Observe {
         }
     }
 
-    pub async fn close(&mut self) -> Result<()> {
+    pub async fn close(mut self) -> Result<()> {
         let handler = self.handler.take();
+        drop(self);
         Ok(handler.unwrap().await?)
     }
 }
@@ -193,8 +194,9 @@ impl ObserveEvents {
     }
 
     #[allow(dead_code)]
-    pub async fn close(&mut self) -> Result<()> {
+    pub async fn close(mut self) -> Result<()> {
         let handler = self.handler.take();
+        drop(self);
         Ok(handler.unwrap().await?)
     }
 }
@@ -284,7 +286,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_observability() {
-        let mut observe =
+        let observe =
             Observe::new("api-key", "https://api.slack.com/api", Client::new()).unwrap();
         let mut writer = &observe;
         let _ = writer
