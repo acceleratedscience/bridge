@@ -13,7 +13,7 @@ pub use observability::PERSIST_META;
 #[cfg(feature = "observe")]
 pub use observability::PERSIST_TIME;
 
-pub fn start_logger(level: LevelFilter, _client: Client, tx: Sender<()>) {
+pub fn start_logger(level: LevelFilter, _client: Client, _tx: Sender<()>) {
     // let file = std::fs::File::create("./log").unwrap();
 
     let ts = tracing_subscriber::registry().with(
@@ -37,7 +37,7 @@ pub fn start_logger(level: LevelFilter, _client: Client, tx: Sender<()>) {
                 .expect("Failed to create observability for logger");
             let observe_layer = observability::ObserveEvents::new(
                 DBCONN.get().expect("DB connection not initialized"),
-                tx,
+                _tx,
             );
 
             ts.with(writer.wrap_layer(level)).with(observe_layer)

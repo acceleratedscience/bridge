@@ -93,6 +93,8 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
     #[cfg(feature = "notebook")]
     kube::init_once().await;
 
+    #[allow(unused_mut)]
+    #[allow(unused_variables)]
     let (sender, mut recv) = channel::<()>(1);
     let tx = sender.clone();
 

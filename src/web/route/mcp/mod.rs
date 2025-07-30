@@ -1,12 +1,15 @@
 use actix_web::{HttpRequest, HttpResponse, dev::PeerAddr, http::Method, web};
 use actix_web_httpauth::extractors::bearer::BearerAuth;
-use tracing::{info, instrument, warn};
+use tracing::{instrument, warn};
+#[cfg(feature = "observe")]
+use tracing::info;
 
+#[cfg(feature = "observe")]
+use crate::logger::{PERSIST_META, PERSIST_TIME};
 use crate::{
     auth::jwt::validate_token,
     config::CONFIG,
     errors::{BridgeError, Result},
-    logger::{PERSIST_META, PERSIST_TIME},
     web::{helper, services::CATALOG},
 };
 
@@ -44,9 +47,12 @@ async fn forward(
                 )));
             }
 
-            let now = time::OffsetDateTime::now_utc().unix_timestamp();
-            info!(target: PERSIST_META, 
+            #[cfg(feature = "observe")]
+            {
+                let now = time::OffsetDateTime::now_utc().unix_timestamp();
+                info!(target: PERSIST_META, 
                 sub=claims.get_sub(), property=mcp, request_date=now, expire_soon_after=now+PERSIST_TIME);
+            }
         } else {
             return Err(BridgeError::Unauthorized(
                 "JWT token is invalid".to_string(),
