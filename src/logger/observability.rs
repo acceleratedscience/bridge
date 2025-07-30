@@ -24,7 +24,7 @@ use crate::{
     db::{
         Database,
         models::{OBSERVE, ObserveEventEntry},
-        mongo::DB,
+        mongo::{DB, helper::i64_to_bson_datatime},
     },
     errors::{BridgeError, Result},
 };
@@ -33,6 +33,8 @@ use super::futures::FutureRace;
 
 pub const MESSAGE_DELIMITER: &str = "*~*~*";
 pub const PERSIST_META: &str = "persist_to_db";
+// 6 months
+pub const PERSIST_TIME: i64 = 15778463;
 
 pub struct Observe {
     sender: Sender<String>,
@@ -73,7 +75,7 @@ const CHANNEL_SIZE: usize = 150;
 
 struct ObserveEventTrace {
     sub: Option<String>,
-    group: Option<String>,
+    // group: Option<String>,
     property: Option<String>,
     request_date: Option<i64>,
     expire_soon_after: Option<i64>,
@@ -149,16 +151,20 @@ impl ObserveEvents {
 
         let handler = tokio::spawn(async move {
             let recv = Arc::new(Mutex::new(recv));
+            let mut term_outer = tx.subscribe();
             loop {
-                let mut term = tx.subscribe();
-                let get_events = FutureRace::new(recv.clone(), term.recv());
+                let mut term_inner = tx.subscribe();
+                let get_events = FutureRace::new(recv.clone(), term_inner.recv());
                 if let Some(events) = get_events.await {
-                    // channel has closed
                     if events.is_empty() {
-                        break;
+                        continue;
                     }
                     if let Err(e) = db.insert_many(events, OBSERVE).await {
                         error!("Failed to insert observability events: {}", e);
+                    }
+                    // shutdown stop
+                    if term_outer.try_recv().is_ok() {
+                        break;
                     }
                 }
             }
@@ -230,7 +236,7 @@ impl Visit for ObserveEventTrace {
     fn record_str(&mut self, field: &tracing::field::Field, value: &str) {
         match field.name() {
             "sub" => self.sub = Some(value.to_string()),
-            "group" => self.group = Some(value.to_string()),
+            // "group" => self.group = Some(value.to_string()),
             "property" => self.property = Some(value.to_string()),
             _ => unreachable!("unimplmented field: {}", field.name()),
         }
@@ -247,7 +253,7 @@ where
         if event.metadata().target() == PERSIST_META {
             let mut trace = ObserveEventTrace {
                 sub: None,
-                group: None,
+                // group: None,
                 property: None,
                 request_date: None,
                 expire_soon_after: None,
@@ -259,12 +265,11 @@ where
             {
                 let entry = ObserveEventEntry {
                     sub: trace.sub.take().unwrap_or_default(),
-                    group: trace.group.take().unwrap_or_default(),
+                    // group: trace.group.take().unwrap_or_default(),
                     property: trace.property.take().unwrap_or_default(),
                     request_date: time::OffsetDateTime::from_unix_timestamp(request_date)
                         .unwrap_or(time::OffsetDateTime::now_utc()),
-                    expire_soon_after: time::OffsetDateTime::from_unix_timestamp(expire_soon_after)
-                        .unwrap_or(time::OffsetDateTime::now_utc()),
+                    expire_soon_after: i64_to_bson_datatime(expire_soon_after),
                 };
                 self.send_message(entry);
             }
@@ -278,7 +283,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_observability() {
-        let observe = Observe::new("api-key", "https://api.slack.com/api", Client::new()).unwrap();
+        let mut observe =
+            Observe::new("api-key", "https://api.slack.com/api", Client::new()).unwrap();
         let mut writer = &observe;
         let _ = writer
             .write(b"Nothing*~*~*Hello there from open bridge")

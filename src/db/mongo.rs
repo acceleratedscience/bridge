@@ -86,6 +86,7 @@ impl DB {
         Self::create_index::<Locks, _>(&dbs, LOCKS, "expireSoonAfter", 1, |f: &str| {
             IndexOptions::builder()
                 .name(Some(f.to_string()))
+                // this means number of seconds after the time set
                 .expire_after(Duration::from_secs(0)) // 1 hour
                 .build()
         })
@@ -94,10 +95,8 @@ impl DB {
 
         Self::create_index::<Apps, _>(&dbs, APPS, "client_id", "text", unique).await?;
 
-        Self::create_index::<ObserveEventEntry, _>(&dbs, OBSERVE, "sub", 1, not_unique)
-            .await?;
-        Self::create_index::<ObserveEventEntry, _>(&dbs, OBSERVE, "group", 1, not_unique)
-            .await?;
+        Self::create_index::<ObserveEventEntry, _>(&dbs, OBSERVE, "sub", 1, not_unique).await?;
+        Self::create_index::<ObserveEventEntry, _>(&dbs, OBSERVE, "group", 1, not_unique).await?;
         Self::create_index::<ObserveEventEntry, _>(
             &dbs,
             OBSERVE,
@@ -205,6 +204,15 @@ impl DB {
                 "group_subscriptions": "$group_info.subscriptions",
             }},
         ]
+    }
+}
+
+pub mod helper {
+    use mongodb::bson;
+
+    pub fn i64_to_bson_datatime(sec: i64) -> bson::DateTime {
+        let time_in_ms = sec * 1_000;
+        bson::DateTime::from_millis(time_in_ms)
     }
 }
 

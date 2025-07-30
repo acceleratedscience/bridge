@@ -10,6 +10,8 @@ mod observability;
 pub use observability::MESSAGE_DELIMITER;
 #[cfg(feature = "observe")]
 pub use observability::PERSIST_META;
+#[cfg(feature = "observe")]
+pub use observability::PERSIST_TIME;
 
 pub fn start_logger(level: LevelFilter, _client: Client, tx: Sender<()>) {
     // let file = std::fs::File::create("./log").unwrap();

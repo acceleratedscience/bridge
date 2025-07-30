@@ -1,10 +1,9 @@
 use actix_web::{HttpRequest, HttpResponse, dev::PeerAddr, http::Method, web};
 use actix_web_httpauth::middleware::HttpAuthentication;
-use tracing::{error, info, instrument, warn};
+use tracing::{error, instrument, warn};
 
 use crate::{
     errors::{BridgeError, Result},
-    logger::PERSIST_META,
     web::{bridge_middleware::validator, helper},
 };
 
@@ -47,9 +46,6 @@ async fn forward(
     let mut new_url = helper::log_with_level!(CATALOG.get_service(service), error)?;
     new_url.set_path(path);
     new_url.set_query(req.uri().query());
-
-    let now = time::OffsetDateTime::now_utc().unix_timestamp();
-    info!(target: PERSIST_META, sub="hi", group="hi", property="hi", request_date=now, expire_soon_after=now);
 
     helper::forwarding::forward(req, payload, method, peer_addr, client, new_url, None, true).await
 }

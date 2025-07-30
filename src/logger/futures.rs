@@ -9,10 +9,11 @@ use std::{
 use pin_project::pin_project;
 use tokio::{
     sync::{broadcast::error::RecvError, mpsc::Receiver},
-    time::{sleep, Sleep},
+    time::{Sleep, sleep},
 };
 
 static MAX_CAP: usize = 10;
+static WAIT: u64 = 30;
 
 #[pin_project]
 pub struct FutureRace<T, F> {
@@ -27,7 +28,7 @@ pub struct FutureRace<T, F> {
 impl<T, F> FutureRace<T, F> {
     pub fn new(fut: Arc<Mutex<Receiver<T>>>, term: F) -> Self {
         // Create a timer that will sleep for 60 minutes
-        let sleep = sleep(Duration::from_secs(60 * 60));
+        let sleep = sleep(Duration::from_secs(WAIT));
         let events = Vec::with_capacity(MAX_CAP);
         Self {
             fut,

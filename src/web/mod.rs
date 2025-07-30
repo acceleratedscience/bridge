@@ -100,22 +100,6 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
 
     let (sender, mut recv) = channel::<()>(1);
     let tx = sender.clone();
-    tokio::spawn(async move {
-        select(
-            pin!(
-                tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate())
-                    .expect("Cannot establish SIGTERM signal")
-                    .recv()
-            ),
-            pin!(
-                tokio::signal::unix::signal(tokio::signal::unix::SignalKind::interrupt())
-                    .expect("Cannot establish SIGINT signal")
-                    .recv()
-            ),
-        )
-        .await;
-        let _ = sender.send(());
-    });
 
     // Logger and this is not configurable by the caller
     if cfg!(debug_assertions) {
@@ -226,6 +210,9 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
     } else {
         server.bind(("0.0.0.0", 8080))?.run().await?;
     }
+
+    // shutdown signal
+    sender.send(()).unwrap();
 
     // If the lock was acquired, release it
     #[cfg(all(feature = "notebook", feature = "lifecycle"))]

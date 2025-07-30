@@ -1,11 +1,12 @@
 use actix_web::{HttpRequest, HttpResponse, dev::PeerAddr, http::Method, web};
 use actix_web_httpauth::extractors::bearer::BearerAuth;
-use tracing::{instrument, warn};
+use tracing::{info, instrument, warn};
 
 use crate::{
     auth::jwt::validate_token,
     config::CONFIG,
     errors::{BridgeError, Result},
+    logger::{PERSIST_META, PERSIST_TIME},
     web::{helper, services::CATALOG},
 };
 
@@ -42,6 +43,10 @@ async fn forward(
                     "User does not have access to {mcp}"
                 )));
             }
+
+            let now = time::OffsetDateTime::now_utc().unix_timestamp();
+            info!(target: PERSIST_META, 
+                sub=claims.get_sub(), property=mcp, request_date=now, expire_soon_after=now+PERSIST_TIME);
         } else {
             return Err(BridgeError::Unauthorized(
                 "JWT token is invalid".to_string(),

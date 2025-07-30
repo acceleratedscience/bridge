@@ -3,8 +3,14 @@ use actix_web_httpauth::extractors::{
     AuthenticationError,
     bearer::{self, BearerAuth},
 };
+use tracing::info;
 
-use crate::{auth::jwt::validate_token, config::CONFIG, web::route::proxy::INFERENCE_HEADER};
+use crate::{
+    auth::jwt::validate_token,
+    config::CONFIG,
+    logger::{PERSIST_META, PERSIST_TIME},
+    web::route::proxy::INFERENCE_HEADER,
+};
 
 pub async fn validator(
     req: ServiceRequest,
@@ -25,6 +31,10 @@ pub async fn validator(
                 // TODO: handle unwrap_or better
                 let inference = r.to_str().unwrap_or("");
                 if claims.scp.contains(&inference.to_string()) {
+                    let now = time::OffsetDateTime::now_utc().unix_timestamp();
+                    info!(target: PERSIST_META,
+                        sub=claims.get_sub(), property=inference, request_date=now, expire_soon_after=now+PERSIST_TIME);
+
                     return Ok(req);
                 }
             }
