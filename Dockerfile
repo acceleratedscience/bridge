@@ -1,5 +1,5 @@
 # Stage 1 build
-FROM rust:1.87.0 AS builder
+FROM rust:1.88.0 AS builder
 
 WORKDIR /app
 
@@ -9,6 +9,7 @@ ARG NOTEBOOK=false
 ARG LIFECYCLE=false
 ARG OBSERVE=false
 ARG MCP=false
+ARG OWUI=false
 
 RUN <<EOF
 #!/bin/bash
@@ -24,6 +25,9 @@ if [ "$OBSERVE" = "true" ]; then
 fi
 if [ "$MCP" = "true" ]; then
 	flags+=("mcp")
+fi
+if [ "$OWUI" = "true" ]; then
+	flags+=("openwebui")
 fi
 if [ ${#flags[@]} -eq 0 ]; then
 	echo "Building with no features..."

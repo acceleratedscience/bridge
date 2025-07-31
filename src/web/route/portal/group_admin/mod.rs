@@ -19,7 +19,7 @@ use crate::{
         Database,
         models::{
             AdminTab, AdminTabs, BridgeCookie, GROUP, Group, ModifyUser, NotebookStatusCookie,
-            USER, User, UserGroupMod, UserPortalRep, UserType,
+            OWUICookie, USER, User, UserGroupMod, UserPortalRep, UserType,
         },
         mongo::DB,
     },
@@ -48,6 +48,7 @@ pub(super) async fn group(
     req: HttpRequest,
     context: Data<Context>,
     nsc: Option<ReqData<NotebookStatusCookie>>,
+    oc: Option<ReqData<OWUICookie>>,
     db: Data<&DB>,
     subject: Option<ReqData<BridgeCookie>>,
 ) -> Result<HttpResponse> {
@@ -108,6 +109,14 @@ pub(super) async fn group(
     ctx.insert("token", &user.token);
     if let Some(token) = &user.token {
         helper::add_token_exp_to_tera(&mut ctx, token);
+    }
+
+    #[cfg(feature = "openwebui")]
+    if let Some(owui_cookie) = oc {
+        use crate::config::CONFIG;
+
+        ctx.insert("openwebui", &owui_cookie.subject);
+        ctx.insert("owui_url", &CONFIG.openweb_url);
     }
 
     // add notebook tab if user has a notebook subscription

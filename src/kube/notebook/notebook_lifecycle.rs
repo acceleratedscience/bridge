@@ -23,7 +23,7 @@ use crate::{
         mongo::{DB, DBCONN, ObjectID},
     },
     errors::{BridgeError, Result},
-    kube::KubeAPI,
+    kube::{KubeAPI, NOTEBOOK_NAMESPACE},
     web::{
         notebook_helper::{make_forward_url, make_notebook_name},
         utils,
@@ -86,6 +86,12 @@ where
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
         let mut this = self.project();
 
+        // check if we need to shutdown
+        if this.sigterm.poll(cx).is_ready() {
+            info!("Shutting down lifecycle");
+            return Poll::Ready(());
+        }
+
         if !*this.slept {
             match this.sleep.as_mut().poll(cx) {
                 Poll::Ready(_) => {
@@ -95,12 +101,6 @@ where
                     return Poll::Pending;
                 }
             }
-        }
-
-        // check if we need to shutdown
-        if this.sigterm.poll(cx).is_ready() {
-            info!("Shutting down lifecycle");
-            return Poll::Ready(());
         }
 
         let now = OffsetDateTime::now_utc();
@@ -234,7 +234,7 @@ pub async fn notebook_lifecycle(client: Client) -> Result<()> {
         .get()
         .ok_or(BridgeError::GeneralError("DB connection failed".into()))?;
 
-    let pods = KubeAPI::<Pod>::get_all_pods().await?;
+    let pods = KubeAPI::<Pod>::get_all_pods(*NOTEBOOK_NAMESPACE).await?;
     if pods.is_empty() {
         info!("No running notebooks found");
         return Ok(());
@@ -373,7 +373,6 @@ mod tests {
     async fn test(client: Client) -> Result<()> {
         // ping postman echo
         let resp = client.get("https://postman-echo.com/get").send().await?;
-        println!("{:?}", resp);
         assert!(resp.status().is_success());
         Ok(())
     }

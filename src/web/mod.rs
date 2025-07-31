@@ -1,22 +1,20 @@
 use std::{io::Result, process::exit, time::Duration};
 
-#[cfg(all(feature = "notebook", feature = "lifecycle"))]
-use std::pin::pin;
-
+#[cfg(feature = "openwebui")]
+use actix_web::guard;
 use actix_web::{
     App, HttpServer,
     middleware::{self},
     web::{self, Data},
 };
 use tera::Context;
-use tracing::{error, level_filters::LevelFilter, warn};
+use tokio::sync::broadcast::channel;
+use tracing::level_filters::LevelFilter;
 
 #[cfg(feature = "notebook")]
 use crate::kube::{self};
 #[cfg(all(feature = "notebook", feature = "lifecycle"))]
 use crate::kube::{LifecycleStream, Medium, notebook_lifecycle};
-#[cfg(all(feature = "notebook", feature = "lifecycle"))]
-use futures::future::select;
 
 use crate::{
     auth::openid,
@@ -71,13 +69,6 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
         .build()
         .expect("Cannot create reqwest client");
 
-    // Logger and this is not configurable by the caller
-    if cfg!(debug_assertions) {
-        logger::start_logger(LevelFilter::DEBUG, client.clone());
-    } else {
-        logger::start_logger(LevelFilter::INFO, client.clone());
-    }
-
     rustls::crypto::ring::default_provider()
         .install_default()
         .expect("Cannot install default provider with ring");
@@ -85,49 +76,43 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
     // Singletons
     openid::init_once().await;
     if let Err(e) = DB::init_once(&DBNAME).await {
-        error!("{e}");
+        eprintln!("{e}");
         exit(1);
     }
     if let Err(e) = CacheDB::init_once().await {
         // we don't want to make caching a hard requirement for now
-        warn!("{e}: continuing without caching");
+        eprintln!("{e}: continuing without caching");
     }
     let db = match DBCONN.get() {
         Some(db) => db,
         None => {
-            error!("DB Connection not found... Is the DB running?");
+            eprintln!("DB Connection not found... Is the DB running?");
             exit(1);
         }
     };
     #[cfg(feature = "notebook")]
     kube::init_once().await;
 
-    // Maintainence window impl
+    #[allow(unused_mut)]
+    #[allow(unused_variables)]
+    let (sender, mut recv) = channel::<()>(1);
+    let tx = sender.clone();
+
+    // Logger and this is not configurable by the caller
+    if cfg!(debug_assertions) {
+        logger::start_logger(LevelFilter::DEBUG, client.clone(), tx);
+    } else {
+        logger::start_logger(LevelFilter::INFO, client.clone(), tx);
+    }
+
+    // Launch maintainence window watcher if cache is available
     let _ = maintenance_watch();
 
     // Lifecycle with "advisory lock"
     #[cfg(all(feature = "notebook", feature = "lifecycle"))]
     let handle = tokio::spawn(async move {
         let stream = LifecycleStream::new(notebook_lifecycle);
-        Medium::new(
-            LIFECYCLE_TIME,
-            SIGTERM_FREQ,
-            db,
-            stream,
-            select(
-                pin!(
-                    tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate())
-                        .expect("Cannot establish SIGTERM signal")
-                        .recv()
-                ),
-                pin!(
-                    tokio::signal::unix::signal(tokio::signal::unix::SignalKind::interrupt())
-                        .expect("Cannot establish SIGINT signal")
-                        .recv()
-                ),
-            ),
-        )
-        .await;
+        Medium::new(LIFECYCLE_TIME, SIGTERM_FREQ, db, stream, recv.recv()).await;
     });
 
     let server = HttpServer::new(move || {
@@ -152,16 +137,36 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
             .app_data(client_data)
             .app_data(db)
             .app_data(cache)
-            .wrap(bridge_middleware::custom_code_handle(tera_data, context))
             .wrap(middleware::NormalizePath::trim())
             .wrap(middleware::Compress::default())
-            .wrap(bridge_middleware::Maintainence)
-            .service(actix_files::Files::new("/static", "static"));
+            .wrap(bridge_middleware::Maintainence);
+
+        #[cfg(feature = "openwebui")]
+        let app = {
+            use self::bridge_middleware::OWUICookieCheck;
+            app.service(
+                web::scope("")
+                    .guard(guard::Host(&CONFIG.openweb_url))
+                    .wrap(OWUICookieCheck)
+                    .configure(route::openwebui::config_openwebui),
+            )
+            .service(
+                web::scope("")
+                    .guard(guard::Host(&CONFIG.moleviewer_url))
+                    .wrap(OWUICookieCheck)
+                    .configure(route::openwebui::config_moleviewer),
+            )
+        };
+
+        let app = app.service(actix_files::Files::new("/static", "static"));
+
         #[cfg(feature = "notebook")]
         let app = app.configure(route::notebook::config_notebook);
+
         app.service({
             let scope = web::scope("")
                 .wrap(bridge_middleware::SecurityCacheHeader)
+                .wrap(bridge_middleware::custom_code_handle(tera_data, context))
                 .configure(route::auth::config_auth)
                 .configure(route::health::config_status)
                 .configure(route::proxy::config_proxy)
@@ -202,6 +207,9 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
     } else {
         server.bind(("0.0.0.0", 8080))?.run().await?;
     }
+
+    // shutdown signal
+    sender.send(()).unwrap();
 
     // If the lock was acquired, release it
     #[cfg(all(feature = "notebook", feature = "lifecycle"))]

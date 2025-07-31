@@ -53,7 +53,7 @@ jobs:
       run: |
         just certs
         just gen_curve
-        cargo clippy --features notebook,lifecycle -- -D warnings
+        cargo clippy --features full -- -D warnings
 
     - name: Run tests
       run: |

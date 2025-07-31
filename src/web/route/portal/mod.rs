@@ -15,7 +15,8 @@ use tracing::instrument;
 #[cfg(feature = "observe")]
 use crate::web::helper::observability_post;
 use crate::{
-    auth::{COOKIE_NAME, NOTEBOOK_COOKIE_NAME, NOTEBOOK_STATUS_COOKIE_NAME},
+    auth::{COOKIE_NAME, NOTEBOOK_COOKIE_NAME, NOTEBOOK_STATUS_COOKIE_NAME, OWUI_COOKIE_NAME},
+    config::CONFIG,
     db::{
         Database,
         models::{BridgeCookie, USER, User, UserPortalRep, UserType},
@@ -60,7 +61,33 @@ async fn index(data: Option<ReqData<BridgeCookie>>, db: Data<&DB>) -> Result<Htt
                     .map(|g| {
                         // only return resources that are in the catalog
                         g.into_iter()
-                            .filter(|r| all_resources.contains(&r.as_str()))
+                            .filter(|r| {
+                                // TODO: Temp for demo, remove this when OWUI CDR is impl'd
+                                #[cfg(feature = "openwebui")]
+                                {
+                                    if r.eq(&crate::kube::OWUI) {
+                                        use crate::db::models::OWUICookie;
+
+                                        let subject = &bridge_cookie.subject;
+                                        if let Ok(owui_cookie) =
+                                            serde_json::to_string(&OWUICookie {
+                                                subject: subject.clone(),
+                                            })
+                                        {
+                                            let cookie =
+                                                Cookie::build(OWUI_COOKIE_NAME, &owui_cookie)
+                                                    .domain(&CONFIG.bridge_url)
+                                                    .same_site(SameSite::Lax)
+                                                    .path("/")
+                                                    .http_only(true)
+                                                    .secure(true)
+                                                    .finish();
+                                            resp.cookie(cookie);
+                                        }
+                                    }
+                                }
+                                all_resources.contains(&r.as_str())
+                            })
                             .collect::<Vec<_>>()
                     });
 
@@ -137,7 +164,7 @@ async fn search_by_email(
             };
             let email = urlencoding::decode(email).map_err(|e| {
                 tracing::error!("{}", e);
-                BridgeError::GeneralError(format!("Error parsing query string: {}", e))
+                BridgeError::GeneralError(format!("Error parsing query string: {e}"))
             })?;
 
             let res = match db.search_users(&email, USER, PhantomData::<User>).await {
@@ -145,10 +172,7 @@ async fn search_by_email(
                 Err(e) => match e {
                     BridgeError::RecordSearchError(_) => {
                         return Ok(HttpResponse::BadRequest()
-                            .append_header((
-                                HTMX_ERROR_RES,
-                                format!("No email found for {}", email),
-                            ))
+                            .append_header((HTMX_ERROR_RES, format!("No email found for {email}")))
                             .finish());
                     }
                     _ => {
@@ -214,6 +238,15 @@ async fn logout(#[cfg(feature = "observe")] req: HttpRequest) -> HttpResponse {
         .finish();
     notebook_cookie.make_removal();
 
+    let mut openwebui_cookie = Cookie::build(OWUI_COOKIE_NAME, "")
+        .domain(&CONFIG.bridge_url)
+        .same_site(SameSite::Lax)
+        .path("/")
+        .http_only(true)
+        .secure(true)
+        .finish();
+    openwebui_cookie.make_removal();
+
     let mut notebook_status_cookie = Cookie::build(NOTEBOOK_STATUS_COOKIE_NAME, "")
         .same_site(SameSite::Strict)
         .path("/")
@@ -236,6 +269,7 @@ async fn logout(#[cfg(feature = "observe")] req: HttpRequest) -> HttpResponse {
         .cookie(cookie_remove)
         .cookie(notebook_cookie)
         .cookie(notebook_status_cookie)
+        .cookie(openwebui_cookie)
         .finish()
 }
 

@@ -65,18 +65,17 @@ pub enum BridgeError {
     RecordSearchError(String),
     #[error("{0}")]
     WSError(#[from] actix_web::error::Error),
-    #[cfg(feature = "notebook")]
+    #[cfg(feature = "kubernetes")]
     #[error("{0}")]
     KubeError(#[from] kube::Error),
-    #[cfg(feature = "notebook")]
+    #[cfg(feature = "kubernetes")]
     #[error("{0}")]
-    NotebookExistsError(String),
+    CRDExistsError(String),
     #[cfg(feature = "notebook")]
     #[error("{0}")]
     NotebookAccessError(String),
-    #[cfg(feature = "notebook")]
+    #[cfg(feature = "kubernetes")]
     #[error("{0}")]
-    #[cfg(feature = "notebook")]
     KubeClientError(String),
     #[error("{0}")]
     ReqwestError(#[from] reqwest::Error),
@@ -173,9 +172,9 @@ impl ResponseError for BridgeError {
             BridgeError::OpenIDError(_) => StatusCode::INTERNAL_SERVER_ERROR,
             BridgeError::Argon2Error(_) => StatusCode::INTERNAL_SERVER_ERROR,
 
-            #[cfg(feature = "notebook")]
+            #[cfg(feature = "kubernetes")]
             BridgeError::KubeError(_) => StatusCode::INTERNAL_SERVER_ERROR,
-            #[cfg(feature = "notebook")]
+            #[cfg(feature = "kubernetes")]
             BridgeError::KubeClientError(_) => StatusCode::INTERNAL_SERVER_ERROR,
 
             BridgeError::Unauthorized(_) => StatusCode::UNAUTHORIZED,
@@ -189,8 +188,8 @@ impl ResponseError for BridgeError {
             #[cfg(feature = "notebook")]
             BridgeError::NotebookAccessError(_) => StatusCode::FORBIDDEN,
 
-            #[cfg(feature = "notebook")]
-            BridgeError::NotebookExistsError(_) => StatusCode::CONFLICT,
+            #[cfg(feature = "kubernetes")]
+            BridgeError::CRDExistsError(_) => StatusCode::CONFLICT,
         }
     }
 }

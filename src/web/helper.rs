@@ -1,6 +1,8 @@
 use actix_web::web;
 use base64::{Engine, prelude::BASE64_STANDARD};
 use mongodb::bson::{Bson, to_bson};
+#[cfg(feature = "observe")]
+use mongodb::bson;
 use rand::{Rng, rng};
 use serde::Deserialize;
 use tera::Context;
@@ -217,6 +219,7 @@ pub mod forwarding {
     use crate::errors::{BridgeError, Result};
 
     // No inline needed... generic are inherently inlined
+    #[allow(clippy::too_many_arguments)]
     pub async fn forward<T>(
         req: HttpRequest,
         mut payload: web::Payload,
@@ -225,6 +228,7 @@ pub mod forwarding {
         client: web::Data<reqwest::Client>,
         new_url: T,
         updated_cookie: Option<Cookie<'_>>,
+        inference: bool,
     ) -> Result<HttpResponse>
     where
         T: AsRef<str> + Send + Sync,
@@ -273,9 +277,13 @@ pub mod forwarding {
                 headers.insert("X-Forwarded-For", ip);
             }
         }
+        headers.insert(
+            "X-Forwarded-Proto",
+            ReqwestHeaderValue::from_static("https"),
+        );
 
         for (header_name, header_value) in req.headers().iter() {
-            if header_name == "authorization" || header_name == "inference-service" {
+            if inference && (header_name == "authorization" || header_name == "inference-service") {
                 continue;
             }
             headers.insert(
@@ -286,13 +294,10 @@ pub mod forwarding {
 
         let forwarded_req = forwarded_req.headers(headers);
 
-        let res = log_with_level!(
-            forwarded_req
-                .send()
-                .await
-                .map_err(|e| { BridgeError::GeneralError(e.to_string()) }),
-            error
-        )?;
+        let res = forwarded_req.send().await.map_err(|e| {
+            error!("{:?}", e);
+            BridgeError::GeneralError(e.to_string())
+        })?;
 
         let status = res.status().as_u16();
         let status =
@@ -308,11 +313,11 @@ pub mod forwarding {
         // https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Connection#Directives
         // Also removing "content-length" since we are streaming the response, and content-length
         // is not necessarily needed.
-        for (header_name, header_value) in res
-            .headers()
-            .iter()
-            .filter(|(h, _)| *h != "connection" && *h != "keep-alive" && *h != "content-length")
-        {
+        for (header_name, header_value) in res.headers().iter().filter(|(h, _)| {
+            h.as_str().to_lowercase() != "connection"
+                && h.as_str().to_lowercase() != "keep-alive"
+                && h.as_str().to_lowercase() != "content-length"
+        }) {
             // Again copy over seem incredibly inefficient. It sure is, but like before, we do this
             // because actix-web and reqwest use different versions of http. Once Actix-web
             // updates their http version, we can remove this.
@@ -343,7 +348,7 @@ pub mod utils {
             mongo::ObjectID,
         },
         errors::Result,
-        kube::{KubeAPI, Notebook},
+        kube::{KubeAPI, NOTEBOOK_NAMESPACE, Notebook},
         web::{helper::bson, notebook_helper},
     };
 
@@ -370,10 +375,13 @@ pub mod utils {
     {
         let name = notebook_helper::make_notebook_name(subject);
         let pvc_name = notebook_helper::make_notebook_volume_name(subject);
-        log_with_level!(KubeAPI::<Notebook>::delete(&name).await, error)?;
+        log_with_level!(
+            KubeAPI::<Notebook>::delete(&name, *NOTEBOOK_NAMESPACE).await,
+            error
+        )?;
         if !persist_pvc {
             log_with_level!(
-                KubeAPI::<PersistentVolumeClaim>::delete(&pvc_name).await,
+                KubeAPI::<PersistentVolumeClaim>::delete(&pvc_name, *NOTEBOOK_NAMESPACE).await,
                 error
             )?;
         }
@@ -411,7 +419,10 @@ pub mod ws {
     use tokio_tungstenite::tungstenite::{
         self,
         handshake::client::Request,
-        protocol::frame::coding::{Data, OpCode},
+        protocol::{
+            WebSocketConfig,
+            frame::coding::{Data, OpCode},
+        },
     };
     use tracing::{error, warn};
 
@@ -439,7 +450,16 @@ pub mod ws {
         }
         let request = request.body(()).unwrap();
 
-        let (stream, res) = tokio_tungstenite::connect_async(request).await.unwrap();
+        let (stream, res) = tokio_tungstenite::connect_async_with_config(
+            request,
+            Some(WebSocketConfig::default().accept_unmasked_frames(true)),
+            false,
+        )
+        .await
+        .map_err(|e| {
+            error!("WebSocket connection error: {:?}", e);
+            BridgeError::GeneralError(e.to_string())
+        })?;
         if !res.status().eq(&StatusCode::SWITCHING_PROTOCOLS) {
             return Err(BridgeError::GeneralError(
                 "Failed to establish websocket connection".to_string(),

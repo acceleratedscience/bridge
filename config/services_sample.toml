@@ -19,6 +19,12 @@
 	check = false
 	mcp = false
 
+	[services.owui]
+	url = ""
+	readiness = ""
+	check = false
+	mcp = false
+
 [resources]
 
 	[resources.example]

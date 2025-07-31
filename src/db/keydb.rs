@@ -44,26 +44,20 @@ impl CacheDB {
         let sub = sub.as_ref();
         let _: () = self
             .get_connection()
-            .set_ex(format!("session:{}", sub), session_id, expiration)
+            .set_ex(format!("session:{sub}"), session_id, expiration)
             .await?;
         Ok(())
     }
 
     pub async fn get_session_id<T: AsRef<str>>(&self, sub: T) -> Result<String> {
         let sub = sub.as_ref();
-        let session_id: String = self
-            .get_connection()
-            .get(format!("session:{}", sub))
-            .await?;
+        let session_id: String = self.get_connection().get(format!("session:{sub}")).await?;
         Ok(session_id)
     }
 
     pub async fn del_session_id<T: AsRef<str>>(&self, sub: T) -> Result<()> {
         let sub = sub.as_ref();
-        let _: () = self
-            .get_connection()
-            .del(format!("session:{}", sub))
-            .await?;
+        let _: () = self.get_connection().del(format!("session:{sub}")).await?;
         Ok(())
     }
 }
@@ -109,10 +103,10 @@ mod tests {
         let data_out: String = conn.get("test").await.unwrap();
         let data_out_value: serde_json::Value = serde_json::from_str(&data_out).unwrap();
         assert_eq!(data_in, data_out_value);
-        println!("data_out: {}", data_out);
+        println!("data_out: {data_out}");
 
         let not_exist: Option<String> = conn.get("nothing").await.unwrap();
-        println!("{:?}", not_exist);
+        println!("{not_exist:?}");
 
         // let mut stream = cache.get_async_sub("maintenance").await.unwrap();
         // let msg = stream.next().await.unwrap();

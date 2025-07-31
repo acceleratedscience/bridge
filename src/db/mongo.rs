@@ -15,13 +15,13 @@ use serde::{Serialize, de::DeserializeOwned};
 
 use crate::{
     config::CONFIG,
-    db::models::Apps,
+    db::models::{Apps, ObserveEventEntry},
     errors::{BridgeError, Result},
 };
 
 use super::{
     Database,
-    models::{APPS, GROUP, Group, GroupSubs, LOCKS, Locks, USER, User},
+    models::{APPS, GROUP, Group, GroupSubs, LOCKS, Locks, OBSERVE, USER, User},
 };
 
 type Pipeline = Vec<Document>;
@@ -48,7 +48,7 @@ impl ObjectID {
 pub static DBCONN: OnceLock<DB> = OnceLock::new();
 pub static DBNAME: LazyLock<&str> = LazyLock::new(|| &CONFIG.db.name);
 
-static COLLECTIONS: [&str; 4] = [USER, GROUP, LOCKS, APPS];
+static COLLECTIONS: [&str; 5] = [USER, GROUP, LOCKS, APPS, OBSERVE];
 
 impl DB {
     pub async fn init_once(database: &'static str) -> Result<()> {
@@ -71,17 +71,45 @@ impl DB {
                 .unique(true)
                 .build()
         }
-        Self::create_index::<User, _>(&dbs, USER, "email", 1, unique).await?;
-        Self::create_index::<Group, _>(&dbs, GROUP, "name", "text", unique).await?;
-        Self::create_index::<Locks, _>(&dbs, LOCKS, "expireSoonAfter", 1, |f| {
+
+        fn not_unique(f: impl Into<Bson> + ToString) -> IndexOptions {
             IndexOptions::builder()
                 .name(Some(f.to_string()))
+                .unique(false)
+                .build()
+        }
+
+        Self::create_index::<User, _>(&dbs, USER, "email", 1, unique).await?;
+
+        Self::create_index::<Group, _>(&dbs, GROUP, "name", "text", unique).await?;
+
+        Self::create_index::<Locks, _>(&dbs, LOCKS, "expireSoonAfter", 1, |f: &str| {
+            IndexOptions::builder()
+                .name(Some(f.to_string()))
+                // this means number of seconds after the time set
                 .expire_after(Duration::from_secs(0)) // 1 hour
                 .build()
         })
         .await?;
         Self::create_index::<Locks, _>(&dbs, LOCKS, "leaseName", "text", unique).await?;
+
         Self::create_index::<Apps, _>(&dbs, APPS, "client_id", "text", unique).await?;
+
+        Self::create_index::<ObserveEventEntry, _>(&dbs, OBSERVE, "sub", 1, not_unique).await?;
+        Self::create_index::<ObserveEventEntry, _>(&dbs, OBSERVE, "group", 1, not_unique).await?;
+        Self::create_index::<ObserveEventEntry, _>(
+            &dbs,
+            OBSERVE,
+            "expireSoonAfter",
+            1,
+            |f: &str| {
+                IndexOptions::builder()
+                    .name(Some(f.to_string()))
+                    .expire_after(Duration::from_secs(0)) // 6 months
+                    .build()
+            },
+        )
+        .await?;
 
         DBCONN.get_or_init(|| dbs);
 
@@ -176,6 +204,15 @@ impl DB {
                 "group_subscriptions": "$group_info.subscriptions",
             }},
         ]
+    }
+}
+
+pub mod helper {
+    use mongodb::bson;
+
+    pub fn i64_to_bson_datatime(sec: i64) -> bson::DateTime {
+        let time_in_ms = sec * 1_000;
+        bson::DateTime::from_millis(time_in_ms)
     }
 }
 

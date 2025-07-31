@@ -47,7 +47,7 @@ async fn forward(
     new_url.set_path(path);
     new_url.set_query(req.uri().query());
 
-    helper::forwarding::forward(req, payload, method, peer_addr, client, new_url, None).await
+    helper::forwarding::forward(req, payload, method, peer_addr, client, new_url, None, true).await
 }
 
 pub fn config_proxy(cfg: &mut web::ServiceConfig) {

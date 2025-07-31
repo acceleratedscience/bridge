@@ -14,7 +14,9 @@ use crate::{
     auth::COOKIE_NAME,
     db::{
         Database,
-        models::{BridgeCookie, GROUP, Group, NotebookStatusCookie, USER, User, UserType},
+        models::{
+            BridgeCookie, GROUP, Group, NotebookStatusCookie, OWUICookie, USER, User, UserType,
+        },
         mongo::DB,
     },
     errors::{BridgeError, Result},
@@ -31,6 +33,7 @@ pub(super) async fn user(
     req: HttpRequest,
     subject: Option<ReqData<BridgeCookie>>,
     nsc: Option<ReqData<NotebookStatusCookie>>,
+    oc: Option<ReqData<OWUICookie>>,
     db: Data<&DB>,
 ) -> Result<HttpResponse> {
     // get the subject id from middleware
@@ -86,6 +89,7 @@ pub(super) async fn user(
                     data,
                     context,
                     nsc,
+                    oc,
                     &mut bridge_cookie,
                     helper::add_token_exp_to_tera
                 )

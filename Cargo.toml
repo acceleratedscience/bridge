@@ -11,11 +11,13 @@ path = "./src/main.rs"
 members = ["utils"]
 
 [features]
-notebook = ["dep:kube", "dep:k8s-openapi", "dep:schemars", "dep:either"]
+kubernetes = ["dep:kube", "dep:k8s-openapi", "dep:schemars", "dep:either"]
+notebook = ["kubernetes"]
+openwebui = ["kubernetes"]
 lifecycle = ["notebook"]
 observe = []
 mcp = []
-full = ["notebook", "lifecycle", "observe", "mcp"]
+full = ["notebook", "lifecycle", "observe", "mcp", "openwebui"]
 
 [dependencies]
 # Async dep
@@ -37,7 +39,7 @@ actix-files = "0.6.6"
 tera = { version = "1.20.0", features= ["builtins"] }
 reqwest = { version = "0.12", features = ["stream", "json"] }
 url = "2.5.0"
-toml = "0.8.14"
+toml = "0.9.0"
 urlencoding = "2.1.3"
 actix-ws = "0.3.0"
 tokio-tungstenite = { version = "0.27", features = ["url", "rustls-tls-native-roots"] }
@@ -60,7 +62,7 @@ regex = "~1.11"
 # Error handling
 thiserror = "2"
 # DB
-mongodb = "~3.2"
+mongodb = "=3.2"
 redis = { version = "0.32", features = ["tokio-comp", "num-bigint"] }
 #macro
 utils = { path = "utils" }
@@ -89,9 +91,11 @@ debug = 2
 overflow-checks = true
 incremental = true
 lto = false
+panic = "unwind"
 [profile.release]
 opt-level = 3
 overflow-checks = false
 debug-assertions = false
-incremental = false
+incremental = true
 lto = true
+panic = "abort"
