@@ -14,7 +14,7 @@ use crate::{
     config::CONFIG,
     db::models::OWUICookie,
     errors::{BridgeError, Result},
-    web::helper,
+    web::helper::{self, forwarding},
 };
 
 const OWUI_PORT: &str = "8080";
@@ -90,7 +90,18 @@ async fn openwebui_forward(
 
     url.set_query(req.uri().query());
 
-    helper::forwarding::forward(req, payload, method, peer_addr, client, url, None, false).await
+    helper::forwarding::forward(
+        req,
+        payload,
+        method,
+        peer_addr,
+        client,
+        url,
+        forwarding::Config {
+            ..Default::default()
+        },
+    )
+    .await
 }
 
 #[instrument(skip(payload))]
@@ -116,7 +127,18 @@ async fn moleviewer_forward(
     url.set_path(path);
     url.set_query(req.uri().query());
 
-    helper::forwarding::forward(req, payload, method, peer_addr, client, url, None, false).await
+    helper::forwarding::forward(
+        req,
+        payload,
+        method,
+        peer_addr,
+        client,
+        url,
+        forwarding::Config {
+            ..Default::default()
+        },
+    )
+    .await
 }
 
 #[inline]

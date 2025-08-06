@@ -10,7 +10,7 @@ use crate::{
     auth::jwt::validate_token,
     config::CONFIG,
     errors::{BridgeError, Result},
-    web::{helper, services::CATALOG},
+    web::{helper::{self, forwarding::Config}, services::CATALOG},
 };
 
 const MCP_PREFIX: &str = "/mcp/";
@@ -68,7 +68,7 @@ async fn forward(
         }
         new_url.set_query(req.uri().query());
 
-        helper::forwarding::forward(req, payload, method, peer_addr, client, new_url, None, true)
+        helper::forwarding::forward(req, payload, method, peer_addr, client, new_url, Config{inference: true, ..Default::default()})
             .await
     } else {
         warn!("MCP service not found in url request");
