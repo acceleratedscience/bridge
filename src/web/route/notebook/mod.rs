@@ -37,7 +37,7 @@ use crate::{
     kube::{KubeAPI, NOTEBOOK_NAMESPACE, Notebook, NotebookSpec, PVCSpec},
     web::{
         bridge_middleware::{CookieCheck, Htmx, NotebookCookieCheck},
-        helper::{self, bson},
+        helper::{self, bson, forwarding},
     },
 };
 
@@ -672,7 +672,15 @@ async fn notebook_forward(
     new_url.set_query(req.uri().query());
 
     helper::forwarding::forward(
-        req, payload, method, peer_addr, client, new_url, None, false,
+        req,
+        payload,
+        method,
+        peer_addr,
+        client,
+        new_url,
+        forwarding::Config {
+            ..Default::default()
+        },
     )
     .await
 }

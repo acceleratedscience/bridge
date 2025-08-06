@@ -4,7 +4,10 @@ use tracing::{error, instrument, warn};
 
 use crate::{
     errors::{BridgeError, Result},
-    web::{bridge_middleware::validator, helper},
+    web::{
+        bridge_middleware::validator,
+        helper::{self, forwarding::Config},
+    },
 };
 
 use self::services::CATALOG;
@@ -47,7 +50,19 @@ async fn forward(
     new_url.set_path(path);
     new_url.set_query(req.uri().query());
 
-    helper::forwarding::forward(req, payload, method, peer_addr, client, new_url, None, true).await
+    helper::forwarding::forward(
+        req,
+        payload,
+        method,
+        peer_addr,
+        client,
+        new_url,
+        Config {
+            inference: true,
+            ..Default::default()
+        },
+    )
+    .await
 }
 
 pub fn config_proxy(cfg: &mut web::ServiceConfig) {
