@@ -39,8 +39,8 @@
 flowchart LR
 	user["User"]
 	route["Route 53"]
-	elb["Elasitc Load Balancer"]
-	ob["OpenBridge"]
+	elb["Network Load Balancer"]
+	ob["Bridge"]
 	model1["Model Service 1"]
 	model2["Model Service 2"]
 	model3["Model Service 3"]
@@ -68,10 +68,10 @@ flowchart LR
 flowchart TD
 	user["User"]
 	route["Route 53"]
-	elb["Elasitc Load Balancer"]
-	waf["Web Application Firewall"]
+	ppp["Proxy Protocol V2"]
+	elb["Network Load Balancer"]
 	redis[("Redis")]
-	ob["OpenBridge"]
+	ob["Bridge"]
 	model1["Model Service 1"]
 	model2["Model Service 2"]
 	model3["Model Service 3"]
@@ -79,7 +79,7 @@ flowchart TD
 
 	user --> route
 	subgraph "AWS"
-	route --> waf -- Security  Group --> elb -- Security Group --> ob
+	route --> elb -- Security Group --> ppp --> ob
 	subgraph "Openshift"
 	ob -- Security Group --> mongodb
 	ob -- Security Group --> redis
