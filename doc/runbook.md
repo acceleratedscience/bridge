@@ -33,8 +33,8 @@
 
 1.  Delete currently running pod to have OpenShift spin up a new pod using the new image pushed to ECR
     ```shell
-    # This is not the "recommended" way of deploying
-    # This is a temporary solution while we are actively developing the stage env
+    # This is not the "recommended" way of deploying new version of Bridge on your infrastructure
+    # This is a temporary solution while we are actively developing an automated CICD process
     kubectl delete pod -n bridge bridge-tls-<pod_id>
     ```
 
@@ -68,7 +68,7 @@ flowchart LR
 	bridge --> model
 ```
 
-What does the authenication flow look like?
+WhatN does the authenication flow look like?
 
 ```mermaid
 sequenceDiagram
@@ -84,12 +84,12 @@ sequenceDiagram
 	Bridge ->> User: User Portal
 ```
 
-What does the user initiated flow look like?
+What does the user initiated token-based (i.e., inferences) flow look like?
 
 ```mermaid
 sequenceDiagram
 	autonumber
-	User ->>+ Bridge: I would like an access token
+	User ->>+ Bridge: I would like an access token (through user portal)
 	Bridge -->> Database: What models does this user have access to?
 	Database -->> Bridge: User has access to Model Service A
 	Bridge ->>- User: Here is your token
@@ -113,16 +113,39 @@ sequenceDiagram
 	Bridge ->>- User: Response from Model Service A
 ```
 
+What does the user initiated cookie-based (i.e., web applications) flow look like?
+
+```mermaid
+sequenceDiagram
+	autonumber
+	User ->>+ Bridge: I would like to log in
+    create participant IBMID
+    Bridge ->> IBMID: Redirect user to IBMID
+    IBMID ->> Bridge: User authenticated
+    Bridge ->> User: You've been authenticated
+    Note over User: Cookie is sent back <br>with access information
+    User -->> Bridge: I would like to access Web App A
+    Note over Bridge: User does have access to Web App A
+
+	box Black Not Internet Facing
+	participant Web App A
+	end
+
+    Bridge -->> Web App A: Request proxied for the User
+    Web App A -->> Bridge: Response from Request
+	Bridge ->>- User: Response proxied to User
+```
+
 > [!TIP]
 > Any of the arrows in the diagrams above could error. When encountering a problem with Bridge, it is best to determine where the problem occurred.
 >
 > Possible failures:
 >
-> -   If the user is unable to login, the problem could be with IBM Verify.
+> -   If the user is unable to login, the problem could be with IBM ID.
 > -   If the user is unable to generate access tokens, the problem could be with the database. It could also be Bridge specific.
 > -   If the user is unable to access a model service, the problem could be with the model service.
 >     -   Find out what status could was returned to the user
->     -   The model service could be down. Check the health of the model service either through [pulse](https://open.accelerator.cafe/pulse) or the OpenShift console
+>     -   The model service could be down. Check the health of the model service either through kubectl / oc or the OpenShift console
 
 > I have narrowed down to where the problem may be originating from. What do I do next?
 
