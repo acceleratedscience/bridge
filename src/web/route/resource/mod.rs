@@ -19,7 +19,11 @@ use crate::{
         mongo::DB,
     },
     errors::{BridgeError, Result},
-    web::{bridge_middleware::ResourceCookieCheck, helper, services::CATALOG},
+    web::{
+        bridge_middleware::ResourceCookieCheck,
+        helper::{self, forwarding::Config},
+        services::CATALOG,
+    },
 };
 
 static TOKEN_LIFETIME: usize = 60 * 60 * 24; // 24 hours
@@ -88,8 +92,11 @@ async fn resource_http(
         peer_addr,
         client,
         new_url,
-        updated_cookie,
-        false,
+        Config {
+            updated_cookie,
+            pack_cookies: true,
+            ..Default::default()
+        },
     )
     .await
 }

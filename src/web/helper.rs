@@ -1,8 +1,8 @@
 use actix_web::web;
 use base64::{Engine, prelude::BASE64_STANDARD};
-use mongodb::bson::{Bson, to_bson};
 #[cfg(feature = "observe")]
 use mongodb::bson;
+use mongodb::bson::{Bson, to_bson};
 use rand::{Rng, rng};
 use serde::Deserialize;
 use tera::Context;
@@ -218,8 +218,18 @@ pub mod forwarding {
 
     use crate::errors::{BridgeError, Result};
 
+    /// Configuration that is passed to the forward function takes the following parameters.
+    /// inference filters out Auth specific headers to the proxy forward
+    /// pack_cookies packs cookies to be compatible for http protocol older than 2
+    /// updated_cookie will forward back to client any updated cookies
+    #[derive(Default)]
+    pub struct Config<'a> {
+        pub inference: bool,
+        pub pack_cookies: bool,
+        pub updated_cookie: Option<Cookie<'a>>,
+    }
+
     // No inline needed... generic are inherently inlined
-    #[allow(clippy::too_many_arguments)]
     pub async fn forward<T>(
         req: HttpRequest,
         mut payload: web::Payload,
@@ -227,12 +237,15 @@ pub mod forwarding {
         peer_addr: Option<PeerAddr>,
         client: web::Data<reqwest::Client>,
         new_url: T,
-        updated_cookie: Option<Cookie<'_>>,
-        inference: bool,
+        config: Config<'_>,
     ) -> Result<HttpResponse>
     where
         T: AsRef<str> + Send + Sync,
     {
+        let inference = config.inference;
+        let pack_cookies = config.pack_cookies;
+        let updated_cookie = config.updated_cookie;
+
         let (tx, rx) = mpsc::channel(128);
 
         actix_web::rt::spawn(async move {
@@ -290,6 +303,27 @@ pub mod forwarding {
                 ReqwestHeaderName::from_str(header_name.as_ref()).unwrap(),
                 ReqwestHeaderValue::from_str(header_value.to_str().unwrap()).unwrap(),
             );
+        }
+
+        // find all the cookie header and pack them delimited by ";"
+        if pack_cookies {
+            let mut cookies = String::new();
+            for (header_name, header_value) in req.headers().iter() {
+                if header_name.as_str().to_lowercase() == "cookie" {
+                    if let Ok(value) = header_value.to_str() {
+                        if !cookies.is_empty() {
+                            cookies.push(';');
+                        }
+                        cookies.push_str(value);
+                    }
+                }
+            }
+            if !cookies.is_empty() {
+                headers.insert(
+                    ReqwestHeaderName::from_static("cookie"),
+                    ReqwestHeaderValue::from_str(&cookies).unwrap(),
+                );
+            }
         }
 
         let forwarded_req = forwarded_req.headers(headers);

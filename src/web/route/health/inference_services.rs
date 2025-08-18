@@ -67,7 +67,7 @@ impl<'a> InferenceServicesHealth<'a> {
                 let now = Instant::now();
 
                 let fut = client.get(url.as_str()).send();
-                let response = timeout(Duration::from_secs(1), fut).await.map_err(|_| {
+                let response = timeout(Duration::from_secs(10), fut).await.map_err(|_| {
                     BridgeError::GeneralError("Call to inference service timed out".to_string())
                 })??;
 
