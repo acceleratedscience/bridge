@@ -204,10 +204,10 @@ impl ObserveEvents {
 impl Write for &Observe {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
         let message = String::from_utf8(buf.to_vec()).unwrap_or_default();
-        if let Some(message) = message.split(MESSAGE_DELIMITER).nth(1) {
-            if !message.is_empty() {
-                self.send_message(message);
-            }
+        if let Some(message) = message.split(MESSAGE_DELIMITER).nth(1)
+            && !message.is_empty()
+        {
+            self.send_message(message);
         }
         Ok(buf.len())
     }
@@ -286,8 +286,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_observability() {
-        let observe =
-            Observe::new("api-key", "https://api.slack.com/api", Client::new()).unwrap();
+        let observe = Observe::new("api-key", "https://api.slack.com/api", Client::new()).unwrap();
         let mut writer = &observe;
         let _ = writer
             .write(b"Nothing*~*~*Hello there from open bridge")

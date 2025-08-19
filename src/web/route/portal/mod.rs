@@ -257,10 +257,10 @@ async fn logout(#[cfg(feature = "observe")] req: HttpRequest) -> HttpResponse {
 
     #[cfg(feature = "observe")]
     {
-        if let Some(cookie) = req.cookie(COOKIE_NAME).map(|c| c.value().to_string()) {
-            if let Ok(bridge_cookie) = serde_json::from_str::<BridgeCookie>(&cookie) {
-                observability_post("has logged out from the portal", &bridge_cookie);
-            }
+        if let Some(cookie) = req.cookie(COOKIE_NAME).map(|c| c.value().to_string())
+            && let Ok(bridge_cookie) = serde_json::from_str::<BridgeCookie>(&cookie)
+        {
+            observability_post("has logged out from the portal", &bridge_cookie);
         }
     }
 

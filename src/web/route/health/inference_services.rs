@@ -36,7 +36,7 @@ impl<'a> InferenceServicesHealth<'a> {
         }
     }
 
-    pub fn builder(&self) -> ListBuilder {
+    pub fn builder(&self) -> ListBuilder<'_> {
         let outer_body = (r##"<div class="status-card small">"##, r##"</div>"##);
         ListBuilder {
             outer_body,
@@ -55,13 +55,12 @@ impl<'a> InferenceServicesHealth<'a> {
             // value if it exists. Otherwise, we make the request. We only cache if caching is
             // available.
             async move {
-                if let Some(mut conn) = cache.clone() {
-                    if let Some(t) = conn
+                if let Some(mut conn) = cache.clone()
+                    && let Some(t) = conn
                         .get::<'_, _, Option<u128>>(String::from("health:") + name)
                         .await?
-                    {
-                        return Ok((true, name, t));
-                    }
+                {
+                    return Ok((true, name, t));
                 }
 
                 let now = Instant::now();

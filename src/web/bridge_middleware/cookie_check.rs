@@ -63,25 +63,23 @@ where
                 match bridge_cookie_result {
                     Ok(gcs) => {
                         // also insert notebook_status_cookie if available
-                        if let Some(ncs) = req.cookie(NOTEBOOK_STATUS_COOKIE_NAME) {
-                            if let Ok(ncs) =
+                        if let Some(ncs) = req.cookie(NOTEBOOK_STATUS_COOKIE_NAME)
+                            && let Ok(ncs) =
                                 serde_json::from_str::<NotebookStatusCookie>(ncs.value())
-                            {
-                                req.extensions_mut().insert(ncs);
-                            }
+                        {
+                            req.extensions_mut().insert(ncs);
                         }
 
                         #[cfg(feature = "openwebui")]
                         {
                             use crate::{auth::OWUI_COOKIE_NAME, db::models::OWUICookie};
 
-                            if let Some(owui_cookie) = req.cookie(OWUI_COOKIE_NAME) {
-                                if let Ok(oc) =
+                            if let Some(owui_cookie) = req.cookie(OWUI_COOKIE_NAME)
+                                && let Ok(oc) =
                                     serde_json::from_str::<OWUICookie>(owui_cookie.value())
                                 {
                                     req.extensions_mut().insert(oc);
                                 }
-                            }
                         }
 
                         req.extensions_mut().insert(gcs.clone());

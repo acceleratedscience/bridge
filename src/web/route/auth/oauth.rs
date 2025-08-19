@@ -64,13 +64,12 @@ pub async fn introspection(
                 });
 
                 // Only insert the group_id if the user is in a group
-                if let Some(GroupSubs { group_id, .. }) = docs.first() {
-                    if let Some(group_id) = group_id.first() {
-                        if let Value::Object(map) = &mut json {
-                            map.insert("group_id".to_string(), Value::String(group_id.to_string()));
-                        };
-                    }
-                }
+                if let Some(GroupSubs { group_id, .. }) = docs.first()
+                    && let Some(group_id) = group_id.first()
+                    && let Value::Object(map) = &mut json
+                {
+                    map.insert("group_id".to_string(), Value::String(group_id.to_string()));
+                };
 
                 return Ok(HttpResponse::Ok().json(json));
             }

@@ -335,10 +335,10 @@ pub async fn notebook_lifecycle(client: Client) -> Result<()> {
             .map(|k| (&k).into())
             .collect::<Vec<OffsetDateTime>>();
         last_activities.sort();
-        if let Some(t) = last_activities.last() {
-            if (now - *t) >= Duration::from_secs(MAX_IDLE_TIME) {
-                notebook_to_shutdown.push((id, user));
-            }
+        if let Some(t) = last_activities.last()
+            && (now - *t) >= Duration::from_secs(MAX_IDLE_TIME)
+        {
+            notebook_to_shutdown.push((id, user));
         }
     }
 

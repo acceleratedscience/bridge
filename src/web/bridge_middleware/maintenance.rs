@@ -48,20 +48,20 @@ where
 
     fn call(&self, req: ServiceRequest) -> Self::Future {
         // check if the request url is already to /maintenance
-        if req.path().ne("/maintenance") && req.path().ne("/health") {
-            if let Some(rg) = MAINTENANCE_WINDOWS.try_read() {
-                if *rg {
-                    // OpenBridge under maintenance
-                    return Box::pin(async move {
-                        Ok(req.into_response(
-                            HttpResponse::Found()
-                                .append_header((header::LOCATION, "/maintenance"))
-                                .finish()
-                                .map_into_right_body(),
-                        ))
-                    });
-                }
-            }
+        if req.path().ne("/maintenance")
+            && req.path().ne("/health")
+            && let Some(rg) = MAINTENANCE_WINDOWS.try_read()
+            && *rg
+        {
+            // OpenBridge under maintenance
+            return Box::pin(async move {
+                Ok(req.into_response(
+                    HttpResponse::Found()
+                        .append_header((header::LOCATION, "/maintenance"))
+                        .finish()
+                        .map_into_right_body(),
+                ))
+            });
         }
 
         self.service

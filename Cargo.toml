@@ -44,7 +44,7 @@ urlencoding = "2.1.3"
 actix-ws = "0.3.0"
 tokio-tungstenite = { version = "0.27", features = ["url", "rustls-tls-native-roots"] }
 # Auth deps
-rust-argon2 = "~2.1"
+rust-argon2 = "~3.0"
 sha2 = "~0.10"
 jsonwebtoken = { version = "9.0.0", features = ["use_pem"] }
 openssl = "~0.10"
