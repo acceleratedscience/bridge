@@ -48,7 +48,7 @@ impl<'p> Profile<'p> {
         oc: Option<ReqData<OWUICookie>>,
         bc: &mut BridgeCookie,
         t_exp: impl FnOnce(&mut Context, &str),
-    ) -> Result<(String, Option<[Cookie; 2]>)> {
+    ) -> Result<(String, Option<[Cookie<'_>; 2]>)> {
         let mut context = (**context).clone();
         context.insert("name", &self.user.user_name);
 

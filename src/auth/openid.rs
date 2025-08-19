@@ -160,7 +160,7 @@ impl OpenID {
         Ok(token)
     }
 
-    pub fn get_verifier(&self) -> openidconnect::IdTokenVerifier<core::CoreJsonWebKey> {
+    pub fn get_verifier(&self) -> openidconnect::IdTokenVerifier<'_, core::CoreJsonWebKey> {
         self.client.id_token_verifier()
     }
 }

@@ -285,10 +285,10 @@ pub mod forwarding {
         // TODO: This forwarded implementation is incomplete as it only handles the unofficial
         // X-Forwarded-For header but not the official Forwarded one.
         let mut headers = HeaderMap::new();
-        if let Some(PeerAddr(addr)) = peer_addr {
-            if let Ok(ip) = addr.ip().to_string().parse() {
-                headers.insert("X-Forwarded-For", ip);
-            }
+        if let Some(PeerAddr(addr)) = peer_addr
+            && let Ok(ip) = addr.ip().to_string().parse()
+        {
+            headers.insert("X-Forwarded-For", ip);
         }
         headers.insert(
             "X-Forwarded-Proto",
@@ -309,13 +309,13 @@ pub mod forwarding {
         if pack_cookies {
             let mut cookies = String::new();
             for (header_name, header_value) in req.headers().iter() {
-                if header_name.as_str().to_lowercase() == "cookie" {
-                    if let Ok(value) = header_value.to_str() {
-                        if !cookies.is_empty() {
-                            cookies.push(';');
-                        }
-                        cookies.push_str(value);
+                if header_name.as_str().to_lowercase() == "cookie"
+                    && let Ok(value) = header_value.to_str()
+                {
+                    if !cookies.is_empty() {
+                        cookies.push(';');
                     }
+                    cookies.push_str(value);
                 }
             }
             if !cookies.is_empty() {
