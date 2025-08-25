@@ -1,0 +1,7 @@
+.{
+    .name = .bridge,
+    .version = "0.0.1",
+    .minimum_zig_version = "0.15.1",
+    .paths = .{""},
+    .fingerprint = 0x69780f9f27634972,
+}
