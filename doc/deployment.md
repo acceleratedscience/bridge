@@ -9,7 +9,7 @@
 
     ```shell
     just certs
-    just gen-curve
+    just gen_curve
     ```
 - If you intend to public face Bridge, properly obtain certificates from a trusted authority
 
