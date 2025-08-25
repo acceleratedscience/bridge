@@ -37,7 +37,7 @@
 2.  Start the Bridge server
 
     ```shell
-    cargo run --feature=full --release
+    cargo run --features=full --release
     ```
 
     The release flag will enable all optimizations and compilation will take a longer time
