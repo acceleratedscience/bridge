@@ -4,4 +4,5 @@
 /config/database.toml
 /config/services.toml
 node_modules
-
+/.zig-cache
+/zig-out
