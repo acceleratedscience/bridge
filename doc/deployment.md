@@ -9,7 +9,7 @@
 
     ```shell
     just certs
-    just gen-curve
+    just gen_curve
     ```
 - If you intend to public face Bridge, properly obtain certificates from a trusted authority
 
@@ -37,7 +37,7 @@
 2.  Start the Bridge server
 
     ```shell
-    cargo run --feature=full --release
+    cargo run --features=full --release
     ```
 
     The release flag will enable all optimizations and compilation will take a longer time
