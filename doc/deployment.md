@@ -20,14 +20,14 @@
     -   `config/configurations_sample.toml` &#8594; `config/configurations.toml`
     -   `config/database_sample.toml` &#8594; `config/database.toml`
 
-4.  Adjust the relevant variables:
+4.  Update the relevant variables:
 
-    `configurations.toml`
+    **configurations.toml**
 
     -   `redirect_url` &#8594; Set to their localhost versions (commented out)
     -   `client_id` / `client_secret` &#8594; ??
 
-    `database.toml`
+    **database.toml**
 
     -   AAA
 
@@ -35,13 +35,22 @@
 
 1.  Start a local DB instance
 
-    > **Docker Support:** Ensure you have Podman installed and running on your local machine. If you prefer Docker, updated "podman" commands to "docker" commands in the [justfile](../justfile).
-
-    > **Apple Silicon Support:** Recent Apple devices should run `just local-mongo-arm` instead.
-
     ```shell
     just local-mongo
     ```
+
+    > **Docker Support:** Ensure you have Podman installed and running on your local machine. If you prefer Docker, updated "podman" commands to "docker" commands in the [justfile](../justfile).
+
+    > [!NOTE]
+    > Recent Apple devices should use the ARM install command instead, and remove the auth from the mongodb url in `database.toml`:
+    >
+    > ```
+    > just local-mongo-arm
+    > ```
+    >
+    > ```
+    > url = "mongodb://127.0.0.1:27017/bridge"
+    > ```
 
 2.  Optionally you can start a cache instance
 
