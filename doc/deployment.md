@@ -25,7 +25,7 @@
 
     -   `redirect_url`: Set to their localhost versions (commented out)
     -   `client_id` / `client_secret`: If you're with IBM, you can find instructions on how to generate these [here](https://github.com/acceleratedscience/configurations/tree/main/bridge/prod).  
-        If you're developing your own application, you will need to register it with [IBM ID](https://www.ibm.com/docs/en/controller/11.0.1?topic=authentication-ibmid-registration) to use the IBM ID authentication. For now, no other auth methods are supported (PRs welcome)
+        If you're developing your own application, you will need to register it with IBM ID to use the IBM ID authentication. For now, no other auth methods are supported (PRs welcome)
 
     **database.toml**
 
