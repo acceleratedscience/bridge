@@ -39,19 +39,18 @@
     just local-mongo
     ```
 
-    > [!NOTE]
-    > Recent Apple devices should use the ARM install command instead, and remove the auth from the mongodb url in `database.toml`:
-    > A
+    > **Docker Support:** Ensure you have Podman installed and running on your local machine. If you prefer Docker, updated "podman" commands to "docker" commands in the [justfile](../justfile).
 
-    <!-- > ```
-    > just local-mongo-arm
-    > ```
-    >
-    > ```
-    > url = "mongodb://127.0.0.1:27017/bridge"
-    > ``` -->
-
-    <!-- > **Docker Support:** Ensure you have Podman installed and running on your local machine. If you prefer Docker, updated "podman" commands to "docker" commands in the [justfile](../justfile). -->
+> [!NOTE]
+> Recent Apple devices should use the ARM install command instead, and remove the auth from the mongodb url in `database.toml`:
+>
+> ```
+> just local-mongo-arm
+> ```
+>
+> ```
+> url = "mongodb://127.0.0.1:27017/bridge"
+> ```
 
 2.  Optionally you can start a cache instance
 
