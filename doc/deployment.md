@@ -23,16 +23,21 @@
 
     **configurations.toml**
 
-    -   `redirect_url` &#8594; Set to their localhost versions (commented out)
-    -   `client_id` / `client_secret` &#8594; ??
+    -   `redirect_url`: Set to their localhost versions (commented out)
+    -   `client_id` / `client_secret`: ??
 
     **database.toml**
 
-    -   AAA
+    -   `sub` / `email`: Set to your IBM ID's email
+    -   `[mongodb]`: Use the urls without auth if you're using an Apple Silicon device (M1/M2/M3 etc.)
+
+<br>
 
 ### Running Bridge locally
 
 1.  Start a local DB instance
+
+    Ensure you have Podman installed and running on your local machine.
 
     ```shell
     just local-mongo
@@ -44,26 +49,15 @@
     > just local-mongo-arm
     > ```
 
-    > **Docker Support:** Ensure you have Podman installed and running on your local machine. If you prefer Docker, updated "podman" commands to "docker" commands in the [justfile](../justfile).
+    > **Docker Support:** If you prefer Docker, updated "podman" commands to "docker" commands in the [justfile](../justfile).
 
-[!NOTE]
-Recent Apple devices should use the ARM install command instead, and remove the auth from the mongodb url in `database.toml`:
-
-```
-just local-mongo-arm
-```
-
-```
-url = "mongodb://127.0.0.1:27017/bridge"
-```
-
-1.  Optionally you can start a cache instance
+2.  Optionally you can start a cache instance
 
     ```shell
     just local-keydb
     ```
 
-2.  Start the Bridge server
+3.  Start the Bridge server
 
     ```shell
     cargo run --features=full --release
@@ -72,7 +66,7 @@ url = "mongodb://127.0.0.1:27017/bridge"
     The `--release` flag will enable all optimizations and compilation will take a longer time.  
     Refer to [Cargo.toml](../Cargo.toml) for the available feature flags
 
-3.  See the result at [localhost:8080](https://localhost:8080) (HTTPS required)
+4.  See the result at [localhost:8080](https://localhost:8080) (HTTPS required)
 
 <br>
 
