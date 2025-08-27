@@ -28,8 +28,7 @@
 
     **database.toml**
 
-    -   `sub` / `email`: Set to your IBM ID's email
-    -   `[mongodb]`: Use the urls without auth if you're using an Apple Silicon device (M1/M2/M3 etc.)
+    -   `[mongodb]`: Use the urls without auth (commented out) if you're using an Apple Silicon device (M1/M2/M3 etc.)
 
 <br>
 
