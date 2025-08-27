@@ -12,8 +12,7 @@
     just gen-curve
     ```
 
-> [!TIP]
-> If you intend to deploy Bridge publicly, properly obtain certificates from a trusted authority.
+    > **Note:** If you intend to deploy Bridge publicly, properly obtain certificates from a trusted authority.
 
 3.  Copy or rename the provided configuration files:
 
