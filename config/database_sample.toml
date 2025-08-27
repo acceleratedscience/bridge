@@ -2,6 +2,12 @@
 	url = "mongodb://bridge-user:admin123456789@127.0.0.1:27017/?authSource=bridge"
 	url_local = "mongodb://bridge-user:admin123456789@127.0.0.1:27017/?authSource=bridge"
 	url_prod = "mongodb://bridge-user:admin123456789@127.0.0.1:27017/?authSource=bridge"
+
+	# Apple Silicon:
+	# url = "mongodb://127.0.0.1:27017/bridge"
+	# url_local = "mongodb://127.0.0.1:27017/bridge"
+	# url_prod = "mongodb://127.0.0.1:27017/bridge"
+	
 	name = "bridge"
 
 [keydb]

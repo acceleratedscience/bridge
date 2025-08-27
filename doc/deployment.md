@@ -12,8 +12,8 @@
     just gen-curve
     ```
 
-    > [!TIP]
-    > If you intend to deploy Bridge publicly, properly obtain certificates from a trusted authority.
+> [!TIP]
+> If you intend to deploy Bridge publicly, properly obtain certificates from a trusted authority.
 
 3.  Copy or rename the provided configuration files:
 
@@ -39,26 +39,32 @@
     just local-mongo
     ```
 
+    > **Apple Silicon Support:** Use the ARM install instead, and set the DB urls in `database.toml` without auth: `url="mongodb://127.0.0.1:27017/bridge"`
+    >
+    > ```
+    > just local-mongo-arm
+    > ```
+
     > **Docker Support:** Ensure you have Podman installed and running on your local machine. If you prefer Docker, updated "podman" commands to "docker" commands in the [justfile](../justfile).
 
-> [!NOTE]
-> Recent Apple devices should use the ARM install command instead, and remove the auth from the mongodb url in `database.toml`:
->
-> ```
-> just local-mongo-arm
-> ```
->
-> ```
-> url = "mongodb://127.0.0.1:27017/bridge"
-> ```
+[!NOTE]
+Recent Apple devices should use the ARM install command instead, and remove the auth from the mongodb url in `database.toml`:
 
-2.  Optionally you can start a cache instance
+```
+just local-mongo-arm
+```
+
+```
+url = "mongodb://127.0.0.1:27017/bridge"
+```
+
+1.  Optionally you can start a cache instance
 
     ```shell
     just local-keydb
     ```
 
-3.  Start the Bridge server
+2.  Start the Bridge server
 
     ```shell
     cargo run --features=full --release
@@ -67,7 +73,7 @@
     The `--release` flag will enable all optimizations and compilation will take a longer time.  
     Refer to [Cargo.toml](../Cargo.toml) for the available feature flags
 
-4.  See the result at [localhost:8080](https://localhost:8080) (HTTPS required)
+3.  See the result at [localhost:8080](https://localhost:8080) (HTTPS required)
 
 <br>
 
