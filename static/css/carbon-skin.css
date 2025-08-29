@@ -68,6 +68,26 @@ body {
 	background: var(--cb-soft-bg);
 }
 
+/**
+ * Menu
+ */
+#menu_big .menu-item {
+	display: flex;
+	align-items: center;
+	gap: 1rem;
+	height: 3.5rem;
+	padding-left: 1.5rem;
+}
+#menu_big .menu-item.menu_selected {
+	background: rgba(0,0,0,.08);
+	border-left: solid 3px var(--cb-blue);
+	pointer-events: none;
+}
+#menu_big .menu-item:not(.menu_selected):hover {
+@media (hover: hover) {
+		background: rgba(0,0,0,.04);
+	}
+}
 
 /**
  * Links

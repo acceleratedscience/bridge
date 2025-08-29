@@ -27,9 +27,9 @@ body {
  * Navigation
  */
 
-.menu_selected {
+/* .menu_selected {
 	@apply bg-[rgba(0,0,0,.08)] dark:bg-[rgba(255,255,255,.1)] border-l-2 border-[var(--cb-blue)];
-}
+} */
 
 .mobile_menu_selected {
 	@apply border-l-4 border-[var(--cb-blue)];
