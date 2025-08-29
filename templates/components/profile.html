@@ -1,36 +1,48 @@
 <div class="grid bg-inherit xl:grid-cols-3 lg:grid-cols-2 grid-cols-1 min-h-60">
-	<div id="user_info" class="px-3 py-3 mx-3 mb-4 xl:my-0 rounded-md dark:bg-[#343a3f] bg-[#f4f4f4]">
-		<p class="border-b font-bold">Your Info</p>
-		<p class="pt-4">Name: {{ name }}</p>
-		<p class="pt-2">Email: {{ email }}</p>
-		<p class="pt-2">User type: {{ user_type }}</p>
-	</div>
-	<div id="group_info" class="px-3 py-3 mx-3 xl:my-0 mb-4 rounded-md dark:bg-[#343a3f] bg-[#f4f4f4]">
-		<p class="border-b font-bold">Group Info</p>
-		<table class="w-full mt-4">
-			<tr>
-				<td>Name:</td>
-				<td>{{ group | first }}</td>
-			</tr>
-			<tr>
-				<td class="align-top pt-2">Subscriptions:</td>
-				<td class="pt-2">
-					{% if subscriptions | length > 0 %}
-					<ul>
-						{% for sub in subscriptions %}
-						<li class="{% if loop.index is odd %}bg-white dark:bg-[#42484e]{% endif %} p-1 rounded-md">
-							{{ sub }}
-						</li>
-						{% endfor %}
-					</ul>
-					{% else %}
-					None
-					{% endif %}
-				</td>
-			</tr>
-		</table>
-	</div>
-	<div id="token" class="flex flex-col px-3 py-3 mx-3 xl:my-0 rounded-md dark:bg-[#343a3f] bg-[#f4f4f4]">
+
+	<div id="user_info" class="page-column col-start-1">
+		<p class="section-header">Your Info</p>
+		<p>Name: {{ name }}</p>
+		<p>Email: {{ email }}</p>
+		<p>User type: {{ user_type }}</p>
+
+		<br><br>
 		{%include "components/token.html" %}
 	</div>
+	{# xl:col-start-3 lg:col-start-2 col-start-1 #}
+	{# md:row-start-2 row-start-1 lg:col-start-1 md:col-start-1 col-start-2   col-span-1 #}
+
+	{# <div id="token" class="page-column col-start-1">
+		{%include "components/token.html" %}
+	</div> #}
+
+	{# xl:row-start-1 xl:row-span-2 #}
+	<div id="group_info" class="page-column xl:col-span-2 xl:col-start-2">
+		<div class="flex flex-row">
+		<p class="section-header">Your Subscriptions</p>
+		<div class="section-header section-header-right"><span class="soft-text">Group: {{ group | first }}</span></div>
+		</div>
+		{% if subscriptions | length > 0 %}
+		<table class="table-display">
+			<tr class="header">
+				<th>Service Name</th>
+				<th class="text-right">Type</th>
+			</tr>
+			{% for sub in subscriptions %}
+			<tr class="expandable" _="on click remove .expanded from .expandable in closest <table/> then toggle .expanded on me">
+				<td>{{ sub.name }}</td>
+				<td class="text-right">{% if sub.type == 'openad_model' %}OpenAD model{% else %}{{ sub.type }}{% endif %}</td>
+			</tr>
+			<tr>
+				<td colspan="3">
+					{% include 'components/subscription_details.html' %}
+				</td>
+			</tr>
+			{% endfor %}
+		</table>
+		{% else %}
+		<i>This group has no subscriptions</i>
+		{% endif %}
+	</div>
+
 </div>

@@ -137,14 +137,10 @@ pub fn init_once() -> Configuration {
     validation.set_audience(&AUD);
     validation.leeway = 0;
 
-    let (config_location_str, database_location_str) = if cfg!(debug_assertions) {
-        (
-            "config/configurations_sample.toml",
-            "config/database_sample.toml",
-        )
-    } else {
-        ("config/configurations.toml", "config/database.toml")
-    };
+    let (config_location_str, database_location_str) = (
+        "config/configurations.toml",
+        "config/database.toml",
+    );
 
     let conf_table: toml::Table =
         toml::from_str(&read_to_string(PathBuf::from_str(config_location_str).unwrap()).unwrap())
@@ -281,7 +277,7 @@ mod tests {
             );
         }
 
-        assert_eq!(config.app_name, "Open Accelerated Discovery");
+        assert_eq!(config.app_name, "OpenAD");
     }
 
     #[test]

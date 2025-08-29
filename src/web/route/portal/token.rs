@@ -103,6 +103,7 @@ pub async fn get_token_for_user(
 
     let mut context = tera::Context::new();
     context.insert("token", &Some(token));
+    context.insert("fresh", &true);
     context.insert("token_exp", &exp);
     let content = helper::log_with_level!(data.render("components/token.html", &context), error)?;
 

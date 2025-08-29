@@ -57,10 +57,23 @@ impl<'p> Profile<'p> {
             return Ok((tera.render(EMPTY_PROFILE, &context)?, None));
         }
 
+        // Placeholder: need to fetch subscription parameters from services.toml
+        let subs_expanded: Vec<serde_json::Value> = self.subscriptions
+            .iter()
+            .map(|service_name| {
+                serde_json::json!({
+                    "type": "openad_model",
+                    "url": "https://dummy.url",
+                    "name": service_name,
+                    "nickname": &service_name.strip_prefix("mcp-").unwrap_or(service_name)[0..4],
+                })
+            })
+            .collect();
+
         context.insert("user_type", &self.user.user_type);
         context.insert("email", &self.user.email);
         context.insert("group", &self.groups);
-        context.insert("subscriptions", &self.subscriptions);
+        context.insert("subscriptions", &subs_expanded);
         context.insert("token", &self.user.token);
         // add in the expiration time if token is present
         if let Some(t) = &self.user.token {

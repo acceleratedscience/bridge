@@ -1,0 +1,5 @@
+<code class="block {% if wrap_code %} break-all{% endif %}" _="on click if not me.classList.contains('copied')
+            then writeText(innerText of first .code-content in me) on navigator.clipboard
+            then add .copied to me
+            wait 2s
+            remove .copied from me"><div class="copy">✅ copied</div><span class="code-content">{{ code }}</span></code>

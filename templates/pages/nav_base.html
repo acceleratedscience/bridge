@@ -2,12 +2,12 @@
 
 {% block nav %}
 <nav id="navigation" class="bg-[#f4f4f4] dark:bg-[#121619] sticky top-0 w-full z-10 drop-shadow-md flex-none">
-	<div class="mx-auto min-w-full px-2 sm:px-6 lg:px-8">
+	<div class="mx-auto min-w-full px-2">
 		<div class="relative flex h-12 items-center justify-between">
 			<div class="flex items-center md:hidden">
 				{# Mobile menu button #}
 				<button id="menu_button" type="button"
-					class="relative inline-flex items-center justify-center rounded-md p-2 text-gray-400 hover:bg-gray-700 hover:text-white focus:outline-hidden focus:ring-2 focus:ring-inset focus:ring-white cursor-pointer"
+					class="disable-carbon relative inline-flex items-center justify-center p-2 text-gray-400 hover:text-white focus:outline-hidden focus:ring-2 focus:ring-inset focus:ring-white cursor-pointer"
 					aria-controls="mobile-menu" aria-expanded="false">
 					<span class="absolute -inset-0.5"></span>
 					<span class="sr-only">Open main menu</span>
@@ -31,7 +31,7 @@
 			</div>
 			{#
 			<div
-				class="flex relative dark:hover:bg-[#4d5358] hover:bg-[#c6c6c6] min-h-full items-center justify-center px-2 cursor-pointer">
+				class="flex relative text-gray-400 hover:text-white min-h-full items-center justify-center px-2 cursor-pointer">
 				<span class="sr-only">View notifications</span>
 				<svg class="size-6 animate-bounce" preserveAspectRatio="xMidYMid meet" fill="currentColor" width="32"
 					height="32" viewBox="0 0 32 32" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
@@ -42,7 +42,7 @@
 				</svg>
 			</div>
 			#}
-			<div class="flex relative dark:hover:bg-[#4d5358] hover:bg-[#c6c6c6] ml-2 min-h-full items-center justify-center px-2 cursor-pointer"
+			<div class="flex relative text-gray-400 hover:text-white ml-2 min-h-full items-center justify-center px-2 cursor-pointer"
 				hx-post="/session/logout">
 				<span class="sr-only">Logout</span>
 				<svg class="size-6" preserveAspectRatio="xMidYMid meet" fill="currentColor" width="32" height="32"
@@ -60,12 +60,12 @@
 	</div>
 </nav>
 
-<div class="flex flex-1 grid-cols-2 mx-auto min-w-full px-2 sm:px-6 lg:px-8 relative">
-	<div class="flex-none fixed w-64 pt-4 bg-[#f4f4f4] dark:bg-[#343a3f] md:block hidden">
+<div class="flex flex-1 grid-cols-2 mx-auto min-w-full relative">
+	<div class="flex-none fixed w-64 pt-2 bg-[#f4f4f4] dark:bg-[#343a3f] md:block hidden">
 		<div class="flex flex-col grid-cols-1 grid-rows-2 min-h-[calc(100vh-3rem)]">
 			<div id="menu_big" class="flex-none">
 				<a href="#" id="big_profile"
-					class="block py-2 px-4 dark:hover:bg-[#4d5358] hover:bg-[#c6c6c6] menu_selected">
+					class="disable-carbon block py-2 px-4 dark:hover:bg-[#4d5358] hover:bg-[rgba(0,0,0,.2)] menu_selected">
 					<div class="flex">
 						<svg preserveAspectRatio="xMidYMid meet" fill="currentColor" width="32" height="32"
 							viewBox="0 0 32 32" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
@@ -81,7 +81,7 @@
 				</a>
 				{% if user_type != "pending" %}
 				{#
-				<a href="#" id="big_models" class="block py-2 px-4 dark:hover:bg-[#4d5358] hover:bg-[#c6c6c6]">
+				<a href="#" id="big_models" class="disable-carbon block py-2 px-4 dark:hover:bg-[#4d5358] hover:bg-[rgba(0,0,0,.2)]">
 					<div class="flex">
 						<svg preserveAspectRatio="xMidYMid meet" fill="currentColor" width="32" height="32"
 							viewBox="0 0 32 32" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
@@ -95,7 +95,7 @@
 				</a>
 				#}
 				{#
-				<a href="#" id="big_token" class="block py-2 px-4 dark:hover:bg-[#4d5358] hover:bg-[#c6c6c6]"
+				<a href="#" id="big_token" class="disable-carbon block py-2 px-4 dark:hover:bg-[#4d5358] hover:bg-[rgba(0,0,0,.2)]"
 					hx-get="hx/token" hx-trigger="click" hx-target="#main" hx-swap="innerHTML">
 					<div class="flex">
 						<svg preserveAspectRatio="xMidYMid meet" fill="currentColor" width="32" height="32"
@@ -110,7 +110,7 @@
 				</a>
 				#}
 				{% if notebook %}
-				<a href="#" id="big_notebook" class="block py-2 px-4 dark:hover:bg-[#4d5358] hover:bg-[#c6c6c6]">
+				<a href="#" id="big_notebook" class="disable-carbon block py-2 px-4 dark:hover:bg-[#4d5358] hover:bg-[rgba(0,0,0,.2)]">
 					<div class="flex">
 						<svg focusable="false" preserveAspectRatio="xMidYMid meet" fill="currentColor" width="32"
 							height="32" viewBox="0 0 32 32" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
@@ -124,7 +124,7 @@
 				</a>
 				{% endif %}
 				{% if openwebui %}
-				<a href="#" id="big_owui" class="block py-2 px-4 dark:hover:bg-[#4d5358] hover:bg-[#c6c6c6]">
+				<a href="#" id="big_owui" class="disable-carbon block py-2 px-4 dark:hover:bg-[#4d5358] hover:bg-[rgba(0,0,0,.2)]">
 					<div class="flex">
 						<svg focusable="false" preserveAspectRatio="xMidYMid meet" fill="currentColor" width="32"
 							height="32" viewBox="0 0 32 32" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
@@ -141,7 +141,7 @@
 				</a>
 				{% endif %}
 				{% if user_type == "system" %}
-				<a href="#" id="big_systems" class="block py-2 px-4 dark:hover:bg-[#4d5358] hover:bg-[#c6c6c6]">
+				<a href="#" id="big_systems" class="disable-carbon block py-2 px-4 dark:hover:bg-[#4d5358] hover:bg-[rgba(0,0,0,.2)]">
 					<div class="flex">
 						<svg focusable="false" preserveAspectRatio="xMidYMid meet" fill="currentColor" width="32"
 							height="32" viewBox="0 0 32 32" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
@@ -158,7 +158,7 @@
 				</a>
 				{% endif %}
 				{% if user_type == "group" %}
-				<a href="#" id="big_members" class="block py-2 px-4 dark:hover:bg-[#4d5358] hover:bg-[#c6c6c6]">
+				<a href="#" id="big_members" class="disable-carbon block py-2 px-4 dark:hover:bg-[#4d5358] hover:bg-[rgba(0,0,0,.2)]">
 					<div class="flex">
 						<svg preserveAspectRatio="xMidYMid meet" fill="currentColor" width="32" height="32"
 							viewBox="0 0 32 32" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
@@ -178,7 +178,7 @@
 				{% for resource in resources %}
 				{% if resource.1 %}
 				<a href="/resource/{{ resource.0 }}?token=true" id="ignore_{{ resource.0 }}_big"
-					class="block py-2 px-4 dark:hover:bg-[#4d5358] hover:bg-[#c6c6c6]" target="_blank">
+					class="disable-carbon block py-2 px-4 dark:hover:bg-[#4d5358] hover:bg-[rgba(0,0,0,.2)]" target="_blank">
 					<div class="flex">
 						<svg focusable="false" preserveAspectRatio="xMidYMid meet" fill="currentColor" width="32"
 							height="32" viewBox="0 0 32 32" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
@@ -200,8 +200,8 @@
 		</div>
 	</div>
 
-	<div class="flex-1 pl-2 md:pl-64 pt-4">
-		<div id="main" class="px-3">
+	<div class="flex-1 px-1 md:pl-65 pt-2">
+		<div id="main">
 			{% block main %}{% endblock main %}
 		</div>
 	</div>
@@ -209,27 +209,27 @@
 <div id="menu"
 	class="fixed flex-col left-0 top-12 bg-[#f4f4f4]/70 dark:bg-[#121619]/70 min-h-96 min-w-52 rounded-br-md backdrop-blur-xs drop-shadow-md hidden md:hidden">
 	<a href="#" id="mobile_profile"
-		class="block py-3 px-4 mobile_menu_selected dark:hover:bg-[#4d5358] hover:bg-[#c6c6c6]">Profile</a>
+		class="disable-carbon block py-3 px-4 mobile_menu_selected dark:hover:bg-[#4d5358] hover:bg-[rgba(0,0,0,.2)]">Profile</a>
 	{% if user_type != "pending" %}
 	{#
-	<a href="#" id="mobile_models" class="block py-3 px-4 dark:hover:bg-[#4d5358] hover:bg-[#c6c6c6]">Available
+	<a href="#" id="mobile_models" class="disable-carbon block py-3 px-4 dark:hover:bg-[#4d5358] hover:bg-[rgba(0,0,0,.2)]">Available
 		Models</a>
 	#}
 	{#
-	<a href="#" id="mobile_token" class="block py-3 px-4 dark:hover:bg-[#4d5358] hover:bg-[#c6c6c6]">Token</a>
+	<a href="#" id="mobile_token" class="disable-carbon block py-3 px-4 dark:hover:bg-[#4d5358] hover:bg-[rgba(0,0,0,.2)]">Token</a>
 	#}
 	{% if notebook %}
-	<a href="#" id="mobile_notebook" class="block py-3 px-4 dark:hover:bg-[#4d5358] hover:bg-[#c6c6c6]">Notebook</a>
+	<a href="#" id="mobile_notebook" class="disable-carbon block py-3 px-4 dark:hover:bg-[#4d5358] hover:bg-[rgba(0,0,0,.2)]">Notebook</a>
 	{% endif %}
 	{% if openwebui %}
-	<a href="#" id="mobile_owui" class="block py-3 px-4 dark:hover:bg-[#4d5358] hover:bg-[#c6c6c6]">Open Web UI</a>
+	<a href="#" id="mobile_owui" class="disable-carbon block py-3 px-4 dark:hover:bg-[#4d5358] hover:bg-[rgba(0,0,0,.2)]">Open Web UI</a>
 	{% endif %}
 	{% if user_type == "system" %}
-	<a href="#" id="mobile_systems" class="block py-3 px-4 dark:hover:bg-[#4d5358] hover:bg-[#c6c6c6]">System
+	<a href="#" id="mobile_systems" class="disable-carbon block py-3 px-4 dark:hover:bg-[#4d5358] hover:bg-[rgba(0,0,0,.2)]">System
 		Management</a>
 	{% endif %}
 	{% if user_type == "group" %}
-	<a href="#" id="mobile_members" class="block py-3 px-4 dark:hover:bg-[#4d5358] hover:bg-[#c6c6c6]">Member
+	<a href="#" id="mobile_members" class="disable-carbon block py-3 px-4 dark:hover:bg-[#4d5358] hover:bg-[rgba(0,0,0,.2)]">Member
 		Management</a>
 	{% endif %}
 	{% endif %}
@@ -237,7 +237,7 @@
 	{% for resource in resources %}
 	{% if resource.1 %}
 	<a href="/resource/{{ resource.0 }}?token=true" id="ignore_{{ resource.0 }}_mobile"
-		class="block py-3 px-4 dark:hover:bg-[#4d5358] hover:bg-[#c6c6c6]" target="_blank">{{ resource.0 }}</a>
+		class="disable-carbon block py-3 px-4 dark:hover:bg-[#4d5358] hover:bg-[rgba(0,0,0,.2)]" target="_blank">{{ resource.0 }}</a>
 	{% endif %}
 	{% endfor %}
 	{% endif %}

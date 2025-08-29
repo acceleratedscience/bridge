@@ -1,51 +1,52 @@
-@import 'tailwindcss';
+@import "tailwindcss";
 
-/*
-  The default border color has changed to `currentColor` in Tailwind CSS v4,
-  so we've added these compatibility styles to make sure everything still
-  looks the same as it did with Tailwind CSS v3.
+/**
+ * Base styles
+ */
 
-  If we ever want to remove these styles, we need to add an explicit border
-  color utility to any element that depends on these defaults.
-*/
-@layer base {
-  *,
-  ::after,
-  ::before,
-  ::backdrop,
-  ::file-selector-button {
-    border-color: var(--color-gray-200, currentColor);
-  }
+
+
+body {
+	@apply text-[var(--cb-main)] dark:text-[var(--cb-soft-bg)];
 }
 
+@layer base {
+	p {
+		@apply mb-2;
+	}
+	/* *,
+	::after,
+	::before,
+	::backdrop,
+	::file-selector-button {
+		@apply border-[var(--cb-soft-border)];
+	} */
+}
+
+/**
+ * Navigation
+ */
+
 .menu_selected {
-	@apply bg-[#c6c6c6] dark:bg-[#4d5358] border-l-2 border-[#4589ff];
+	@apply bg-[rgba(0,0,0,.08)] dark:bg-[rgba(255,255,255,.1)] border-l-2 border-[var(--cb-blue)];
 }
 
 .mobile_menu_selected {
-	@apply border-l-4 border-[#4589ff];
+	@apply border-l-4 border-[var(--cb-blue)];
 }
 
-.cb_button {
-	@apply bg-[#0050e6] hover:bg-blue-700 text-slate-200
-		focus:ring-3 dark:focus:outline-hidden active:bg-[#002d9c]
-		dark:focus:ring-white focus:ring-[#0050e6];
-}
-
-.cb_button_secondary {
-	@apply bg-[#ffffff] hover:bg-blue-700 hover:text-slate-200 text-slate-900
-		focus:ring-3 dark:focus:outline-hidden active:bg-[#002d9c] active:text-[#ffffff]
-		dark:focus:ring-white focus:ring-[#0050e6];
-}
+/**
+ * Various
+ */
 
 .htmx-indicator {
-	opacity:0;
+	opacity: 0;
 }
 .htmx-request .htmx-indicator {
-	opacity:1;
+	opacity: 1;
 	transition: opacity 200ms ease-in;
 }
 .htmx-request.htmx-indicator {
-	opacity:1;
+	opacity: 1;
 	transition: opacity 200ms ease-in;
 }

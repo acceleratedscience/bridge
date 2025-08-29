@@ -97,12 +97,25 @@ pub(super) async fn group(
         Err(_) => (vec![], "".to_string(), "".to_string(), "".to_string()),
     };
 
+    // Placeholder: need to fetch subscription parameters from services.toml
+    let subs_expanded: Vec<serde_json::Value> = subs
+        .iter()
+        .map(|service_name| {
+            serde_json::json!({
+                "type": "openad_model",
+                "url": "https://dummy.url",
+                "name": service_name,
+                "nickname": &service_name.strip_prefix("mcp-").unwrap_or(service_name)[0..4],
+            })
+        })
+        .collect();
+
     let mut ctx = (**context).clone();
     ctx.insert("name", &user.user_name);
     ctx.insert("user_type", &user.user_type);
     ctx.insert("email", &user.email);
     ctx.insert("group", &user.groups);
-    ctx.insert("subscriptions", &subs);
+    ctx.insert("subscriptions", &subs_expanded);
     ctx.insert("group_created_at", &group_created_at);
     ctx.insert("group_updated_at", &group_updated_at);
     ctx.insert("group_last_updated", &group_last_updated);

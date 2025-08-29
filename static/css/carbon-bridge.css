@@ -1,0 +1,7 @@
+html {
+	font-size: 14px;
+}
+#navigation {
+	background: var(--cb-main);
+	color: white;
+}

@@ -99,12 +99,58 @@ pub(super) async fn system(
         Err(_) => (vec![], "".to_string(), "".to_string(), "".to_string()),
     };
 
+    // // Expand subs into objects with service details
+    // let expanded_subs_1: Vec<serde_json::Value> = subs
+    //     .iter()
+    //     .map(|service_name| {
+    //         match CATALOG.get_service(service_name) {
+    //             Ok(service_details) => {
+    //                 serde_json::json!({
+    //                     "service_details": service_details,
+    //                 })
+    //             }
+    //             Err(_) => {
+    //                 serde_json::json!({
+    //                     "service_name": service_name,
+    //                 })
+    //             }
+    //         }
+    //     })
+    //     .collect();
+
+    // @placeholder: need to fetch subscription parameters from services.toml
+    let subs_expanded: Vec<serde_json::Value> = subs
+        .iter()
+        .enumerate()
+        .map(|(i, service_name)| {
+            if i % 2 == 1 {
+                serde_json::json!({
+                    "type": "mcp",
+                    "url": "https://dummy.url",
+                    "name": service_name,
+                    "code": format!("http://openad.accelerate.science/mcp/{}/mcp", service_name)
+                })
+            } else {
+                serde_json::json!({
+                    "type": "openad_model",
+                    "url": "https://dummy.url",
+                    "name": service_name,
+                    "code": format!(
+                        "catalog model service from remote 'https://open.accelerate.science/proxy' as {} using (auth_group=default inference-service={})",
+                        "foobar",
+                        service_name
+                    )
+                })
+            }
+        })
+        .collect();
+
     let mut ctx = (**context).clone();
     ctx.insert("name", &user.user_name);
     ctx.insert("user_type", &user.user_type);
     ctx.insert("email", &user.email);
     ctx.insert("group", &user.groups);
-    ctx.insert("subscriptions", &subs);
+    ctx.insert("subscriptions", &subs_expanded);
     ctx.insert("group_created_at", &group_created_at);
     ctx.insert("group_updated_at", &group_updated_at);
     ctx.insert("group_last_updated", &group_last_updated);

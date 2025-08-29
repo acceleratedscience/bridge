@@ -1,45 +1,45 @@
-<div class="flex flex-row">
-	<p class="border-b font-bold {%if not token%}flex-grow{% endif %}">Your API Token</p>
-	{%if token %}
-	<div class="flex flex-row justify-end border-b font-bold flex-grow">
-		<a id="token_button" class="w-16 text-center cb_button_secondary cursor-pointer" _="on click writeText(innerText of #token_text) on navigator.clipboard
-			then set my.textContent to 'copied!'
-			wait 2s
-			set my.textContent to 'copy'">
-			copy
+<span id="token">
+	{# Note: fresh prevents token-details from being hidden
+	   on small screen when you (re)create your token #}
+	{% if token and not fresh %}
+	<span class="token-show-btn lg:hidden inline-block">
+		<a class="cb_button secondary"
+		   _="on click add .hidden to .token-show-btn in #token
+			  remove .inline-block from .token-show-btn in #token
+			  remove .hidden from .token-details in #token
+			  add .block to .token-details in #token">
+		   Show token
 		</a>
-	</div>
+	</span>
 	{% endif %}
-</div>
-{%if token %}
-<p id="token_text" class="pt-4 overflow-hidden break-all">
-	{{ token }}
-</p>
-<p class="border-b font-bold pt-4">Expiration time</p>
-<p class="pt-4">
-	{{ token_exp }}
-</p>
-{% else %}
-<p class="pt-2">
-	You currently do not have a token.
-</p>
-{% endif %}
-<div class="flex justify-center items-center pt-3 flex-grow">
-	<a id="token_button"
-		class="lg:w-[300px] w-[220px] h-[50px] py-2 flex justify-center items-center relative cb_button cursor-pointer"
-		hx-get="/portal/hx/token" hx-target="#token" hx-trigger="click" hx-swap="innerHTML" tabindex="0" {%if token %}
-		hx-confirm="This will revoke your current token" {%endif%}>
-		<svg class="mr-1" preserveAspectRatio="xMidYMid meet" fill="currentColor" width="32" height="32"
-			viewBox="0 0 32 32" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
-			<path
-				d="M21,2a8.9977,8.9977,0,0,0-8.6119,11.6118L2,24v6H8L18.3881,19.6118A9,9,0,1,0,21,2Zm0,16a7.0125,7.0125,0,0,1-2.0322-.3022L17.821,17.35l-.8472.8472-3.1811,3.1812L12.4141,20,11,21.4141l1.3787,1.3786-1.5859,1.586L9.4141,23,8,24.4141l1.3787,1.3786L7.1716,28H4V24.8284l9.8023-9.8023.8472-.8474-.3473-1.1467A7,7,0,1,1,21,18Z">
-			</path>
-			<circle cx="22" cy="10" r="2"></circle>
-		</svg>
+	<div class="token-details{% if token and not fresh %} hidden lg:block{% endif %}">
+		<p class="section-header {%if not token%}flex-grow{% endif %}">Your API Token</p>
+		<div class="pt-3">
+			<a id="token_button"
+				class="cb_button mb-4"
+				hx-get="/portal/hx/token" hx-target="#token" hx-trigger="click" hx-swap="innerHTML" tabindex="0" {% if token %}
+				hx-confirm="This will revoke your current token" {%endif%}>
+				<svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+					<path d="M10.5 1C9.7973 0.99982 9.10433 1.16425 8.47663 1.48011C7.84892 1.79597 7.30393 2.25448 6.88534 2.81889C6.46674 3.3833 6.18618 4.03792 6.06613 4.73029C5.94609 5.42265 5.9899 6.13351 6.19405 6.8059L1 12V15H4L9.19405 9.8059C9.81302 9.99383 10.4652 10.0461 11.1062 9.95917C11.7472 9.87223 12.3619 9.64812 12.9085 9.30211C13.455 8.9561 13.9206 8.49632 14.2733 7.95411C14.6261 7.41191 14.8578 6.80002 14.9527 6.16015C15.0476 5.52028 15.0035 4.86747 14.8232 4.24622C14.643 3.62497 14.331 3.04987 13.9084 2.56013C13.4858 2.07039 12.9625 1.67752 12.3744 1.40829C11.7862 1.13905 11.1469 0.999796 10.5 1ZM10.5 9C10.1557 8.99979 9.81334 8.94888 9.4839 8.8489L8.9105 8.675L6.89635 10.6892L6.20705 10L5.5 10.7071L6.18935 11.3963L5.3964 12.1894L4.70705 11.5L4 12.2071L4.68935 12.8963L3.5858 14H2V12.4142L7.32475 7.08935L7.1511 6.516C6.93739 5.81149 6.95127 5.05753 7.19078 4.36137C7.43028 3.66521 7.88321 3.0623 8.48514 2.6384C9.08706 2.2145 9.80733 1.9912 10.5435 2.00027C11.2796 2.00933 11.9942 2.2503 12.5855 2.68889C13.1768 3.12748 13.6147 3.74136 13.837 4.44321C14.0593 5.14506 14.0546 5.89913 13.8236 6.59816C13.5927 7.2972 13.1471 7.90559 12.5504 8.3368C11.9537 8.76801 11.2362 9.00008 10.5 9Z"/>
+					<path d="M11 6C11.5523 6 12 5.55228 12 5C12 4.44772 11.5523 4 11 4C10.4477 4 10 4.44772 10 5C10 5.55228 10.4477 6 11 6Z"/>
+				</svg>
+				{% if token %}
+				Regenerate Token
+				{% else %}
+				Generate Token
+				{% endif %}
+			</a>
+		</div>
+
 		{% if token %}
-		Regenerate Token
+			{% set code = token %}
+			<span id="token_text" class="mb-2">
+				{% set wrap_code = true %}
+				{% include 'components/code_block.html' %}
+			</span>
+			<small class="soft-text">Expires: {{ token_exp }}</small>
 		{% else %}
-		Generate Token
+			<small class="soft-text">You currently do not have a token.</small>
 		{% endif %}
-	</a>
-</div>
+	</div>
+</span>

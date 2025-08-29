@@ -1,0 +1,18 @@
+{# OpenAD model #}
+{% if sub.type == 'openad_model' %}
+    {% set code = sub.code %}
+    {% include 'components/code_block.html' %}
+    <p>Use the command above to catalog this model in OpenAD.</p>
+    Consult the <a href="https://openad.accelerate.science/docs/model-service/ibm-hosted/#step-3-connect-to-a-model" class="cb-link">OpenAD docs</a> for more instructions.
+
+{# MCP #}
+{% elif sub.type == 'mcp' %}
+    {% set code = sub.code %}
+    {% include 'components/code_block.html' %}
+    Connect to the MCP server with the link above.
+
+{# Other #}
+{% elif sub.type == 'other' %}
+    This subscription does not have any additional details.
+
+{% endif %}

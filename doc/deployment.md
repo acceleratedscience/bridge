@@ -66,6 +66,19 @@
     The `--release` flag will enable all optimizations and compilation will take a longer time.  
     Refer to [Cargo.toml](../Cargo.toml) for the available feature flags
 
+    > **Development:**
+    > To have the server restart on change, use cargo-watch:
+    >
+    > ```
+    > cargo install cargo-watch
+    > ```
+    >
+    > ```
+    > cargo watch -x 'run --features=full --release'
+    > ```
+    >
+    > **Note:** Be patient as the initial build may take multiple minutes.
+
 4.  See the result at [localhost:8080](https://localhost:8080) (HTTPS required)
 
 <br>
