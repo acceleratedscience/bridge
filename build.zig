@@ -19,4 +19,15 @@ pub fn build(b: *std.Build) void {
     wasm.root_module.export_symbol_names = &.{"add_two_numbers"};
 
     b.installArtifact(wasm);
+
+    // test
+    const test_wasm = b.addTest(.{ .root_module = b.createModule(.{
+        .target = b.standardTargetOptions(.{}),
+        .root_source_file = b.path("static/wasm/lib.zig"),
+        .optimize = optimize,
+    }) });
+    const test_wasm_run = b.addRunArtifact(test_wasm);
+
+    const test_step = b.step("test", "Test wasm lib");
+    test_step.dependOn(&test_wasm_run.step);
 }
