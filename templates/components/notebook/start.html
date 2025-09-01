@@ -6,8 +6,8 @@
 	<path d="M20 2L20 4 26.586 4 18 12.586 19.414 14 28 5.414 28 12 30 12 30 2 20 2z"></path>
 </svg>' %}
 
-<p class="pt-2">You currently do not have a workbench running.</p>
-<div class="flex flex-col flex-grow pt-2 text-center justify-center items-center">
+<p class="mb-6">You currently do not have a workbench running.</p>
+<div>
 	{% if cooloff %}
 	<a id="cooloff_button"
 		class="lg:w-[300px] w-[220px] h-[50px] py-2 flex justify-center items-center relative bg-slate-300 text-black"
@@ -30,20 +30,17 @@
 	</a>
 	{% endif %}
 	<a id="notebook_start_button"
-		class="lg:w-[300px] w-[220px] h-[50px] py-2 flex justify-center items-center relative cb_button cursor-pointer {% if cooloff %} hidden{% endif %}"
+		class="cb_button {% if cooloff %} hidden{% endif %}"
 		hx-post="/notebook_manage/hx/create{% if pvc_exists %}?clear{% endif %}" hx-target="#notebook_panel"
 		hx-trigger="click" hx-swap="innerHTML" tabindex="0"
-		hx-confirm="You are about to spin up a new instance of a workbench">
-		{#
-		<svg class="mr-1" preserveAspectRatio="xMidYMid meet" fill="currentColor" width="32" height="32"
-			viewBox="0 0 32 32" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
-			<path
-				d="M21,2a8.9977,8.9977,0,0,0-8.6119,11.6118L2,24v6H8L18.3881,19.6118A9,9,0,1,0,21,2Zm0,16a7.0125,7.0125,0,0,1-2.0322-.3022L17.821,17.35l-.8472.8472-3.1811,3.1812L12.4141,20,11,21.4141l1.3787,1.3786-1.5859,1.586L9.4141,23,8,24.4141l1.3787,1.3786L7.1716,28H4V24.8284l9.8023-9.8023.8472-.8474-.3473-1.1467A7,7,0,1,1,21,18Z">
-			</path>
-			<circle cx="22" cy="10" r="2"></circle>
+		hx-confirm="You are about to spin up a new workbench instance">
+		<svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+			<path d="M14 8V11H2V3H7.5V2H2C1.73478 2 1.48043 2.10536 1.29289 2.29289C1.10536 2.48043 1 2.73478 1 3V11C1 11.2652 1.10536 11.5196 1.29289 11.7071C1.48043 11.8946 1.73478 12 2 12H6V14H4V15H12V14H10V12H14C14.2652 12 14.5196 11.8946 14.7071 11.7071C14.8946 11.5196 15 11.2652 15 11V8H14ZM9 14H7V12H9V14Z"/>
+			<path d="M15 2H9V3H15V2Z"/>
+			<path d="M15 4H9V5H15V4Z"/>
+			<path d="M12 6H9V7H12V6Z"/>
 		</svg>
-		#}
-		{{ launch_icon | safe }}Create Workbench
+		<div>Create workbench</div>
 	</a>
 	{% if pvc_exists %}
 	<a id="notebook_resume_button"

@@ -47,6 +47,17 @@ body {
  * Layout
  */
 
+#main {
+	min-height: 100%;
+	flex: 1;
+	padding-top: 0.5rem;
+	padding-right: 0.25rem;
+}
+
+#main > div {
+	height: 100%;
+}
+
 /* Section headers */
 .section-header {
 	border-bottom: solid 1px var(--cb-soft-text);

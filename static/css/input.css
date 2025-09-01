@@ -1,6 +1,16 @@
 @import "tailwindcss";
 
 /**
+ * Layout
+ */
+
+.cb-grid {
+	min-height: 100%;
+	@apply grid xl:grid-cols-3 lg:grid-cols-2 grid-cols-1;
+}
+
+
+/**
  * Base styles
  */
 
@@ -8,6 +18,9 @@
 
 body {
 	@apply text-[var(--cb-main)] dark:text-[var(--cb-soft-bg)];
+}
+#main {
+	@apply md:pl-65;
 }
 
 @layer base {
