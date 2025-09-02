@@ -1,7 +1,7 @@
 [&#8592; Back](../#bridge)
 
 > [!NOTE]
-> This document is specific to OPENAD / IBM deployment
+> This document is specific to Accelerated Science IBM Research deployment
 
 # Prepare for building Bridge Image
 
@@ -9,6 +9,7 @@
     ```shell
     git clone git@github.com:acceleratedscience/configurations.git
     ```
+    a. Please follow the directions on how to decrypt in the configurations repo. You will need to install "age" on your machine
 
 2.  Move the the two directors "certs" and "config" into the root directory of bridge. An example of the service.toml is below:
     ```toml
@@ -20,7 +21,9 @@
         check = true
         mcp = false
 
+        # the name of the service you would like to see in the portal follows "service."
         [services.hello]
+        # This is the internal url to the api you would like to proxy
         url = "http://hello.namespace.svc.cluster.local:8000"
         readiness = ""
         check = true
