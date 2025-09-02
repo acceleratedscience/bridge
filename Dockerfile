@@ -1,5 +1,5 @@
 # Stage 1 build
-FROM rust:1.88.0 AS builder
+FROM rust:1.89.0 AS builder
 
 WORKDIR /app
 
@@ -56,7 +56,7 @@ RUN chgrp -R 0 /app && \
 	chmod -R g=u /app
 USER 1001
 
-EXPOSE 8080
-EXPOSE 8000 
+EXPOSE 8080 # HTTPS
+EXPOSE 8000 # HTTP redirect
 
 CMD ["./openbridge"]
