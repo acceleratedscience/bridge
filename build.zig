@@ -12,6 +12,7 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .root_source_file = b.path("static/wasm/lib.zig"),
         .optimize = optimize,
+        .strip = b.option(bool, "strip", "Strip debug symbols") orelse false,
     }) });
     wasm.entry = .disabled;
     wasm.use_llvm = false; // disable llvm backend
