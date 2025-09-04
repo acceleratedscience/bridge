@@ -62,7 +62,7 @@ regex = "~1.11"
 # Error handling
 thiserror = "2"
 # DB
-mongodb = "=3.2"
+mongodb = "=3.3"
 redis = { version = "0.32", features = ["tokio-comp", "num-bigint"] }
 #macro
 utils = { path = "utils" }
@@ -76,7 +76,7 @@ mimalloc = "~0.1"
 # security
 base64 = "~0.22.1"
 rand = "~0.9"
-uuid = { version = "~1.17", features = ["v4"] }
+uuid = { version = "~1.18", features = ["v4"] }
 
 [dev-dependencies]
 jsonwebkey = { version = "~0.3", features = ["jwt-convert"] }

@@ -105,6 +105,10 @@ down-local-mongo:
 down-local-keydb:
 	podman stop keydb
 
+down:
+	podman stop mongodb
+	podman stop keydb
+
 # --- Watchers ---
 watch-tailwind:
 	tailwindcss -i ./static/css/input.css -o ./static/css/output.css --minify --watch
