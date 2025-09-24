@@ -118,6 +118,15 @@ pub struct PodSpec {
 }
 
 #[derive(Deserialize, Serialize, Clone, Debug, JsonSchema)]
+pub struct Toleration {
+    pub effect: Option<std::string::String>,
+    pub key: Option<std::string::String>,
+    pub operator: Option<std::string::String>,
+    pub toleration_seconds: Option<i64>,
+    pub value: Option<std::string::String>,
+}
+
+#[derive(Deserialize, Serialize, Clone, Debug, JsonSchema)]
 pub struct ImagePullSecret {
     name: String,
 }
