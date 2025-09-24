@@ -1,44 +1,99 @@
 [&#8592; Back](../#bridge)
 
+> [!NOTE]
+> This document is specific to Accelerated Science IBM Research deployment
+
+# Prepare for building Bridge Image
+
+1.  Clone the Configuration repo and decrypt the contents in file bi.tar.age or open.tar.age
+    ```shell
+    git clone git@github.com:acceleratedscience/configurations.git
+    ```
+    a. Please follow the directions on how to decrypt in the configurations repo. You will need to install "age" on your machine
+
+2.  Move the the two directors "certs" and "config" into the root directory of bridge. An example of the service.toml is below:
+    ```toml
+    [services]
+        # Your APIs go here
+        [services.postman]
+        url = "https://postman-echo.com"
+        readiness = "/get"
+        check = true
+        mcp = false
+
+        # the name of the service you would like to see in the portal follows "service."
+        [services.hello]
+        # This is the internal url to the api you would like to proxy
+        url = "http://hello.namespace.svc.cluster.local:8000"
+        readiness = ""
+        check = true
+        # Setting MCP to true changes the auth flow from JWT to cookies
+        # This is really meant for MVP servers, but anything that require cookies instead can leverage this
+        mcp = true
+
+    [resources]
+        # Your web apps go here
+        [resources.example]
+        url = "https://www.example.com"
+        readiness = "/"
+        check = true
+        show = true
+
+        [resources.reddit]
+        url = "https://www.reddit.com"
+        readiness = "/r/rust"
+        check = true
+        show = true
+
+        [resources.echo]
+        url = "wss://ws.postman-echo.com/raw"
+        readiness = ""
+        check = true
+        show = false
+    ```
+
+3. Make necessary changes to the service.toml if needed.
+
 # Updating Bridge on OpenShift or K8s
 > [!WARNING]
 > This will definitely change as processes are automated further in the very near future.
 > This section also requires Bridge to already be deployed on OpenShift. Deployment process is still being worked on and streamlined.
+> This updating instruction is particularly geared towards x86-64 architecture. If you are on any other arch, please run this out of a container or a VM.
 
 1.  Build the Bridge container image
     ```shell
     just build-full
     ```
 
-1.  Get and use login password for ECR
+2.  Get and use login password for ECR
     ```shell
     aws ecr get-login-password --region us-east-1 | podman login --username AWS --password-stdin xxx.amazonaws.com
     ```
 
-1.  Tag the container image
+3.  Tag the container image
     ```shell
     podman tag bridge:v#.#.# xxx.amazonaws.com/bridge:v#.#.#
     ```
 
-1.  Push the container image to the ECR
+4.  Push the container image to the ECR
     ```shell
     podman push xxx.amazonaws.com/bridge:v#.#.#
     ```
 
-1.  Rotate the ECR secret in OpenShift
+5.  Rotate the ECR secret in OpenShift
     ```shell
     kubectl delete secret -n bridge ecr-registry
     aws ecr get-login-password --region us-east-1 | kubectl create secret docker-registry ecr-registry --docker-server=xxx.amazonaws.com/bridge --docker-username=AWS --docker-password=$(aws ecr get-login-password --region us-east-1)
     ```
 
-1.  Delete currently running pod to have OpenShift spin up a new pod using the new image pushed to ECR
+6.  Delete currently running pod to have OpenShift spin up a new pod using the new image pushed to ECR
     ```shell
     # This is not the "recommended" way of deploying new version of Bridge on your infrastructure
     # This is a temporary solution while we are actively developing an automated CICD process
     kubectl delete pod -n bridge bridge-tls-<pod_id>
     ```
 
-1.  Check and ensure the new pod is running
+7.  Check and ensure the new pod is running
     ```shell
     kubectl get pods -n bridge
     ```

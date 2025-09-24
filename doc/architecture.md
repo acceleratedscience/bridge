@@ -13,6 +13,7 @@
     -   HTMX
     -   TypeScript
     -   Tailwind CSS
+    -   Zig (experimental use for WASM)
 -   Back-end:
     -   Rust
 -   Infrastructure:
@@ -23,7 +24,7 @@
     -   OpenTofu
 -   Database:
     -   MongoDB
-    -   Redis / KeyDB (Optional)
+    -   Redis / KeyDB (Optional for caching and more secure session management)
 -   Dev Tooling:
     -   rust-analyzer
     -   bacon
