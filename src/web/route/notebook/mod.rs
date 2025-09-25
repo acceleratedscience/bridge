@@ -262,6 +262,7 @@ async fn notebook_create(
                 name.clone(),
                 "open_ad_workbench",
                 pvc_name,
+                None,
                 &mut start_up_url,
                 &mut max_idle_time,
                 vec![("PROXY_KEY".to_string(), notebook_token)],

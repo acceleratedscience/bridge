@@ -27,6 +27,7 @@ impl NotebookSpec {
         name: String,
         notebook_image_name: &str,
         volume_name: String,
+        tolerations: Option<Vec<Toleration>>,
         notebook_start_url: &mut Option<String>,
         max_idle_time: &mut Option<u64>,
         env_to_add: Vec<(String, String)>,
@@ -86,6 +87,7 @@ impl NotebookSpec {
                         workingdir: notebook_image.working_dir.clone(),
                         env: Some(env),
                     }],
+                    tolerations,
                     image_pull_secrets: notebook_image
                         .secret
                         .clone()
@@ -114,6 +116,7 @@ pub struct PodSpec {
     containers: Vec<ContainerSpec>,
     #[serde(rename = "imagePullSecrets")]
     image_pull_secrets: Option<Vec<ImagePullSecret>>,
+    tolerations: Option<Vec<Toleration>>,
     volumes: Option<Vec<VolumeSpec>>,
 }
 
