@@ -17,6 +17,8 @@ notebook_env = [
 secret = "ibmdpdev-openad-pull-secret"
 start_up_url = "lab/tree/start_menu.ipynb"
 max_idle_time = 86400
+cpu_heavy = "4"
+mem_heavy = "32Gi"
 [open_ad_workbench.env]
 PROXY_URL = "https://open.accelerate.science/proxy"
 
@@ -36,5 +38,7 @@ notebook_env = [
 	# base-url is taken care by bridge
 ]
 max_idle_time = 86400
+cpu_heavy = "4"
+mem_heavy = "8Gi"
 [datascience_notebook.env]
 PROXY_URL = ""

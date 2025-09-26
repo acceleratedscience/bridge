@@ -22,6 +22,9 @@ pub struct NotebookSpec {
     template: NotebookTemplateSpec,
 }
 
+static CPU: &'static str = "4";
+static MEM: &'static str = "8Gi";
+
 impl NotebookSpec {
     pub fn new(
         name: String,
@@ -33,7 +36,19 @@ impl NotebookSpec {
         env_to_add: Vec<(String, String)>,
     ) -> Self {
         let notebook_image = CONFIG.notebooks.get(notebook_image_name).unwrap();
+        //
         let mut notebook_env = notebook_image.notebook_env.clone().unwrap_or_default();
+
+        let (cpu, mem) = {
+            if tolerations.is_some() {
+                (
+                    notebook_image.cpu_heavy.as_deref().unwrap_or(CPU),
+                    notebook_image.mem_heavy.as_deref().unwrap_or(MEM),
+                )
+            } else {
+                ("2", "4Gi")
+            }
+        };
 
         notebook_env.push(format!(
             "--ServerApp.base_url='notebook/{}/{}'",
@@ -69,12 +84,12 @@ impl NotebookSpec {
                         image: notebook_image.url.clone(),
                         resources: Some(ResourceRequirements {
                             requests: BTreeMap::from([
-                                ("cpu".to_string(), "2".to_string()),
-                                ("memory".to_string(), "4Gi".to_string()),
+                                ("cpu".to_string(), cpu.to_string()),
+                                ("memory".to_string(), mem.to_string()),
                             ]),
                             limits: BTreeMap::from([
-                                ("cpu".to_string(), "2".to_string()),
-                                ("memory".to_string(), "4Gi".to_string()),
+                                ("cpu".to_string(), cpu.to_string()),
+                                ("memory".to_string(), mem.to_string()),
                             ]),
                         }),
                         image_pull_policy: notebook_image.pull_policy.clone(),
@@ -240,6 +255,7 @@ mod test {
             name,
             "open_ad_workbench",
             volume_name,
+            None,
             &mut start_url,
             &mut max_idle_time,
             vec![],
