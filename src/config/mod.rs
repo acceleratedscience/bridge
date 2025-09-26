@@ -71,8 +71,15 @@ pub struct Notebook {
     pub args: Option<Vec<String>>,
     pub start_up_url: Option<String>,
     pub max_idle_time: Option<u64>,
-    pub cpu_heavy: Option<String>,
-    pub mem_heavy: Option<String>,
+    pub scheduling: Option<Scheduling>,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct Scheduling {
+    pub cpu_heavy: String,
+    pub mem_heavy: String,
+    pub toleration_key: String,
+    pub toleration_value: String,
 }
 
 const OIDC_PROVIDER: [OpenIDProvider; 2] = [OpenIDProvider::W3, OpenIDProvider::IbmId];

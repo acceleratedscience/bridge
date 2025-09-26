@@ -22,8 +22,8 @@ pub struct NotebookSpec {
     template: NotebookTemplateSpec,
 }
 
-static CPU: &'static str = "4";
-static MEM: &'static str = "8Gi";
+static CPU_HEAVY_DEFAULT: &str = "4";
+static MEM_HEAVY_DEFAULT: &str = "8Gi";
 
 impl NotebookSpec {
     pub fn new(
@@ -36,14 +36,21 @@ impl NotebookSpec {
         env_to_add: Vec<(String, String)>,
     ) -> Self {
         let notebook_image = CONFIG.notebooks.get(notebook_image_name).unwrap();
-        //
         let mut notebook_env = notebook_image.notebook_env.clone().unwrap_or_default();
 
         let (cpu, mem) = {
             if tolerations.is_some() {
                 (
-                    notebook_image.cpu_heavy.as_deref().unwrap_or(CPU),
-                    notebook_image.mem_heavy.as_deref().unwrap_or(MEM),
+                    notebook_image
+                        .scheduling
+                        .as_ref()
+                        .map(|v| v.cpu_heavy.as_ref())
+                        .unwrap_or(CPU_HEAVY_DEFAULT),
+                    notebook_image
+                        .scheduling
+                        .as_ref()
+                        .map(|v| v.mem_heavy.as_ref())
+                        .unwrap_or(MEM_HEAVY_DEFAULT),
                 )
             } else {
                 ("2", "4Gi")
@@ -142,6 +149,18 @@ pub struct Toleration {
     pub operator: Option<std::string::String>,
     pub toleration_seconds: Option<i64>,
     pub value: Option<std::string::String>,
+}
+
+impl Toleration {
+    pub fn new(key: String, value: String) -> Self {
+        Self {
+            effect: Some("NoSchedule".to_string()),
+            key,
+            operator,
+            toleration_seconds,
+            value,
+        }
+    }
 }
 
 #[derive(Deserialize, Serialize, Clone, Debug, JsonSchema)]
