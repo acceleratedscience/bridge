@@ -83,12 +83,6 @@ build-front:
 # --- Local Development Services ---
 local-mongo:
 	podman run -d --rm --name mongodb \
-	-e MONGODB_ROOT_PASSWORD="admin123456789" \
-	-e MONGODB_USERNAME="bridge-user" -e MONGODB_PASSWORD="admin123456789" -e MONGODB_DATABASE="bridge" \
-	-p 27017:27017 bitnami/mongodb:latest
-
-local-mongo-arm:
-	podman run -d --rm --name mongodb \
 	-e MONGO_INITDB_ROOT_USERNAME="guardian-user" \
 	-e MONGO_INITDB_ROOT_PASSWORD="admin123456789" \
 	-e MONGO_INITDB_DATABASE="bridge" \
@@ -97,7 +91,7 @@ local-mongo-arm:
 local-keydb:
 	podman run -d --rm --name keydb \
 	-e KEYDB_PASSWORD="admin123456789" \
-	-p 6379:6379 bitnami/keydb:latest
+	-p 6379:6379 bitnamicharts/keydb:sha256-ab8a4b7afff5a07ea778bf9ee4a7b10a501867cc2cbd7199a068d6777d6e807f
 
 down-local-mongo:
 	podman stop mongodb

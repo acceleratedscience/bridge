@@ -19,6 +19,13 @@
 	check = false
 	mcp = false
 
+	# This is a supplementary entry to notebook for heavier resource
+	[services.notebook_heavy]
+	url = ""
+	readiness = ""
+	check = false
+	mcp = false
+
 	[services.owui]
 	url = ""
 	readiness = ""
