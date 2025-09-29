@@ -38,6 +38,7 @@ impl NotebookSpec {
         let notebook_image = CONFIG.notebooks.get(notebook_image_name).unwrap();
         let mut notebook_env = notebook_image.notebook_env.clone().unwrap_or_default();
 
+        // get resource limit from notebook config
         let (cpu, mem) = {
             if tolerations.is_some() {
                 (
@@ -155,10 +156,10 @@ impl Toleration {
     pub fn new(key: String, value: String) -> Self {
         Self {
             effect: Some("NoSchedule".to_string()),
-            key,
-            operator,
-            toleration_seconds,
-            value,
+            key: Some(key),
+            operator: Some("Equal".to_string()),
+            toleration_seconds: None,
+            value: Some(value),
         }
     }
 }

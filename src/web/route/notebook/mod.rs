@@ -34,7 +34,7 @@ use crate::{
         mongo::{DB, ObjectID},
     },
     errors::{BridgeError, Result},
-    kube::{KubeAPI, NOTEBOOK_NAMESPACE, Notebook, NotebookSpec, PVCSpec},
+    kube::{KubeAPI, NOTEBOOK_NAMESPACE, Notebook, NotebookSpec, PVCSpec, Toleration},
     web::{
         bridge_middleware::{CookieCheck, Htmx, NotebookCookieCheck},
         helper::{self, bson, forwarding},
@@ -42,6 +42,8 @@ use crate::{
 };
 
 pub const NOTEBOOK_SUB_NAME: &str = "notebook";
+pub const NOTEBOOK_SUB_HEAVY_NAME: &str = "notebook_heavy";
+const NOTEBOOK_CFG_NAME: &str = "open_ad_workbench";
 const NOTEBOOK_PORT: &str = "8888";
 const NOTEBOOK_TOKEN_LIFETIME: usize = const { 60 * 60 * 24 * 30 };
 const PVC_DELETE_ATTEMPT: u8 = 9;
@@ -172,6 +174,27 @@ async fn notebook_create(
             ));
         }
 
+        // check for heavy notebook add-on
+        let tolerations = if group
+            .subscriptions
+            .contains(&NOTEBOOK_SUB_HEAVY_NAME.to_string())
+        {
+            let notebook_image = CONFIG
+                .notebooks
+                .get(NOTEBOOK_CFG_NAME)
+                .and_then(|v| v.scheduling.as_ref())
+                .map(|v| (&v.toleration_key, &v.toleration_value));
+
+            if let Some(kv) = notebook_image {
+                let (key, value) = (kv.0.to_string(), kv.1.to_string());
+                Some(vec![Toleration::new(key, value)])
+            } else {
+                None
+            }
+        } else {
+            None
+        };
+
         let scp = if user.groups.is_empty() {
             vec!["".to_string()]
         } else {
@@ -260,9 +283,9 @@ async fn notebook_create(
             &name,
             NotebookSpec::new(
                 name.clone(),
-                "open_ad_workbench",
+                NOTEBOOK_CFG_NAME,
                 pvc_name,
-                None,
+                tolerations,
                 &mut start_up_url,
                 &mut max_idle_time,
                 vec![("PROXY_KEY".to_string(), notebook_token)],

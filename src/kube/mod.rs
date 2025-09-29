@@ -5,7 +5,7 @@ pub use models::*;
 mod notebook;
 #[cfg(feature = "notebook")]
 pub use notebook::{
-    LifecycleStream, Medium, NOTEBOOK_NAMESPACE, Notebook, NotebookSpec, PVCSpec,
+    LifecycleStream, Medium, NOTEBOOK_NAMESPACE, Notebook, NotebookSpec, PVCSpec, Toleration,
     notebook_lifecycle,
 };
 
