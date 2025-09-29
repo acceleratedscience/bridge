@@ -91,7 +91,7 @@ local-mongo:
 local-keydb:
 	podman run -d --rm --name keydb \
 	-e KEYDB_PASSWORD="admin123456789" \
-	-p 6379:6379 bitnamicharts/keydb:sha256-ab8a4b7afff5a07ea778bf9ee4a7b10a501867cc2cbd7199a068d6777d6e807f
+	-p 6379:6379 bitnami/keydb:latest
 
 down-local-mongo:
 	podman stop mongodb
