@@ -83,7 +83,7 @@ build-front:
 # --- Local Development Services ---
 local-mongo:
 	podman run -d --rm --name mongodb \
-	-e MONGO_INITDB_ROOT_USERNAME="guardian-user" \
+	-e MONGO_INITDB_ROOT_USERNAME="bridge-user" \
 	-e MONGO_INITDB_ROOT_PASSWORD="admin123456789" \
 	-e MONGO_INITDB_DATABASE="bridge" \
 	-p 27017:27017 mongodb/mongodb-community-server

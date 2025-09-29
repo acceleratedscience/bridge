@@ -321,6 +321,7 @@ mod test {
                             }
                         ],
                     }],
+                    "tolerations": null,
                     "imagePullSecrets": [
                         {
                             "name": "ibmdpdev-openad-pull-secret"
