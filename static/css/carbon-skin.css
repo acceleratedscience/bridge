@@ -251,6 +251,12 @@ a.cb-link:hover {
 	border-color: var(--cb-blue-hover);
 }
 
+.cb-button-wrap {
+	display: flex;
+	flex-direction: row;
+	gap: 0.5rem;
+}
+
 /**
  * Dropdowns
  */
@@ -365,5 +371,28 @@ code.copied .copy {
 	}
 	100% {
 		background: var(--cb-main);
+	}
+}
+
+/**
+ * Animnations
+ */
+
+.cb-blink {
+	animation: blink 2s infinite;
+}
+
+@keyframes blink {
+	0% {
+		opacity: 1;
+	}
+	49% {
+		opacity: 1;
+	}
+	50% {
+		opacity: 0.3;
+	}
+	100% {
+		opacity: 0.3;
 	}
 }

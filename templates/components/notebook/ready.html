@@ -1,22 +1,31 @@
-<p class="pt-2">You currently have a workbench running.</p>
-<div class="flex flex-col flex-grow pt-2 text-center justify-center items-center">
+<div class="flex items-center gap-2 mb-4">
+	<svg class="cb-blink" width="16" height="16" viewBox="0 0 16 16" fill="green" xmlns="http://www.w3.org/2000/svg">
+		<path d="M14 8V11H2V3H7.5V2H2C1.73478 2 1.48043 2.10536 1.29289 2.29289C1.10536 2.48043 1 2.73478 1 3V11C1 11.2652 1.10536 11.5196 1.29289 11.7071C1.48043 11.8946 1.73478 12 2 12H6V14H4V15H12V14H10V12H14C14.2652 12 14.5196 11.8946 14.7071 11.7071C14.8946 11.5196 15 11.2652 15 11V8H14ZM9 14H7V12H9V14Z"/>
+		<path d="M15 2H9V3H15V2Z"/>
+		<path d="M15 4H9V5H15V4Z"/>
+		<path d="M12 6H9V7H12V6Z"/>
+	</svg>
+	<div>Your workbench is active</div>
+</div>
+
+<div class="cb-button-wrap">
 	<a id="notebook_open_button"
-		class="lg:w-[300px] w-[220px] h-[50px] py-2 flex justify-center items-center cb_button cursor-pointer"
+		class="cb_button"
 		href="{{ notebook.url }}{% if notebook.start_up_url %}/{{ notebook.start_up_url }}{% endif %}"
 		hx-post="/notebook_manage/hx/enter" hx-target="#notebook_panel" hx-swap="innerhtml" target="_blank" _="on click
-          call window.open(me.href, '_blank')" tabindex="0">
-		Open Workbench
+		call window.open(me.href, '_blank')" tabindex="0">
+		Open
 	</a>
 	<a id="notebook_terminate_button"
-		class="lg:w-[300px] w-[220px] h-[50px] py-2 mt-4 flex justify-center items-center cb_button cursor-pointer"
+		class="cb_button_secondary"
 		hx-delete="/notebook_manage/hx/delete" hx-target="#notebook_panel" hx-swap="innerhtml settle:5s"
 		hx-confirm="Are you sure you want to terminate: {{ notebook.name }}?" tabindex="0">
-		Terminate Workbench
-	</a>
-	<a id="notebook_terminate_button"
-		class="lg:w-[300px] w-[220px] h-[50px] py-2 mt-4 flex justify-center items-center cb_button cursor-pointer"
-		hx-delete="/notebook_manage/hx/delete?save=true" hx-target="#notebook_panel" hx-swap="innerhtml"
-		hx-confirm="Are you sure you want to terminate: {{ notebook.name }}?" tabindex="0">
-		Terminate Workbench Save Work
+		Terminate
 	</a>
 </div>
+{# <a id="notebook_terminate_button"
+	class="cb_button"
+	hx-delete="/notebook_manage/hx/delete?save=true" hx-target="#notebook_panel" hx-swap="innerhtml"
+	hx-confirm="Are you sure you want to terminate: {{ notebook.name }}?" tabindex="0">
+	Terminate Workbench Save Work
+</a> #}

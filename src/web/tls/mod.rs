@@ -8,6 +8,10 @@ pub fn load_certs(cert: &str, key: &str) -> ServerConfig {
     // init server config builder with safe defaults
     let config = ServerConfig::builder().with_no_client_auth();
 
+    // Print cer and key
+    println!("Using cert: {cert}");
+    println!("Using key: {key}");
+
     // load TLS key/cert files
     let cert_file = &mut BufReader::new(File::open(cert).expect("Could not open cert file"));
     let key_file = &mut BufReader::new(File::open(key).expect("Could not open key file"));

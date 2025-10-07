@@ -1,7 +1,6 @@
-<div class="relative flex flex-col justify-center items-center h-full" hx-get="/notebook_manage/hx/status"
-	hx-trigger="every 5s">
-	<p class="pt-4">Your workbench is starting please wait...</p>
-	<div class="flex flex-col flex-grow justify-center">
-		<div class="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-500"></div>
-	</div>
+<div hx-get="/notebook_manage/hx/status" hx-trigger="every 5s" class="flex items-center gap-2">
+	<svg class="animate-spin" width="16" height="16" viewBox="0 0 16 16"  fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+		<path fill-rule="evenodd" clip-rule="evenodd" d="M8 0.999969C6.12587 1.00038 4.25679 1.74886 2.87845 3.22823C0.243076 6.05678 0.399677 10.4862 3.22823 13.1215C6.05678 15.7569 10.4862 15.6003 13.1215 12.7718C13.6082 12.2494 14.0002 11.6717 14.2975 11.0602L13.3983 10.6229C13.1438 11.146 12.8081 11.6412 12.3899 12.0901C10.131 14.5146 6.33438 14.6488 3.90991 12.3899C1.48544 10.131 1.35121 6.33438 3.6101 3.90991C4.79153 2.64188 6.3936 2.00032 8 1.99997V0.999969ZM14.7794 6.25346C14.728 6.05294 14.6675 5.85429 14.5981 5.65817L13.6554 5.99192C13.7149 6.15994 13.7667 6.33018 13.8108 6.50209L14.7794 6.25346ZM14.9937 8.30015C15.0061 8.00776 15.0003 7.71487 14.9762 7.42331L13.9796 7.50543C14.0002 7.75557 14.0052 8.00686 13.9946 8.25771L14.9937 8.30015ZM14.5128 10.5706C14.6925 10.1149 14.8223 9.64474 14.9025 9.16842L13.9164 9.00237C13.8476 9.41074 13.7364 9.81351 13.5825 10.2037L14.5128 10.5706Z"/>
+	</svg>
+	<div>Starting up...</div>
 </div>
