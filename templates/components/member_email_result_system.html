@@ -1,43 +1,17 @@
-<table class="w-full text-sm text-left">
-	<thead class="text-xs">
+<table class="table-display mt-4">
+	<thead>
 		<tr>
-			<th scope="col" class="py-3 px-1">
-				Name
-			</th>
-			<th scope="col" class="py-3 px-1">
-				Email
-			</th>
-			<th scope="col" class="py-3 px-1">
-				Updated
-			</th>
-			<th scope="col" class="py-3 px-1">
-				Actions
-			</th>
+			<th scope="col">Name</th>
+			<th scope="col">Email</th>
+			<th scope="col">Updated</th>
 		</tr>
 	</thead>
 	<tbody>
 		{% for user in users %}
-		<tr class="{% if loop.index is even and users | length > 1 %}border-t{% endif %}">
-			<td class="py-3 px-1">
-				{{ user.user_name }}
-			</td>
-			<td class="py-3 px-1">
-				{{ user.email }}
-			</td>
-			<td class="py-3 px-1" title="{{ user.updated_at }}">
-				{{ user.updated_at | truncate(length=16) }}
-			</td>
-			<td id="_{{ user.sub | slugify }}_add" class="py-3 px-1">
-				<button class="font-medium hover:underline cursor-pointer"
-					hx-get="system_admin/hx/tab?tab=UserModify&user={{user.email}}" hx-target="#system_admin_user">
-					Edit
-				</button>
-				<button class="font-medium hover:underline cursor-pointer pl-1"
-					hx-delete="/portal/system_admin/hx/user?email={{ user.email }}&last_updated_by=system"
-					hx-confirm="Are you sure you want to delete {{ user.user_name }}">
-					Delete
-				</button>
-			</td>
+		<tr class="clickable" hx-get="system_admin/hx/tab?tab=UserModify&user={{user.email}}" hx-target="#system_admin_user">
+			<td>{{ user.user_name }}</td>
+			<td>{{ user.email }}</td>
+			<td title="{{ user.updated_at }}">{{ user.updated_at | time_ago }}</td>
 		</tr>
 		{% endfor %}
 	</tbody>
