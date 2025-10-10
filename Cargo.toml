@@ -30,6 +30,8 @@ tokio-stream = { version = "0.1.15", features = ["sync"] }
 pin-project = "1"
 # Other dep
 time = { version = "0.3.36", features = ["serde"] }
+chrono = { version = "0.4", features = ["serde"] }
+chrono-humanize = "0.2"
 parking_lot = "~0.12"
 num-bigint = "~0.4"
 # Web deps

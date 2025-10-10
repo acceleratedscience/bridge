@@ -5,3 +5,28 @@ html {
 	background: var(--cb-main);
 	color: white;
 }
+
+ul.sub-options {
+}
+ul.sub-options li {
+	display: flex;
+	gap: 1rem;
+	height: 40px;
+	line-height: 40px;
+	cursor: pointer;
+	margin: 0 -1rem;
+	padding: 0 1rem;
+}
+ul.sub-options li:hover {
+	background: rgba(255, 255, 255, 0.5);
+}
+ul.sub-options li label {
+	flex: 1;
+	margin-bottom: 0;
+	font-size: var(--text-base);
+	user-select: none;
+	cursor: pointer;
+}
+ul.sub-options li:has(input:checked) {
+	background: white;
+}

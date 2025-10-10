@@ -24,21 +24,25 @@
 		</div>
 		{% if subscriptions | length > 0 %}
 		<table class="table-display">
-			<tr class="header">
-				<th>Service Name</th>
-				<th class="text-right">Type</th>
-			</tr>
-			{% for sub in subscriptions %}
-			<tr class="expandable" _="on click remove .expanded from .expandable in closest <table/> then toggle .expanded on me">
-				<td>{{ sub.name }}</td>
-				<td class="text-right">{% if sub.type == 'openad_model' %}OpenAD model{% else %}{{ sub.type }}{% endif %}</td>
-			</tr>
-			<tr>
-				<td colspan="3">
-					{% include 'components/subscription_details.html' %}
-				</td>
-			</tr>
-			{% endfor %}
+			<thead>
+				<tr>
+					<th>Service Name</th>
+					<th class="text-right">Type</th>
+				</tr>
+			</thead>
+			<tbody>
+				{% for sub in subscriptions %}
+				<tr class="expandable" _="on click toggle .expanded on me">
+					<td>{{ sub.name }}</td>
+					<td class="text-right">{% if sub.type == 'openad_model' %}OpenAD model{% else %}{{ sub.type }}{% endif %}</td>
+				</tr>
+				<tr>
+					<td colspan="3">
+						{% include 'components/subscription_details.html' %}
+					</td>
+				</tr>
+				{% endfor %}
+			</tbody>
 		</table>
 		{% else %}
 		<i>This group has no subscriptions</i>

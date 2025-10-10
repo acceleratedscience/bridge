@@ -7,7 +7,7 @@ pub struct GroupContent {
     pub items: Vec<String>,
 }
 
-pub(super) static VIEW_GROUP: &str = "components/group_view.html";
+pub(super) static VIEW_GROUP: &str = "components/systems_group.html";
 pub(super) static MODIFY_GROUP: &str = "components/group_edit.html";
 pub(super) static CREATE_GROUP: &str = "components/group_create.html";
 

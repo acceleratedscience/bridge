@@ -1,42 +1,26 @@
-<div class="flex flex-row">
-	<p class="section-header">Group Edit {{ group_name | capitalize }}</p>
-	<div class="section-header section-header-right">
-		<a id="group_admin_back" hx-get="system_admin/hx/tab?tab=GroupList" hx-target="#system_admin_group"
-			class="flex justify-center w-16 text-center cb_button_secondary cursor-pointer" tabindex="0">
-			<svg focusable="false" preserveAspectRatio="xMidYMid meet" fill="currentColor" width="20" height="20"
-				viewBox="0 0 32 32" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
-				<path d="M14 26L15.41 24.59 7.83 17 28 17 28 15 7.83 15 15.41 7.41 14 6 4 16 14 26z"></path>
-				<title>Arrow left</title>
-			</svg>
-		</a>
-	</div>
+<div class="section-header flex flex-row">
+	<a hx-get="system_admin/hx/tab?tab=GroupList" hx-target="#system_admin_group" class="cb-link">Group Management</a>
+	&nbsp;&rsaquo;&nbsp;
+	<a class="cb-link" hx-get="system_admin/hx/tab?tab=GroupView&group={{ group_name }}" hx-target="#system_admin_group">{{ group_name | capitalize }}</a>
+	&nbsp;&rsaquo;&nbsp;
+	Subscriptions
 </div>
 <div class="flex flex-col items-center" hx-ext="response-targets">
 	<form hx-patch="system_admin/hx/group" hx-target="#response-message" hx-swap="innerHTML"
-		hx-target-400="#response-message" class="px-2 pt-2">
+		hx-target-400="#response-message" class="w-full">
 		<input type="hidden" name="name" value="{{ group_name }}">
 		<input type="hidden" name="last_updated_by" value="{{ subject }}">
-		<div>
-			<label class="text-sm font-bold">
-				Subscriptons:
-			</label>
-			<ul class="list-none p-0 m-0 max-h-80 overflow-y-auto">
-				{% for item in selections %}
-				<li class="px-4 py-6 lg:py-2 border-b last:border-b-0 flex items-center">
-					<input type="checkbox" id="item-{{ item.0 }}" name="subscriptions" value="{{ item.0 }}"
-						class="mr-2 leading-tight" {% if item.1 %}checked{% endif %}>
-					<label for="item-{{ item.0 }}" class="text-sm flex-grow cursor-pointer">
-						{{ item.0 }}
-					</label>
-				</li>
-				{% endfor %}
-			</ul>
-		</div>
-		<button type="submit"
-			class="lg:w-[300px] w-[220px] h-[50px] py-2 mt-4 flex justify-center items-center cb_button cursor-pointer">
-			Save Selection
-		</button>
+		
+		<div id="response-message" class="mb-4 -mt-4 text-green-600"></div>
+		<button type="submit"class="cb_button">Save Selection</button>
+		<label class="mt-4">Subscriptons</label>
+		<ul class="sub-options">
+			{% for item in selections %}
+			<li>
+				<input type="checkbox" id="item-{{ item.0 }}" name="subscriptions" value="{{ item.0 }}">
+				<label for="item-{{ item.0 }}">{{ item.0 }}</label>
+			</li>
+			{% endfor %}
+		</ul>
 	</form>
-	<div id="response-message" class="mt-4 text-green-600">
-	</div>
 </div>

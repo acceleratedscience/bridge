@@ -239,12 +239,12 @@ async fn system_create_group(
     // TODO: check if group already exists, and not rely one dup key from DB
     let result = helper::log_with_level!(db.insert(group, GROUP).await, error);
     let content = match result {
-        Ok(r) => format!("<p>Group created with id: {r}</p>"),
+        Ok(r) => format!("Group created with id: {r}"),
         Err(e) if e.to_string().contains("dup key") => {
             return Ok(HttpResponse::BadRequest()
                 .append_header((
                     HTMX_ERROR_RES,
-                    format!("<p>Group '{}' already exists</p>", gf.name),
+                    format!("Group '{}' already exists", gf.name),
                 ))
                 .finish());
         }
@@ -265,7 +265,7 @@ async fn system_create_group(
 //		 .delete(doc! {"name": &group.name}, GROUP, PhantomData::<Group>)
 //		 .await?;
 //
-//	 let content = format!("<p>Group '{}' has been deleted</p>", group.name);
+//	 let content = format!("Group '{}' has been deleted", group.name);
 //	 Ok(HttpResponse::Ok()
 //		 .content_type(ContentType::form_url_encoded())
 //		 .body(content))
@@ -302,14 +302,14 @@ async fn system_update_group(
         return Ok(HttpResponse::BadRequest()
             .append_header((
                 HTMX_ERROR_RES,
-                format!("<p>Group '{}' does not exist</p>", gf.name),
+                format!("Group '{}' does not exist", gf.name),
             ))
             .finish());
     }
 
     Ok(HttpResponse::Ok()
         .content_type(ContentType::form_url_encoded())
-        .body(format!("<p>Group '{}' has been updated</p>", gf.name)))
+        .body(format!("Group '{}' has been updated", gf.name)))
 }
 
 #[patch("user")]
@@ -325,7 +325,7 @@ async fn system_update_user(
     // stop self update
     if uf.email.eq(&uf.last_updated_by) {
         return Ok(HttpResponse::BadRequest()
-            .append_header((HTMX_ERROR_RES, "<p>Cannot update self</p>".to_string()))
+            .append_header((HTMX_ERROR_RES, "Cannot update self".to_string()))
             .finish());
     }
 
@@ -346,7 +346,7 @@ async fn system_update_user(
         return Ok(HttpResponse::BadRequest()
             .append_header((
                 HTMX_ERROR_RES,
-                format!("<p>User with email address {} does not exist</p>", uf.email),
+                format!("User with email address {} does not exist", uf.email),
             ))
             .finish());
     }
@@ -354,7 +354,7 @@ async fn system_update_user(
     Ok(HttpResponse::Ok()
         .content_type(ContentType::form_url_encoded())
         .body(format!(
-            "<p>User with email address {} has been updated</p>",
+            "User with email address {} has been updated",
             uf.email
         )))
 }
@@ -375,7 +375,7 @@ async fn system_delete_user(
     // stop self delete
     if uf.email.eq(&uf.last_updated_by) {
         return Ok(HttpResponse::BadRequest()
-            .append_header((HTMX_ERROR_RES, "<p>Cannot delete self</p>".to_string()))
+            .append_header((HTMX_ERROR_RES, "Cannot delete self".to_string()))
             .finish());
     }
 
@@ -395,6 +395,7 @@ async fn system_tab_htmx(
     data: Data<Tera>,
     subject: Option<ReqData<BridgeCookie>>,
 ) -> Result<HttpResponse> {
+    println!("--- SYSTEM TAB ---");
     let gc = check_admin(subject, UserType::SystemAdmin)?;
 
     let id =
@@ -419,11 +420,12 @@ async fn system_tab_htmx(
         | AdminTab::GroupList
         | AdminTab::GroupCreate
         | AdminTab::GroupView => {
+            println!("--- DEFINE GROUPS ---");
             let mut group_form = GroupContent::new();
-
             CATALOG.get_all_by_name().iter().for_each(|name| {
                 // TODO: remove this clone and use &'static str
                 group_form.add(name.clone());
+                println!("Added group name: {}", name);
             });
 
             match tab.tab {
@@ -449,7 +451,8 @@ async fn system_tab_htmx(
                     let groups: Vec<Group> = db.find_many(doc! {}, GROUP).await.unwrap_or(vec![]);
                     let groups: Vec<GroupPortalRep> =
                         groups.into_iter().map(|group| group.into()).collect();
-
+                    
+                    // println!("Groups: {:#?}", groups);
                     helper::log_with_level!(
                         group_form.render(
                             &user.email,
@@ -532,10 +535,50 @@ async fn system_tab_htmx(
             }
         }
         AdminTab::UserList => data.render("components/systems_user.html", &tera::Context::new())?,
-        AdminTab::Main => helper::log_with_level!(
-            data.render("components/systems_group.html", &tera::Context::new()),
-            error
-        )?,
+        // AdminTab::Main => helper::log_with_level!(
+        //     data.render("components/systems_group.html", &tera::Context::new()),
+        //     error
+        // )?,
+        AdminTab::Main => {
+            let groups: Vec<Group> = db.find_many(doc! {}, GROUP).await.unwrap_or(vec![]);
+            let groups: Vec<GroupPortalRep> =
+                groups.into_iter().map(|group| group.into()).collect();
+
+            let mut context = tera::Context::new();
+            context.insert("groups", &groups);
+
+            helper::log_with_level!(
+                data.render("components/systems_group.html", &context),
+                error
+            )?
+        },
+
+        // @moe-trash
+        // AdminTab::Main => {
+        //     println!("--- TEST TEST TEST ---");
+        //     // let mut group_form = GroupContent::new();
+
+        //     // CATALOG.get_all_by_name().iter().for_each(|name| {
+        //     //     // TODO: remove this clone and use &'static str
+        //     //     group_form.add(name.clone());
+        //     // });
+
+        //     let groups: Vec<Group> = db.find_many(doc! {}, GROUP).await.unwrap_or(vec![]);
+        //     let groups: Vec<GroupPortalRep> =
+        //         groups.into_iter().map(|group| group.into()).collect();
+
+        //     helper::log_with_level!(
+        //         group_form.render(
+        //             &user.email,
+        //             data,
+        //             VIEW_GROUP,
+        //             Some(|ctx: &mut tera::Context| {
+        //                 ctx.insert("groups", &groups);
+        //             }),
+        //         ),
+        //         error
+        //     )?
+        // }
     };
 
     Ok(HttpResponse::Ok()

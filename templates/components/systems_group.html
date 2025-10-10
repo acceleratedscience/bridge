@@ -9,6 +9,7 @@
 	>
 		Create Group
 	</a>
+	{% if not groups %}
 	<a
 		id="group_admin_view_member"
 		class="cb_button"
@@ -16,6 +17,33 @@
 		hx-target="#system_admin_group"
 		tabindex="0"
 	>
-		View Groups
+		Load Groups
 	</a>
+	{% endif %}
 </div>
+{% if groups %}
+<table class="table-display mt-4">
+	<thead>
+		<tr>
+			<th scope="col">
+				Name
+			</th>
+			<th scope="col">
+				Updated
+			</th>
+		</tr>
+	</thead>
+	<tbody>
+		{% for group in groups %}
+		<tr class="clickable border-b {% if loop.index == 1 %}border-t{% endif %}" hx-get="system_admin/hx/tab?tab=GroupView&group={{ group.name }}" hx-target="#system_admin_group">
+			<td class="py-3 px-1">
+				{{ group.name }}
+			</td>
+			<td class="py-3 px-1" title="{{ group.updated_at }}">
+				{{ group.updated_at | time_ago }}
+			</td>
+		</tr>
+		{% endfor %}
+	</tbody>
+</table>
+{% endif %}

@@ -1,3 +1,14 @@
+{#
+
+
+
+
+THIS TEMPLATE IS NOT LONGER USED - MARKED FOR DELETION
+
+
+
+
+#}
 <div class="flex flex-row">
 	<p class="section-header">Group View</p>
 	<div class="section-header section-header-right">
@@ -11,16 +22,16 @@
 		</a>
 	</div>
 </div>
-<table class="w-full text-sm text-left">
-	<thead class="text-xs">
+<table class="table-display mt-4">
+	<thead>
 		<tr>
-			<th scope="col" class="py-3 px-1">
+			<th scope="col">
 				Name
 			</th>
-			<th scope="col" class="py-3 px-1">
+			<th scope="col">
 				Updated
 			</th>
-			<th scope="col" class="py-3 px-1">
+			<th scope="col">
 				Actions
 			</th>
 		</tr>
@@ -28,14 +39,14 @@
 	<tbody>
 		{% if groups %}
 		{% for group in groups %}
-		<tr class="{% if loop.index is even and groups | length > 1 %}border-t border-b{% endif %}">
-			<td class="py-3 px-1">
+		<tr>
+			<td>
 				{{ group.name }}
 			</td>
-			<td class="py-3 px-1" title="{{ group.updated_at }}">
-				{{ group.updated_at | truncate(length=16) }}
+			<td title="{{ group.updated_at }}">
+				{{ group.updated_at | time_ago }}
 			</td>
-			<td class="py-3 px-1">
+			<td>
 				<button class="font-medium hover:underline cursor-pointer"
 					hx-get="system_admin/hx/tab?tab=GroupModify&group={{ group.name }}" hx-target="#system_admin_group">
 					Edit

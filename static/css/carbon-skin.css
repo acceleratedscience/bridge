@@ -1,18 +1,17 @@
-
-/* @import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@100..700&display=swap"); */
+/* #region ----------------------------------------------- Base */
 
 body {
 	/* Colors - light */
-	--cb-blue: #0F62FE;
-	--cb-blue-hover: #0353E9;
-	--cb-blue-active: #0043CE;
+	--cb-blue: #0f62fe;
+	--cb-blue-hover: #0353e9;
+	--cb-blue-active: #0043ce;
 	--cb-main: #393939;
-	--cb-main-weak: #4C4C4C;
+	--cb-main-weak: #4c4c4c;
 	--cb-main-strong: #161616;
-	--cb-soft-text: #BBBBBB;
-	--cb-soft-border: #E5E5E5;
-	--cb-soft-bg: #F4F4F4;
-	--cb-highlight: #FFF7CC;
+	--cb-soft-text: #bbbbbb;
+	--cb-soft-border: #e5e5e5;
+	--cb-soft-bg: #f4f4f4;
+	--cb-highlight: #fff7cc;
 
 	/* Font styles */
 	--cb-font-fam: "IBM Plex Sans", sans-serif;
@@ -29,23 +28,21 @@ body {
 		--cb-main: #393939;
 		--cb-main-weak: #4c4c4c;
 		--cb-main-strong: #161616;
-		--cb-soft-text: #BBBBBB;
-		--cb-soft-border: #E5E5E5;
-		--cb-soft-bg: #F4F4F4;
+		--cb-soft-text: #bbbbbb;
+		--cb-soft-border: #e5e5e5;
+		--cb-soft-bg: #f4f4f4;
 	}
 }
 
-/**
- * Style shortcuts
- */
+/* #endregion */
+/* #region ----------------------------------------------- Style shortcuts */
 
 .soft-text {
 	color: var(--cb-soft-text);
 }
 
-/**
- * Layout
- */
+/* #endregion */
+/* #region ----------------------------------------------- Layout */
 
 #main {
 	min-height: 100%;
@@ -79,9 +76,9 @@ body {
 	background: var(--cb-soft-bg);
 }
 
-/**
- * Menu
- */
+/* #endregion */
+/* #region ----------------------------------------------- Menu */
+
 #menu_big .menu-item {
 	display: flex;
 	align-items: center;
@@ -90,131 +87,31 @@ body {
 	padding-left: 1.5rem;
 }
 #menu_big .menu-item.menu_selected {
-	background: rgba(0,0,0,.08);
+	background: rgba(0, 0, 0, 0.08);
 	border-left: solid 3px var(--cb-blue);
 	pointer-events: none;
 }
 #menu_big .menu-item:not(.menu_selected):hover {
-@media (hover: hover) {
-		background: rgba(0,0,0,.04);
+	@media (hover: hover) {
+		background: rgba(0, 0, 0, 0.04);
 	}
 }
 
-/**
- * Links
- */
+/* #endregion */
+/* #region ----------------------------------------------- Links */
 
 a.cb-link {
 	color: var(--cb-blue);
 	text-decoration: none;
+	cursor: pointer;
 }
 a.cb-link:hover {
 	color: var(--cb-blue-active);
+	text-decoration: underline;
 }
 
-/**
- * Tables
- */
-
-.table-display {
-	width: calc(100% + 2rem);
-	/* border-left: solid 1px var(--cb-soft-border); */
-	/* border-top: solid 1px var(--cb-soft-border); */
-	background: white;
-	padding: 0.5rem 1rem;
-	margin: -1rem;
-	margin-top: 0;
-	text-align: left;
-}
-
-/* Row borders */
-.table-display tr {
-	border-bottom: solid 1px var(--cb-soft-border);
-}
-.table-display tr:not(.expandable):last-child,
-.table-display tr.expandable:nth-last-child(2) {
-	border-bottom: none;
-}
-
-/* Header */
-.table-display tr.header {
-	background: var(--cb-soft-border);
-}
-
-/* Cells */
-.table-display td,
-.table-display th {
-	padding: 0.5rem 1rem;
-}
-
-/* Expandable row */
-.table-display tr.expandable {
-	cursor: pointer;
-	position: relative;
-}
-.table-display tr.expandable:not(.expanded) + tr {
-	display: none;
-}
-
-/* Expanded state */
-.table-display tr.expanded {
-	border-bottom: none;
-	font-weight: bold;
-}
-.table-display tr.expanded,
-.table-display tr.expanded + tr {
-	position: relative;
-}
-.table-display tr.expanded td::before,
-.table-display tr.expanded + tr td::before {
-	content: '';
-	display: block;
-	position: absolute;
-	top: 0;
-	left: 0;
-	width: 3px;
-	height: calc(100% + 1px);
-	background: var(--cb-blue);
-}
-.table-display tr:not(.expandable):last-child td::before {
-	/* Last row doesn't have bottom border */
-	height: 100%;
-}
-
-/* Expandable tray */
-.table-display tr.expandable + tr {
-	font-size: 0.9rem;
-	position: relative;
-}
-.table-display tr.expandable + tr td {
-	padding-bottom: 2rem;
-}
-.table-display tr.expandable + tr::after {
-	content: '';
-	display: block;
-	position: absolute;
-	top: 0;
-	left: 1rem;
-	width: calc(100% - 2rem);
-	border-bottom: dashed 1px var(--cb-soft-border);
-}
-
-/* Code blocks */
-.table-display code {
-	margin: 0.25rem 0;
-}
-
-@media (hover: hover) {
-	.table-display tr.expandable:not(.expanded):hover {
-		background: var(--cb-highlight);
-		position: relative;
-		z-index: 1;
-	}
-}
-
-/**
- * Buttons
- */
+/* #endregion */
+/* #region ----------------------------------------------- Buttons */
 
 .cb_button {
 	height: 40px;
@@ -257,9 +154,9 @@ a.cb-link:hover {
 	gap: 0.5rem;
 }
 
-/**
- * Dropdowns
- */
+/* #endregion */
+/* #region ----------------------------------------------- Dropdowns */
+
 .ibm-dropdown {
 	display: flex;
 	flex-direction: column;
@@ -309,9 +206,137 @@ a.cb-link:hover {
 		0 0 no-repeat;
 }
 
-/**
- * Code blocks
- */
+/* #endregion */
+/* #region ----------------------------------------------- Inputs */
+
+input:not([type="checkbox"]):not([type="radio"]) {
+	background: white;
+	height: 40px;
+	padding: 0 1rem;
+	border-bottom: solid 1px var(--cb-main);
+}
+input:not([type="checkbox"]):not([type="radio"]):focus {
+	outline: solid 2px var(--cb-blue);
+	border-bottom-color: transparent;
+}
+label {
+	font-size: var(--text-sm);
+	color: var(--cb-main-weak);
+	display: block;
+	margin-bottom: 0.25rem;
+}
+
+/* Group of input + submit button */
+.input-submit > div {
+	display: flex;
+	gap: 0.5rem;
+}
+
+/* #endregion */
+/* #region ----------------------------------------------- Tables */
+
+.table-display {
+	width: calc(100% + 2rem);
+	background: white;
+	padding: 0.5rem 1rem;
+	margin-left: -1rem;
+	margin-left: -1rem;
+	text-align: left;
+}
+
+/* Clickable rows */
+.table-display tr.clickable {
+	cursor: pointer;
+}
+
+/* Row borders */
+.table-display tr {
+	border-bottom: solid 1px var(--cb-soft-border);
+}
+.table-display tr:not(.expandable):last-child,
+.table-display tr.expandable:nth-last-child(2) {
+	border-bottom: none;
+}
+
+/* Header */
+.table-display thead tr {
+	background: var(--cb-soft-border);
+}
+
+/* Cells */
+.table-display td,
+.table-display th {
+	padding: 0.5rem 1rem;
+}
+
+/* Expandable row */
+.table-display tr.expandable {
+	cursor: pointer;
+	position: relative;
+}
+.table-display tr.expandable:not(.expanded) + tr {
+	display: none;
+}
+
+/* Expanded state */
+.table-display tr.expanded {
+	border-bottom: none;
+	font-weight: bold;
+}
+.table-display tr.expanded,
+.table-display tr.expanded + tr {
+	position: relative;
+}
+.table-display tr.expanded td::before,
+.table-display tr.expanded + tr td::before {
+	content: "";
+	display: block;
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 3px;
+	height: calc(100% + 1px);
+	background: var(--cb-blue);
+}
+.table-display tr:not(.expandable):last-child td::before {
+	/* Last row doesn't have bottom border */
+	height: 100%;
+}
+
+/* Expandable tray */
+.table-display tr.expandable + tr {
+	font-size: 0.9rem;
+	position: relative;
+}
+.table-display tr.expandable + tr td {
+	padding-bottom: 2rem;
+}
+.table-display tr.expandable + tr::after {
+	content: "";
+	display: block;
+	position: absolute;
+	top: 0;
+	left: 1rem;
+	width: calc(100% - 2rem);
+	border-bottom: dashed 1px var(--cb-soft-border);
+}
+
+/* Code blocks */
+.table-display code {
+	margin: 0.25rem 0;
+}
+
+@media (hover: hover) {
+	.table-display tr.clickable:hover,
+	.table-display tr.expandable:not(.expanded):hover {
+		background: var(--cb-highlight);
+		position: relative;
+		z-index: 1;
+	}
+}
+
+/* #endregion */
+/* #region ----------------------------------------------- Code blocks */
 
 code {
 	background: var(--cb-main);
@@ -334,7 +359,7 @@ code .copy {
 	color: white;
 }
 code .copy::before {
-	content: '';
+	content: "";
 	position: absolute;
 	z-index: -1;
 	top: 0;
@@ -347,7 +372,7 @@ code .copy::before {
 code.copied,
 code.copied .copy::before {
 	animation: code-copied 120ms 3;
-	color: #9C9882;
+	color: #9c9882;
 }
 code.copied .copy {
 	display: block;
@@ -374,9 +399,8 @@ code.copied .copy {
 	}
 }
 
-/**
- * Animnations
- */
+/* #endregion */
+/* #region ----------------------------------------------- Animations */
 
 .cb-blink {
 	animation: blink 2s infinite;
@@ -396,3 +420,5 @@ code.copied .copy {
 		opacity: 0.3;
 	}
 }
+
+/* #endregion */

@@ -6,32 +6,27 @@
 {% set target_panel = 'group_admin_panel' %}
 {% endif %}
 
-<div class="flex flex-row">
-	<p class="section-header">Group View</p>
-	<div class="section-header section-header-right">
-		<a id="group_admin_back" hx-get="{{ back_link }}" hx-target="#{{ target_panel }}"
-			class="flex justify-center w-16 text-center cb_button_secondary cursor-pointer" tabindex="0">
-			<svg focusable="false" preserveAspectRatio="xMidYMid meet" fill="currentColor" width="20" height="20"
-				viewBox="0 0 32 32" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
-				<path d="M14 26L15.41 24.59 7.83 17 28 17 28 15 7.83 15 15.41 7.41 14 6 4 16 14 26z"></path>
-				<title>Arrow left</title>
-			</svg>
-		</a>
-	</div>
+<div class="section-header flex flex-row">
+	<a hx-get="{{ back_link }}" hx-target="#{{ target_panel }}" class="cb-link">Group Management</a>
+	&nbsp;&rsaquo;
+	{{ group | capitalize }}
 </div>
-<table class="w-full text-sm text-left">
-	<thead class="text-xs">
+<button type="submit" class="cb_button secondary" hx-get="system_admin/hx/tab?tab=GroupModify&group={{ group }}" hx-target="#system_admin_group">
+	Subscriptions
+</button>
+<table class="table-display mt-4">
+	<thead>
 		<tr>
-			<th scope="col" class="py-3 px-1 max-lg:hidden">
+			<th scope="col" class="max-lg:hidden">
 				Name
 			</th>
-			<th scope="col" class="py-3 px-1">
+			<th scope="col">
 				Email
 			</th>
-			<th scope="col" class="py-3 px-1 max-sm:hidden">
+			<th scope="col" class="max-sm:hidden">
 				Updated
 			</th>
-			<th scope="col" class="py-3 px-1">
+			<th scope="col">
 				Actions
 			</th>
 		</tr>
@@ -39,17 +34,17 @@
 	<tbody>
 		{% if group_members %}
 		{% for user in group_members %}
-		<tr class="{% if loop.index is even and group_members | length > 1 %}border-t border-b{% endif %}">
-			<td class="py-3 px-1 max-lg:hidden">
+		<tr>
+			<td class="max-lg:hidden">
 				{{ user.user_name }}
 			</td>
-			<td class="py-3 px-1">
+			<td>
 				{{ user.email }}
 			</td>
-			<td class="py-3 px-1 max-sm:hidden" title="{{ user.updated_at }}">
-				{{ user.updated_at | truncate(length=16) }}
+			<td class="max-sm:hidden" title="{{ user.updated_at }}">
+				{{ user.updated_at | time_ago }}
 			</td>
-			<td id="_{{ user.sub | slugify }}_remove" class="py-3 px-1">
+			<td id="_{{ user.sub | slugify }}_remove">
 				<button class="font-medium text-red-600 dark:text-red-500 cursor-pointer" hx-patch="group_admin/hx/user"
 					hx-vals='{"email": "{{ user.email }}", "group_name": "{{ group }}", "modify_user": "remove", "last_updated_by": "{{ group_admin }}"}'
 					hx-target="#_{{ user.sub | slugify }}_remove" hx-swap="outerhtml"
