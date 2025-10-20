@@ -5,7 +5,7 @@
 		<div id="notebook_panel" class="flex flex-col flex-grow">
 			{% if notebook.start_time == "None" %}
 			{# No notebook up #}
-			{% include 'components/notebook/ready.html' %}
+			{% include 'components/notebook/start.html' %}
 			{% else %}
 			{% if notebook.status == "Ready" %}
 			{% include 'components/notebook/ready.html' %}

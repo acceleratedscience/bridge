@@ -73,12 +73,12 @@ build-full: (build-features "notebook,lifecycle,observe,mcp,openwebui")
 
 # --- Frontend & Minification ---
 mini-js:
-	uglifyjs ./static/js/main.js -o ./static/js/main.js -c -m
+	npx uglifyjs ./static/js/main.js -o ./static/js/main.js -c -m
 
 build-front:
-	tailwindcss -i ./static/css/input.css -o ./static/css/output.css --minify
-	tsc
-	uglifyjs ./static/js/main.js -o ./static/js/main.js -c -m
+	npx tailwindcss -i ./static/css/input.css -o ./static/css/output.css --minify
+	npx tsc
+	npx uglifyjs ./static/js/main.js -o ./static/js/main.js -c -m
 
 # --- Local Development Services ---
 local-mongo:
