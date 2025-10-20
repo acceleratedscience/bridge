@@ -1,1 +1,131 @@
-var currentPath=window.location.pathname,Menu=function(t,e){function s(e,n){e instanceof HTMLElement&&(e=e.id.split(n)[1],(n=document.getElementById(e))instanceof HTMLElement)&&n.classList.remove("hidden")}function i(){c.main.forEach(function(e){e instanceof HTMLElement&&e.classList.add("hidden")})}var c=this;this.menu_button=document.getElementById(t.button),this.menu_big=document.getElementById(t.big).childNodes,this.menu=document.getElementById(t.menu),this.menu_mobile=document.getElementById(t.menu).childNodes,this.menu_open=document.getElementById(t.open),this.menu_close=document.getElementById(t.close),this.main=document.getElementById(e).childNodes,this.menu_big.forEach(function(n){n.addEventListener("click",function(){var e;n instanceof HTMLElement&&n.id.startsWith("ignore")||(i(),s(n,"_"),c.menu_big.forEach(function(e){e instanceof HTMLElement&&e.classList.remove(t.menu_selected)}),c.menu_mobile.forEach(function(e){e instanceof HTMLElement&&e.classList.remove(t.mobile_menu_selected)}),n instanceof HTMLElement&&(n.classList.add(t.menu_selected),e=n.id.replace("big_","mobile_"),document.getElementById(e).classList.add(t.mobile_menu_selected)))})}),this.menu_mobile.forEach(function(n){n.addEventListener("click",function(){var e;n instanceof HTMLElement&&n.id.startsWith("ignore")||(i(),s(n,"_"),c.menu_mobile.forEach(function(e){e instanceof HTMLElement&&e.classList.remove(t.mobile_menu_selected)}),c.menu_big.forEach(function(e){e instanceof HTMLElement&&e.classList.remove(t.menu_selected)}),n instanceof HTMLElement&&(n.classList.add(t.mobile_menu_selected),e=n.id.replace("mobile_","big_"),document.getElementById(e).classList.add(t.menu_selected)))})}),this.menu_button.addEventListener("click",function(){c.menu.classList.contains("hidden")?(c.menu.classList.add("flex"),c.menu.classList.remove("hidden"),c.menu_open.classList.add("hidden"),c.menu_close.classList.remove("hidden")):(c.menu.classList.add("hidden"),c.menu.classList.remove("flex"),c.menu_open.classList.remove("hidden"),c.menu_close.classList.add("hidden"))}),document.addEventListener("click",function(e){e.target instanceof HTMLElement&&!c.menu_button.contains(e.target)&&c.menu.classList.contains("flex")&&(c.menu.classList.add("hidden"),c.menu.classList.remove("flex"),c.menu_open.classList.remove("hidden"),c.menu_close.classList.add("hidden"))})};"/"!==currentPath&&window.addEventListener("DOMContentLoaded",function(){new Menu({button:"menu_button",big:"menu_big",menu:"menu",open:"menu_open",close:"menu_close",menu_selected:"menu_selected",mobile_menu_selected:"mobile_menu_selected"},"main")}),htmx.config.includeIndicatorStyles=!1;
+var currentPath = window.location.pathname;
+var Menu = /** @class */ (function () {
+    function Menu(menu_labels, main) {
+        var _this = this;
+        this.menu_button = document.getElementById(menu_labels.button);
+        this.menu_big = document.getElementById(menu_labels.big).childNodes;
+        this.menu = document.getElementById(menu_labels.menu);
+        this.menu_mobile = document.getElementById(menu_labels.menu).childNodes;
+        this.menu_open = document.getElementById(menu_labels.open);
+        this.menu_close = document.getElementById(menu_labels.close);
+        this.main = document.getElementById(main).childNodes;
+        var showById = function (node, delimiter) {
+            if (node instanceof HTMLElement) {
+                var element = node.id;
+                var id = element.split(delimiter)[1];
+                var target = document.getElementById(id);
+                if (target instanceof HTMLElement) {
+                    target.classList.remove("hidden");
+                }
+            }
+        };
+        var hideAllMain = function () {
+            _this.main.forEach(function (node) {
+                if (node instanceof HTMLElement) {
+                    node.classList.add("hidden");
+                }
+            });
+        };
+        // Big menu item selection styling
+        this.menu_big.forEach(function (node) {
+            node.addEventListener("click", function () {
+                // if the node name starts with "ignore" skip it
+                if (node instanceof HTMLElement &&
+                    node.id.startsWith("ignore")) {
+                    return;
+                }
+                hideAllMain();
+                showById(node, "_");
+                _this.menu_big.forEach(function (node) {
+                    if (node instanceof HTMLElement) {
+                        node.classList.remove(menu_labels.menu_selected);
+                    }
+                });
+                _this.menu_mobile.forEach(function (node) {
+                    if (node instanceof HTMLElement) {
+                        node.classList.remove(menu_labels.mobile_menu_selected);
+                    }
+                });
+                if (node instanceof HTMLElement) {
+                    node.classList.add(menu_labels.menu_selected);
+                    var mobile_target = node.id.replace("big_", "mobile_");
+                    document
+                        .getElementById(mobile_target)
+                        .classList.add(menu_labels.mobile_menu_selected);
+                }
+            });
+        });
+        // mobile menu item selection styling
+        this.menu_mobile.forEach(function (node) {
+            node.addEventListener("click", function () {
+                // if the node name starts with "ignore" skip it
+                if (node instanceof HTMLElement &&
+                    node.id.startsWith("ignore")) {
+                    return;
+                }
+                hideAllMain();
+                showById(node, "_");
+                _this.menu_mobile.forEach(function (node) {
+                    if (node instanceof HTMLElement) {
+                        node.classList.remove(menu_labels.mobile_menu_selected);
+                    }
+                });
+                _this.menu_big.forEach(function (node) {
+                    if (node instanceof HTMLElement) {
+                        node.classList.remove(menu_labels.menu_selected);
+                    }
+                });
+                if (node instanceof HTMLElement) {
+                    node.classList.add(menu_labels.mobile_menu_selected);
+                    var big_target = node.id.replace("mobile_", "big_");
+                    document
+                        .getElementById(big_target)
+                        .classList.add(menu_labels.menu_selected);
+                }
+            });
+        });
+        // Mobile menu
+        this.menu_button.addEventListener("click", function () {
+            if (_this.menu.classList.contains("hidden")) {
+                _this.menu.classList.add("flex");
+                _this.menu.classList.remove("hidden");
+                _this.menu_open.classList.add("hidden");
+                _this.menu_close.classList.remove("hidden");
+            }
+            else {
+                _this.menu.classList.add("hidden");
+                _this.menu.classList.remove("flex");
+                _this.menu_open.classList.remove("hidden");
+                _this.menu_close.classList.add("hidden");
+            }
+        });
+        // Mobile when close when clicking outside the menu
+        document.addEventListener("click", function (e) {
+            if (e.target instanceof HTMLElement &&
+                !_this.menu_button.contains(e.target) &&
+                _this.menu.classList.contains("flex")) {
+                _this.menu.classList.add("hidden");
+                _this.menu.classList.remove("flex");
+                _this.menu_open.classList.remove("hidden");
+                _this.menu_close.classList.add("hidden");
+            }
+        });
+    }
+    return Menu;
+}());
+if (currentPath !== "/") {
+    window.addEventListener("DOMContentLoaded", function () {
+        var menu_labels = {
+            button: "menu_button",
+            big: "menu_big",
+            menu: "menu",
+            open: "menu_open",
+            close: "menu_close",
+            menu_selected: "menu_selected",
+            mobile_menu_selected: "mobile_menu_selected",
+        };
+        new Menu(menu_labels, "main");
+    });
+}
+// @ts-ignore
+htmx.config.includeIndicatorStyles = false;
