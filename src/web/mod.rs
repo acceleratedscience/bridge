@@ -74,7 +74,7 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
         .expect("Cannot install default provider with ring");
 
     // Singletons
-    openid::init_once().await; // <-- TEMP DISABLED TO BYPASS LOGIN
+    openid::init_once().await;
     if let Err(e) = DB::init_once(&DBNAME).await {
         eprintln!("{e}");
         exit(1);

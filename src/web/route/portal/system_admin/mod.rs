@@ -99,25 +99,6 @@ pub(super) async fn system(
         Err(_) => (vec![], "".to_string(), "".to_string(), "".to_string()),
     };
 
-    // // Expand subs into objects with service details
-    // let expanded_subs_1: Vec<serde_json::Value> = subs
-    //     .iter()
-    //     .map(|service_name| {
-    //         match CATALOG.get_service(service_name) {
-    //             Ok(service_details) => {
-    //                 serde_json::json!({
-    //                     "service_details": service_details,
-    //                 })
-    //             }
-    //             Err(_) => {
-    //                 serde_json::json!({
-    //                     "service_name": service_name,
-    //                 })
-    //             }
-    //         }
-    //     })
-    //     .collect();
-
     // @placeholder: need to fetch subscription parameters from services.toml
     let subs_expanded: Vec<serde_json::Value> = subs
         .iter()
@@ -395,7 +376,6 @@ async fn system_tab_htmx(
     data: Data<Tera>,
     subject: Option<ReqData<BridgeCookie>>,
 ) -> Result<HttpResponse> {
-    println!("--- SYSTEM TAB ---");
     let gc = check_admin(subject, UserType::SystemAdmin)?;
 
     let id =
@@ -420,12 +400,10 @@ async fn system_tab_htmx(
         | AdminTab::GroupList
         | AdminTab::GroupCreate
         | AdminTab::GroupView => {
-            println!("--- DEFINE GROUPS ---");
             let mut group_form = GroupContent::new();
             CATALOG.get_all_by_name().iter().for_each(|name| {
                 // TODO: remove this clone and use &'static str
                 group_form.add(name.clone());
-                println!("Added group name: {}", name);
             });
 
             match tab.tab {
@@ -452,7 +430,6 @@ async fn system_tab_htmx(
                     let groups: Vec<GroupPortalRep> =
                         groups.into_iter().map(|group| group.into()).collect();
                     
-                    // println!("Groups: {:#?}", groups);
                     helper::log_with_level!(
                         group_form.render(
                             &user.email,
@@ -535,50 +512,25 @@ async fn system_tab_htmx(
             }
         }
         AdminTab::UserList => data.render("components/systems_user.html", &tera::Context::new())?,
-        // AdminTab::Main => helper::log_with_level!(
-        //     data.render("components/systems_group.html", &tera::Context::new()),
-        //     error
-        // )?,
-        AdminTab::Main => {
-            let groups: Vec<Group> = db.find_many(doc! {}, GROUP).await.unwrap_or(vec![]);
-            let groups: Vec<GroupPortalRep> =
-                groups.into_iter().map(|group| group.into()).collect();
+        AdminTab::Main => helper::log_with_level!(
+            data.render("components/systems_group.html", &tera::Context::new()),
+            error
+        )?,
 
-            let mut context = tera::Context::new();
-            context.insert("groups", &groups);
-
-            helper::log_with_level!(
-                data.render("components/systems_group.html", &context),
-                error
-            )?
-        },
-
-        // @moe-trash
+        // Failed attempt at making groups available on page load
         // AdminTab::Main => {
-        //     println!("--- TEST TEST TEST ---");
-        //     // let mut group_form = GroupContent::new();
-
-        //     // CATALOG.get_all_by_name().iter().for_each(|name| {
-        //     //     // TODO: remove this clone and use &'static str
-        //     //     group_form.add(name.clone());
-        //     // });
-
         //     let groups: Vec<Group> = db.find_many(doc! {}, GROUP).await.unwrap_or(vec![]);
         //     let groups: Vec<GroupPortalRep> =
         //         groups.into_iter().map(|group| group.into()).collect();
 
+        //     let mut context = tera::Context::new();
+        //     context.insert("groups", &groups);
+
         //     helper::log_with_level!(
-        //         group_form.render(
-        //             &user.email,
-        //             data,
-        //             VIEW_GROUP,
-        //             Some(|ctx: &mut tera::Context| {
-        //                 ctx.insert("groups", &groups);
-        //             }),
-        //         ),
+        //         data.render("components/systems_group.html", &context),
         //         error
         //     )?
-        // }
+        // },
     };
 
     Ok(HttpResponse::Ok()

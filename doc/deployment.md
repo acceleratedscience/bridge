@@ -60,11 +60,16 @@
 3.  Start the Bridge server
 
     ```shell
-    cargo run --features=full --release
+    cargo run --features=full
     ```
 
-    The `--release` flag will enable all optimizations and compilation will take a longer time.  
-    Refer to [Cargo.toml](../Cargo.toml) for the available feature flags
+    Refer to [Cargo.toml](../Cargo.toml) for the available `--features` flags.
+
+    The `--release` flag will enable all optimizations and compilation will take a longer time:
+
+    ```shell
+    cargo run --features=full --release
+    ```
 
     > **Development:**
     > To have the server restart on change, use cargo-watch:
@@ -74,7 +79,7 @@
     > ```
     >
     > ```
-    > cargo watch -x 'run --features=full --release'
+    > cargo watch -x 'run --features=full
     > ```
     >
     > **Note:** Be patient as the initial build may take multiple minutes.

@@ -277,7 +277,7 @@ mod tests {
             );
         }
 
-        assert_eq!(config.app_name, "OpenAD");
+        assert_eq!(config.app_name, "Open Accelerated Discovery");
     }
 
     #[test]
