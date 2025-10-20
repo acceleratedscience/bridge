@@ -5,9 +5,6 @@ html {
 	background: var(--cb-main);
 	color: white;
 }
-
-ul.sub-options {
-}
 ul.sub-options li {
 	display: flex;
 	gap: 1rem;

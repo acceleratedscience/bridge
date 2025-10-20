@@ -346,7 +346,7 @@ async fn system_update_user(
         return Ok(HttpResponse::BadRequest()
             .append_header((
                 HTMX_ERROR_RES,
-                format!("User with email address {} does not exist", uf.email),
+                format!("User '{}' does not exist", uf.email),
             ))
             .finish());
     }
@@ -354,7 +354,7 @@ async fn system_update_user(
     Ok(HttpResponse::Ok()
         .content_type(ContentType::form_url_encoded())
         .body(format!(
-            "User with email address {} has been updated",
+            "User '{}' has been updated",
             uf.email
         )))
 }

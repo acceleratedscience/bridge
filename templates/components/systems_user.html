@@ -1,9 +1,9 @@
 <p class="section-header">User Management</p>
-<div class="pt-4" hx-ext="response-targets">
-	<label for="searchInput" class="text-sm font-medium">Search</label>
+<div hx-ext="response-targets">
+	{# <label for="searchInput" class="text-sm font-medium">Search</label> #}
 	<div class="flex mt-2 relative">
 		<input type="text" id="searchInput" name="email" class="flex-grow focus:outline-none"
-			placeholder="Email address..." hx-get="hx/search_by_email" hx-trigger="input delay:1s"
+			placeholder="Search email address..." hx-get="hx/search_by_email" hx-trigger="input delay:1s"
 			hx-target="#searchResults" hx-swap="innerHTML" hx-target-400="#searchResults" _="on input from me
 		set innerHTML of #searchResults to '' end
 		on htmx:beforeRequest if my value is empty set innerHTML of #searchResults to 'Value is required'
