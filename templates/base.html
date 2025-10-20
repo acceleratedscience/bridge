@@ -8,8 +8,6 @@
 	<title>{% block title %}{% endblock title %}</title>
 	<link rel="icon" href="/static/img/favicon.svg" />
 	<link rel="stylesheet" href="/static/css/output.css" />
-	<link rel="stylesheet" href="/static/css/carbon-skin.css" />
-	<link rel="stylesheet" href="/static/css/carbon-bridge.css" />
 	{% block htmx %}
 	<script src="/static/js/htmx.min.js"></script>
 	<script src="/static/js/main.js" defer></script>
@@ -19,7 +17,7 @@
 	{% endblock head %}
 </head>
 
-<body class="flex flex-col min-h-screen bg-[#ffffff] dark:bg-[#21272a] text-slate-900 dark:text-slate-200">
+<body>
 	{% block nav %}
 	{% endblock nav %}
 

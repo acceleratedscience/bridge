@@ -1,25 +1,22 @@
 {% extends 'base.html' %}
 
 {% block nav %}
-<nav id="navigation" class="bg-[#f4f4f4] dark:bg-[#121619] sticky top-0 w-full z-10 drop-shadow-md flex-none">
+
+{# Top navigation bar #}
+<nav id="navigation">
 	<div class="mx-auto min-w-full px-2">
 		<div class="relative flex h-12 items-center justify-between">
 			<div class="flex items-center md:hidden">
 				{# Mobile menu button #}
-				<button id="menu_button" type="button"
-					class="relative inline-flex items-center justify-center p-2 text-gray-400 hover:text-white focus:outline-hidden focus:ring-2 focus:ring-inset focus:ring-white cursor-pointer"
-					aria-controls="mobile-menu" aria-expanded="false">
+				<button id="menu_button" type="button" aria-controls="mobile-menu" aria-expanded="false">
 					<span class="absolute -inset-0.5"></span>
 					<span class="sr-only">Open main menu</span>
 					{# menu closed #}
-					<svg id="menu_open" class="block size-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
-						stroke="currentColor" aria-hidden="true" data-slot="icon">
-						<path stroke-linecap="round" stroke-linejoin="round"
-							d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+					<svg id="menu_open" class="block size-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true" data-slot="icon">
+						<path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
 					</svg>
 					{# menu opened #}
-					<svg id="menu_close" class="hidden size-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
-						stroke="currentColor" aria-hidden="true" data-slot="icon">
+					<svg id="menu_close" class="hidden size-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true" data-slot="icon">
 						<path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
 					</svg>
 				</button>
@@ -45,14 +42,9 @@
 			<div class="flex relative text-gray-400 hover:text-white ml-2 min-h-full items-center justify-center px-2 cursor-pointer"
 				hx-post="/session/logout">
 				<span class="sr-only">Logout</span>
-				<svg class="size-6" preserveAspectRatio="xMidYMid meet" fill="currentColor" width="32" height="32"
-					viewBox="0 0 32 32" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
-					<path
-						d="M6,30H18a2.0023,2.0023,0,0,0,2-2V25H18v3H6V4H18V7h2V4a2.0023,2.0023,0,0,0-2-2H6A2.0023,2.0023,0,0,0,4,4V28A2.0023,2.0023,0,0,0,6,30Z">
-					</path>
-					<path
-						d="M20.586 20.586L24.172 17 10 17 10 15 24.172 15 20.586 11.414 22 10 28 16 22 22 20.586 20.586z">
-					</path>
+				<svg class="size-6" preserveAspectRatio="xMidYMid meet" fill="currentColor" width="32" height="32" viewBox="0 0 32 32" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+					<path d="M6,30H18a2.0023,2.0023,0,0,0,2-2V25H18v3H6V4H18V7h2V4a2.0023,2.0023,0,0,0-2-2H6A2.0023,2.0023,0,0,0,4,4V28A2.0023,2.0023,0,0,0,6,30Z"></path>
+					<path d="M20.586 20.586L24.172 17 10 17 10 15 24.172 15 20.586 11.414 22 10 28 16 22 22 20.586 20.586z"></path>
 					<title>Logout</title>
 				</svg>
 			</div>
@@ -60,9 +52,16 @@
 	</div>
 </nav>
 
+{# Main wrap #}
 <div class="flex flex-1 grid-cols-2 mx-auto min-w-full relative">
-	<div class="flex-none fixed w-64 pt-2 bg-[#f4f4f4] dark:bg-[#343a3f] md:block hidden">
+	
+	{# Side nav wrapper #}
+	<div id="side_nav_wrap">
+		
+		{# Side nav column #}
 		<div class="flex flex-col grid-cols-1 grid-rows-2 min-h-[calc(100vh-3rem)]">
+			
+			{# Side nav items #}
 			<div id="menu_big" class="flex-none">
 				
 				{# Profile #}
@@ -90,80 +89,59 @@
 
 				{# Member Management #}
 				{% if user_type == "group" %}
-				<a href="#" id="big_members" class="block py-2 px-4 dark:hover:bg-[#4d5358] hover:bg-[rgba(0,0,0,.2)]">
-					<div class="flex">
-						<svg preserveAspectRatio="xMidYMid meet" fill="currentColor" width="32" height="32"
-							viewBox="0 0 32 32" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
-							<path
-								d="M8 19H6V17a3.0033 3.0033 0 013-3h5v2H9a1.0011 1.0011 0 00-1 1zM12 13a4 4 0 114-4A4.0045 4.0045 0 0112 13zm0-6a2 2 0 102 2A2.0021 2.0021 0 0012 7zM20 20a4 4 0 114-4A4.0045 4.0045 0 0120 20zm0-6a2 2 0 102 2A2.0021 2.0021 0 0020 14zM26 26H24V24a1.0011 1.0011 0 00-1-1H17a1.0011 1.0011 0 00-1 1v2H14V24a3.0033 3.0033 0 013-3h6a3.0033 3.0033 0 013 3z">
-							</path>
-							<path
-								d="M8 30H4a2.0021 2.0021 0 01-2-2V4A2.0021 2.0021 0 014 2H8V4H4V28H8zM28 30H24V28h4V4H24V2h4a2.0021 2.0021 0 012 2V28A2.0021 2.0021 0 0128 30z">
-							</path>
-						</svg>
-						<p class="self-center grow pl-4">Member Management</p>
-					</div>
+				<a href="#" id="big_members" class="incognito menu-item">
+					<svg class="scale-150" width="16" height="16" viewBox="0 0 16 16" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+						<path d="M15.5 15H14.5V13.5C14.5 13.1022 14.342 12.7206 14.0607 12.4393C13.7794 12.158 13.3978 12 13 12H11C10.6022 12 10.2206 12.158 9.93934 12.4393C9.65804 12.7206 9.5 13.1022 9.5 13.5V15H8.5V13.5C8.5 12.837 8.76339 12.2011 9.23223 11.7322C9.70107 11.2634 10.337 11 11 11H13C13.663 11 14.2989 11.2634 14.7678 11.7322C15.2366 12.2011 15.5 12.837 15.5 13.5V15Z"/>
+						<path d="M12 6C12.2967 6 12.5867 6.08797 12.8334 6.2528C13.08 6.41762 13.2723 6.65189 13.3858 6.92597C13.4994 7.20006 13.5291 7.50166 13.4712 7.79264C13.4133 8.08361 13.2704 8.35088 13.0607 8.56066C12.8509 8.77044 12.5836 8.9133 12.2926 8.97118C12.0017 9.02906 11.7001 8.99935 11.426 8.88582C11.1519 8.77229 10.9176 8.58003 10.7528 8.33335C10.588 8.08668 10.5 7.79667 10.5 7.5C10.5 7.10218 10.658 6.72064 10.9393 6.43934C11.2206 6.15804 11.6022 6 12 6ZM12 5C11.5055 5 11.0222 5.14662 10.6111 5.42133C10.2 5.69603 9.87952 6.08648 9.6903 6.54329C9.50108 7.00011 9.45157 7.50277 9.54804 7.98773C9.6445 8.47268 9.8826 8.91814 10.2322 9.26777C10.5819 9.6174 11.0273 9.8555 11.5123 9.95196C11.9972 10.0484 12.4999 9.99892 12.9567 9.8097C13.4135 9.62048 13.804 9.30005 14.0787 8.88893C14.3534 8.4778 14.5 7.99445 14.5 7.5C14.5 6.83696 14.2366 6.20107 13.7678 5.73223C13.2989 5.26339 12.663 5 12 5Z"/>
+						<path d="M7.5 11H6.5V9.5C6.5 9.10218 6.34196 8.72064 6.06066 8.43934C5.77936 8.15804 5.39782 8 5 8H3C2.60218 8 2.22064 8.15804 1.93934 8.43934C1.65804 8.72064 1.5 9.10218 1.5 9.5V11H0.5V9.5C0.5 8.83696 0.763392 8.20107 1.23223 7.73223C1.70107 7.26339 2.33696 7 3 7H5C5.66304 7 6.29893 7.26339 6.76777 7.73223C7.23661 8.20107 7.5 8.83696 7.5 9.5V11Z"/>
+						<path d="M4 2C4.29667 2 4.58668 2.08797 4.83336 2.2528C5.08003 2.41762 5.27229 2.65189 5.38582 2.92597C5.49935 3.20006 5.52906 3.50166 5.47118 3.79264C5.4133 4.08361 5.27044 4.35088 5.06066 4.56066C4.85088 4.77044 4.58361 4.9133 4.29264 4.97118C4.00166 5.02906 3.70006 4.99935 3.42597 4.88582C3.15189 4.77229 2.91762 4.58003 2.7528 4.33336C2.58797 4.08668 2.5 3.79667 2.5 3.5C2.5 3.10218 2.65804 2.72064 2.93934 2.43934C3.22064 2.15804 3.60218 2 4 2ZM4 1C3.50555 1 3.0222 1.14662 2.61107 1.42133C2.19995 1.69603 1.87952 2.08648 1.6903 2.54329C1.50108 3.00011 1.45157 3.50277 1.54804 3.98773C1.6445 4.47268 1.8826 4.91814 2.23223 5.26777C2.58186 5.6174 3.02732 5.8555 3.51227 5.95196C3.99723 6.04843 4.49989 5.99892 4.95671 5.8097C5.41352 5.62048 5.80397 5.30005 6.07867 4.88893C6.35338 4.4778 6.5 3.99445 6.5 3.5C6.5 2.83696 6.23661 2.20107 5.76777 1.73223C5.29893 1.26339 4.66304 1 4 1Z"/>
+					</svg>
+					<div>Member Management</div>
 				</a>
 				{% endif %}
 
 				{% if user_type != "pending" %}
-				{#
-				<a href="#" id="big_models" class="block py-2 px-4 dark:hover:bg-[#4d5358] hover:bg-[rgba(0,0,0,.2)]">
-					<div class="flex">
-						<svg preserveAspectRatio="xMidYMid meet" fill="currentColor" width="32" height="32"
-							viewBox="0 0 32 32" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
-							<path
-								d="M19 21v-2h1v-7h-1v-2h4v2h-1v7h1v2h-4zM15.5005 21h2l-3.5005-11h-3l-3.4966 11h1.9988l.6018-2h4.7781l.6184 2zM10.7058 17l1.6284-5.4111.2559-.0024 1.6736 5.4136h-3.5579z">
-							</path>
-							<path d="M32,32H0V0h32v32ZM2,30h28V2H2v28Z"></path>
+					{# <a href="#" id="big_models" class="incognito menu-item">
+						<svg class="scale-150" width="16" height="16" viewBox="0 0 16 16" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+							<path d="M11.75 2H4.25001L0.85791 6.5227L8.00001 14.7634L15.1421 6.5227L11.75 2ZM13.5 6H10.7772L8.90216 3H11.25L13.5 6ZM5.15106 7L7.02786 12.115L2.59501 7H5.15106ZM6.21606 7H9.78401L7.99951 11.8606L6.21606 7ZM6.40231 6L8.00001 3.44335L9.59786 6H6.40231ZM10.8491 7H13.405L8.97136 12.1157L10.8491 7ZM4.75001 3H7.09786L5.22286 6H2.50001L4.75001 3Z"/>
 						</svg>
-						<p class="self-center grow pl-4">Available Models</p>
-					</div>
-				</a>
-				#}
-				{#
-				<a href="#" id="big_token" class="block py-2 px-4 dark:hover:bg-[#4d5358] hover:bg-[rgba(0,0,0,.2)]"
-					hx-get="hx/token" hx-trigger="click" hx-target="#main" hx-swap="innerHTML">
-					<div class="flex">
-						<svg preserveAspectRatio="xMidYMid meet" fill="currentColor" width="32" height="32"
-							viewBox="0 0 32 32" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
-							<path
-								d="M21,2a8.9977,8.9977,0,0,0-8.6119,11.6118L2,24v6H8L18.3881,19.6118A9,9,0,1,0,21,2Zm0,16a7.0125,7.0125,0,0,1-2.0322-.3022L17.821,17.35l-.8472.8472-3.1811,3.1812L12.4141,20,11,21.4141l1.3787,1.3786-1.5859,1.586L9.4141,23,8,24.4141l1.3787,1.3786L7.1716,28H4V24.8284l9.8023-9.8023.8472-.8474-.3473-1.1467A7,7,0,1,1,21,18Z">
-							</path>
-							<circle cx="22" cy="10" r="2"></circle>
+						<div>Available Models</div>
+					</a>
+					<a href="#" id="big_token" class="incognito menu-item" hx-get="hx/token" hx-trigger="click" hx-target="#main" hx-swap="innerHTML">
+						<svg class="scale-150" width="16" height="16" viewBox="0 0 16 16" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+							<path d="M10.5 1C9.7973 0.99982 9.10433 1.16425 8.47663 1.48011C7.84892 1.79597 7.30393 2.25448 6.88534 2.81889C6.46674 3.3833 6.18618 4.03792 6.06613 4.73029C5.94609 5.42265 5.9899 6.13351 6.19405 6.8059L1 12V15H4L9.19405 9.8059C9.81302 9.99383 10.4652 10.0461 11.1062 9.95917C11.7472 9.87223 12.3619 9.64812 12.9085 9.30211C13.455 8.9561 13.9206 8.49632 14.2733 7.95411C14.6261 7.41191 14.8578 6.80002 14.9527 6.16015C15.0476 5.52028 15.0035 4.86747 14.8232 4.24622C14.643 3.62497 14.331 3.04987 13.9084 2.56013C13.4858 2.07039 12.9625 1.67752 12.3744 1.40829C11.7862 1.13905 11.1469 0.999796 10.5 1ZM10.5 9C10.1557 8.99979 9.81334 8.94888 9.4839 8.8489L8.9105 8.675L6.89635 10.6892L6.20705 10L5.5 10.7071L6.18935 11.3963L5.3964 12.1894L4.70705 11.5L4 12.2071L4.68935 12.8963L3.5858 14H2V12.4142L7.32475 7.08935L7.1511 6.516C6.93739 5.81149 6.95127 5.05753 7.19078 4.36137C7.43028 3.66521 7.88321 3.0623 8.48514 2.6384C9.08706 2.2145 9.80733 1.9912 10.5435 2.00027C11.2796 2.00933 11.9942 2.2503 12.5855 2.68889C13.1768 3.12748 13.6147 3.74136 13.837 4.44321C14.0593 5.14506 14.0546 5.89913 13.8236 6.59816C13.5927 7.2972 13.1471 7.90559 12.5504 8.3368C11.9537 8.76801 11.2362 9.00008 10.5 9Z"/>
+							<path d="M11 6C11.5523 6 12 5.55228 12 5C12 4.44772 11.5523 4 11 4C10.4477 4 10 4.44772 10 5C10 5.55228 10.4477 6 11 6Z"/>
 						</svg>
-						<p class="self-center grow pl-4">Token</p>
-					</div>
-				</a>
-				#}
+						<div>Token</div>
+					</a> #}
 
-				{# Jupyter Notebook #}
-				{% if notebook %}
-				<a href="#" id="big_notebook" class="incognito menu-item">
-					<svg class="scale-150" width="16" height="16" viewBox="0 0 16 16" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-						<path d="M13.591 0.997289C13.6021 1.18655 13.5586 1.37497 13.4659 1.53855C13.3732 1.70212 13.2355 1.83346 13.0703 1.91582C12.9052 1.99817 12.7201 2.02783 12.5386 2.001C12.3571 1.97418 12.1875 1.89208 12.0513 1.76518C11.9151 1.63828 11.8184 1.47231 11.7737 1.28842C11.729 1.10453 11.7383 0.911043 11.8003 0.732601C11.8623 0.554159 11.9742 0.398841 12.1219 0.286434C12.2695 0.174026 12.4462 0.109617 12.6293 0.10141C12.7494 0.0945545 12.8696 0.112326 12.9831 0.153701C13.0965 0.195076 13.2009 0.259238 13.2903 0.342498C13.3796 0.425757 13.4522 0.526471 13.5038 0.638845C13.5554 0.751218 13.585 0.873035 13.591 0.997289ZM8.20492 12.0303C5.7535 12.0303 3.59887 11.1205 2.48489 9.77654C2.91715 10.9854 3.6971 12.0284 4.71977 12.7649C5.74245 13.5015 6.95874 13.8964 8.20495 13.8964C9.45116 13.8964 10.6675 13.5015 11.6901 12.7649C12.7128 12.0284 13.4928 10.9854 13.925 9.77654C12.8137 11.1204 10.6673 12.0303 8.20492 12.0303ZM8.20492 3.29194C10.6564 3.29194 12.811 4.20178 13.925 5.54569C13.4928 4.33678 12.7128 3.29385 11.6901 2.55728C10.6675 1.82071 9.45116 1.42585 8.20495 1.42585C6.95874 1.42585 5.74245 1.82071 4.71977 2.55728C3.6971 3.29385 2.91715 4.33678 2.48489 5.54569C3.59892 4.19907 5.74262 3.29194 8.20492 3.29194ZM4.83021 14.6454C4.84533 14.9408 4.75369 15.2314 4.57311 15.4608C4.39254 15.6902 4.13593 15.8419 3.8532 15.8864C3.57047 15.9309 3.28184 15.8651 3.04343 15.7017C2.80503 15.5383 2.6339 15.2891 2.56333 15.0025C2.49275 14.7158 2.52779 14.4123 2.66161 14.1509C2.79543 13.8895 3.01848 13.6889 3.28737 13.5881C3.55625 13.4874 3.85176 13.4937 4.11641 13.6058C4.38106 13.7179 4.59593 13.9278 4.71924 14.1947C4.78424 14.336 4.82193 14.4891 4.83021 14.6454ZM2.76338 2.98571C2.63131 2.98945 2.50111 2.95272 2.38917 2.88013C2.27722 2.80755 2.18852 2.70236 2.13422 2.57778C2.07991 2.4532 2.06244 2.3148 2.08398 2.17997C2.10552 2.04515 2.16512 1.91992 2.25529 1.82003C2.34546 1.72015 2.46216 1.65006 2.59074 1.61859C2.71931 1.58712 2.85401 1.59567 2.9779 1.64316C3.10179 1.69065 3.20934 1.77496 3.28703 1.8855C3.36471 1.99603 3.40907 2.12786 3.41452 2.26439C3.41968 2.44908 3.3542 2.62841 3.23229 2.76346C3.11038 2.89851 2.94188 2.97837 2.76338 2.98571Z"/>
-					</svg>
-					<div>Notebook</div>
-				</a>
+					{# Jupyter Notebook #}
+					{% if notebook %}
+					<a href="#" id="big_notebook" class="incognito menu-item">
+						<svg class="scale-150" width="16" height="16" viewBox="0 0 16 16" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+							<path d="M13.591 0.997289C13.6021 1.18655 13.5586 1.37497 13.4659 1.53855C13.3732 1.70212 13.2355 1.83346 13.0703 1.91582C12.9052 1.99817 12.7201 2.02783 12.5386 2.001C12.3571 1.97418 12.1875 1.89208 12.0513 1.76518C11.9151 1.63828 11.8184 1.47231 11.7737 1.28842C11.729 1.10453 11.7383 0.911043 11.8003 0.732601C11.8623 0.554159 11.9742 0.398841 12.1219 0.286434C12.2695 0.174026 12.4462 0.109617 12.6293 0.10141C12.7494 0.0945545 12.8696 0.112326 12.9831 0.153701C13.0965 0.195076 13.2009 0.259238 13.2903 0.342498C13.3796 0.425757 13.4522 0.526471 13.5038 0.638845C13.5554 0.751218 13.585 0.873035 13.591 0.997289ZM8.20492 12.0303C5.7535 12.0303 3.59887 11.1205 2.48489 9.77654C2.91715 10.9854 3.6971 12.0284 4.71977 12.7649C5.74245 13.5015 6.95874 13.8964 8.20495 13.8964C9.45116 13.8964 10.6675 13.5015 11.6901 12.7649C12.7128 12.0284 13.4928 10.9854 13.925 9.77654C12.8137 11.1204 10.6673 12.0303 8.20492 12.0303ZM8.20492 3.29194C10.6564 3.29194 12.811 4.20178 13.925 5.54569C13.4928 4.33678 12.7128 3.29385 11.6901 2.55728C10.6675 1.82071 9.45116 1.42585 8.20495 1.42585C6.95874 1.42585 5.74245 1.82071 4.71977 2.55728C3.6971 3.29385 2.91715 4.33678 2.48489 5.54569C3.59892 4.19907 5.74262 3.29194 8.20492 3.29194ZM4.83021 14.6454C4.84533 14.9408 4.75369 15.2314 4.57311 15.4608C4.39254 15.6902 4.13593 15.8419 3.8532 15.8864C3.57047 15.9309 3.28184 15.8651 3.04343 15.7017C2.80503 15.5383 2.6339 15.2891 2.56333 15.0025C2.49275 14.7158 2.52779 14.4123 2.66161 14.1509C2.79543 13.8895 3.01848 13.6889 3.28737 13.5881C3.55625 13.4874 3.85176 13.4937 4.11641 13.6058C4.38106 13.7179 4.59593 13.9278 4.71924 14.1947C4.78424 14.336 4.82193 14.4891 4.83021 14.6454ZM2.76338 2.98571C2.63131 2.98945 2.50111 2.95272 2.38917 2.88013C2.27722 2.80755 2.18852 2.70236 2.13422 2.57778C2.07991 2.4532 2.06244 2.3148 2.08398 2.17997C2.10552 2.04515 2.16512 1.91992 2.25529 1.82003C2.34546 1.72015 2.46216 1.65006 2.59074 1.61859C2.71931 1.58712 2.85401 1.59567 2.9779 1.64316C3.10179 1.69065 3.20934 1.77496 3.28703 1.8855C3.36471 1.99603 3.40907 2.12786 3.41452 2.26439C3.41968 2.44908 3.3542 2.62841 3.23229 2.76346C3.11038 2.89851 2.94188 2.97837 2.76338 2.98571Z"/>
+						</svg>
+						<div>Notebook</div>
+					</a>
+					{% endif %}
+
+					{# Open WebUI #}
+					{% if openwebui %}
+					<a href="#" id="big_profile" class="incognito menu-item">
+						<svg class="scale-150" width="16" height="16" viewBox="0 0 16 16" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+							<path d="M10 4.5C10.2761 4.5 10.5 4.27614 10.5 4C10.5 3.72386 10.2761 3.5 10 3.5C9.72386 3.5 9.5 3.72386 9.5 4C9.5 4.27614 9.72386 4.5 10 4.5Z"/>
+							<path d="M11.5 4.5C11.7761 4.5 12 4.27614 12 4C12 3.72386 11.7761 3.5 11.5 3.5C11.2239 3.5 11 3.72386 11 4C11 4.27614 11.2239 4.5 11.5 4.5Z"/>
+							<path d="M13 4.5C13.2761 4.5 13.5 4.27614 13.5 4C13.5 3.72386 13.2761 3.5 13 3.5C12.7239 3.5 12.5 3.72386 12.5 4C12.5 4.27614 12.7239 4.5 13 4.5Z"/>
+							<path d="M14 2H2C1.73488 2.0003 1.4807 2.10576 1.29323 2.29323C1.10576 2.4807 1.0003 2.73488 1 3V13C1.0003 13.2651 1.10576 13.5193 1.29323 13.7068C1.4807 13.8942 1.73488 13.9997 2 14H14C14.2651 13.9997 14.5193 13.8942 14.7068 13.7068C14.8942 13.5193 14.9997 13.2651 15 13V3C14.9997 2.73488 14.8942 2.4807 14.7068 2.29323C14.5193 2.10576 14.2651 2.0003 14 2ZM14 3V5H2V3H14ZM2 6H5V13H2V6ZM6 13V6H14V13H6Z"/>
+						</svg>
+						<div>Open WebUI</div>
+					</a>
+					{% endif %}
 				{% endif %}
 
-				{# Open WebUI #}
-				{% if openwebui %}
-				<a href="#" id="big_profile" class="incognito menu-item">
-					<svg class="scale-150" width="16" height="16" viewBox="0 0 16 16" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-						<path d="M10 4.5C10.2761 4.5 10.5 4.27614 10.5 4C10.5 3.72386 10.2761 3.5 10 3.5C9.72386 3.5 9.5 3.72386 9.5 4C9.5 4.27614 9.72386 4.5 10 4.5Z"/>
-						<path d="M11.5 4.5C11.7761 4.5 12 4.27614 12 4C12 3.72386 11.7761 3.5 11.5 3.5C11.2239 3.5 11 3.72386 11 4C11 4.27614 11.2239 4.5 11.5 4.5Z"/>
-						<path d="M13 4.5C13.2761 4.5 13.5 4.27614 13.5 4C13.5 3.72386 13.2761 3.5 13 3.5C12.7239 3.5 12.5 3.72386 12.5 4C12.5 4.27614 12.7239 4.5 13 4.5Z"/>
-						<path d="M14 2H2C1.73488 2.0003 1.4807 2.10576 1.29323 2.29323C1.10576 2.4807 1.0003 2.73488 1 3V13C1.0003 13.2651 1.10576 13.5193 1.29323 13.7068C1.4807 13.8942 1.73488 13.9997 2 14H14C14.2651 13.9997 14.5193 13.8942 14.7068 13.7068C14.8942 13.5193 14.9997 13.2651 15 13V3C14.9997 2.73488 14.8942 2.4807 14.7068 2.29323C14.5193 2.10576 14.2651 2.0003 14 2ZM14 3V5H2V3H14ZM2 6H5V13H2V6ZM6 13V6H14V13H6Z"/>
-					</svg>
-					<div>Open WebUI</div>
-				</a>
-				{% endif %}
-
-				{% endif %}
 				{% if resources %}
-				{% for resource in resources %}
-				{% if resource.1 %}
+					{% for resource in resources %}
+						{% if resource.1 %}
 
 				{# External resource #}
 				<a target="_blank" href="/resource/{{ resource.0 }}?token=true" id="ignore_{{ resource.0 }}_big" class="incognito menu-item">
@@ -174,59 +152,45 @@
 					<div>{{ resource.0 }}</div>
 				</a>
 				
-				{% endif %}
-				{% endfor %}
+						{% endif %}
+					{% endfor %}
 				{% endif %}
 			</div>
+
+			{# Side nav footer #}
 			<div class="flex flex-col grow justify-end items-center">
 				<p class="pb-4 text-xs">Powered by {{ application }} {{ application_version }}</p>
 			</div>
 		</div>
 	</div>
 
-	
+	{# Main content #}
 	<div id="main">
 		{% block main %}{% endblock main %}
 	</div>
 	
 </div>
-<div id="menu"
-	class="fixed flex-col left-0 top-12 bg-[#f4f4f4]/70 dark:bg-[#121619]/70 min-h-96 min-w-52 rounded-br-md backdrop-blur-xs drop-shadow-md hidden md:hidden">
-	<a href="#" id="mobile_profile"
-		class="block py-3 px-4 mobile_menu_selected dark:hover:bg-[#4d5358] hover:bg-[rgba(0,0,0,.2)]">Profile</a>
+
+{# Mobile side navigation - dropdown #}
+<div id="menu" class="hidden md:hidden">
+	<a href="#" id="mobile_profile" class="mobile_menu_selected">Profile</a>
 	{% if user_type != "pending" %}
-	{#
-	<a href="#" id="mobile_models" class="block py-3 px-4 dark:hover:bg-[#4d5358] hover:bg-[rgba(0,0,0,.2)]">Available
-		Models</a>
-	#}
-	{#
-	<a href="#" id="mobile_token" class="block py-3 px-4 dark:hover:bg-[#4d5358] hover:bg-[rgba(0,0,0,.2)]">Token</a>
-	#}
-	{% if notebook %}
-	<a href="#" id="mobile_notebook" class="block py-3 px-4 dark:hover:bg-[#4d5358] hover:bg-[rgba(0,0,0,.2)]">Notebook</a>
-	{% endif %}
-	{% if openwebui %}
-	<a href="#" id="mobile_owui" class="block py-3 px-4 dark:hover:bg-[#4d5358] hover:bg-[rgba(0,0,0,.2)]">Open Web UI</a>
-	{% endif %}
-	{% if user_type == "system" %}
-	<a href="#" id="mobile_systems" class="block py-3 px-4 dark:hover:bg-[#4d5358] hover:bg-[rgba(0,0,0,.2)]">System
-		Management</a>
-	{% endif %}
-	{% if user_type == "group" %}
-	<a href="#" id="mobile_members" class="block py-3 px-4 dark:hover:bg-[#4d5358] hover:bg-[rgba(0,0,0,.2)]">Member
-		Management</a>
-	{% endif %}
+		{# <a href="#" id="mobile_models">Available Models</a> #}
+		{# <a href="#" id="mobile_token">Token</a> #}
+		{% if notebook %}<a href="#" id="mobile_notebook">Notebook</a>{% endif %}
+		{% if openwebui %}<a href="#" id="mobile_owui">Open Web UI</a>{% endif %}
+		{% if user_type == "system" %}<a href="#" id="mobile_systems">System Management</a>{% endif %}
+		{% if user_type == "group" %}<a href="#" id="mobile_members">Member Management</a>{% endif %}
 	{% endif %}
 	{% if resources %}
-	{% for resource in resources %}
-	{% if resource.1 %}
-	<a href="/resource/{{ resource.0 }}?token=true" id="ignore_{{ resource.0 }}_mobile"
-		class="block py-3 px-4 dark:hover:bg-[#4d5358] hover:bg-[rgba(0,0,0,.2)]" target="_blank">{{ resource.0 }}</a>
+		{% for resource in resources %}
+			{% if resource.1 %}
+			<a href="/resource/{{ resource.0 }}?token=true" id="ignore_{{ resource.0 }}_mobile" target="_blank">{{ resource.0 }}</a>
+			{% endif %}
+		{% endfor %}
 	{% endif %}
-	{% endfor %}
-	{% endif %}
-	<div class="grow flex flex-col justify-end">
-		<p class="text-xs self-center pb-0.5">Powered by {{ application }} {{ application_version }}</p>
+	<div class="absolute -bottom-8 left-4 text-white text-xs opacity-50">
+		Powered by {{ application }} {{ application_version }}</p>
 	</div>
 </div>
 {% endblock nav %}

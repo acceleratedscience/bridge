@@ -1,6 +1,6 @@
 <div class="section-header flex flex-row">
 	<a class="cb-link" hx-get="system_admin/hx/tab?tab=UserList" hx-target="#system_admin_user">User Management</a>
-	&nbsp;&rsaquo;&nbsp;
+	&nbsp;&nbsp;&rsaquo;&nbsp;
 	{{ target_user }}
 </div>
 <div class="mb-4">
@@ -39,7 +39,7 @@
 
 		<div id="response-message" class="mb-4 text-green-600"></div>
 
-		<a class="text-red-600 mt-6"
+		<a class="text-red-600 mt-6 cursor-pointer"
 			hx-delete="/portal/system_admin/hx/user?email={{ target_user }}&last_updated_by=system"
 			hx-confirm="Are you sure you want to delete {{ target_user }}?">
 			Delete user

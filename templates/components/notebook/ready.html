@@ -17,8 +17,8 @@
 		Open
 	</a>
 	<a id="notebook_terminate_button"
-		class="cb_button_secondary"
-		hx-delete="/notebook_manage/hx/delete" hx-target="#notebook_panel" hx-swap="innerhtml settle:5s"
+		class="cb_button secondary"
+		hx-delete="/notebook_manage/hx/delete?save=true" hx-target="#notebook_panel" hx-swap="innerhtml settle:5s"
 		hx-confirm="Are you sure you want to terminate: {{ notebook.name }}?" tabindex="0">
 		Terminate
 	</a>

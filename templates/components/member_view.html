@@ -8,7 +8,7 @@
 
 <div class="section-header flex flex-row">
 	<a hx-get="{{ back_link }}" hx-target="#{{ target_panel }}" class="cb-link">Group Management</a>
-	&nbsp;&rsaquo;
+	&nbsp;&nbsp;&rsaquo;&nbsp;
 	{{ group | capitalize }}
 </div>
 <button type="submit" class="cb_button secondary" hx-get="system_admin/hx/tab?tab=GroupModify&group={{ group }}" hx-target="#system_admin_group">

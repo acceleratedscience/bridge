@@ -1,61 +1,551 @@
 @import "tailwindcss";
 
-/**
- * Layout
- */
-
-.cb-grid {
-	min-height: 100%;
-	@apply grid xl:grid-cols-3 lg:grid-cols-2 grid-cols-1;
-}
-
-/**
- * Base styles
- */
+/* #region ----------------------------------------------- Base */
 
 body {
-	@apply text-[var(--cb-main)] dark:text-[var(--cb-soft-bg)];
-}
-#main {
-	@apply md:pl-65;
+	/* Colors - light */
+	--cb-blue: #0f62fe;
+	--cb-blue-hover: #0353e9;
+	--cb-blue-active: #0043ce;
+	--cb-main: #393939;
+	--cb-main-weak: #4c4c4c;
+	--cb-main-strong: #161616;
+	--cb-soft-text: #bbbbbb;
+	--cb-soft-border: #e5e5e5;
+	--cb-soft-bg: #f4f4f4;
+	--cb-highlight: #fff7cc;
+
+	/* Font styles */
+	--cb-font-fam: "IBM Plex Sans", sans-serif;
+	--cb-font-size: 14px;
+	--cb-line-height: 18px;
 }
 
+@media (prefers-color-scheme: dark) {
+	body {
+		/* Colors - dark */
+		--cb-blue: #0f62fe;
+		--cb-blue-hover: #0353e9;
+		--cb-blue-active: #0043ce;
+		--cb-main: #393939;
+		--cb-main-weak: #4c4c4c;
+		--cb-main-strong: #161616;
+		--cb-soft-text: #bbbbbb;
+		--cb-soft-border: #e5e5e5;
+		--cb-soft-bg: #f4f4f4;
+	}
+}
+
+/* Base styles to overwrite HTML defaults */
 @layer base {
 	p {
-		@apply mb-2;
+		margin-bottom: 0.5rem;
 	}
-	/* *,
-	::after,
-	::before,
-	::backdrop,
-	::file-selector-button {
-		@apply border-[var(--cb-soft-border)];
-	} */
 }
 
+/* Links */
+a.cb-link {
+	text-decoration: none;
+	cursor: pointer;
+	color: var(--cb-blue);
+	@apply hover:text-[var(--cb-blue-active)]
+		hover:underline
+		dark:text-[#73a0ff]
+		dark:hover:text-[#ffffff];
+}
+
+/* Set default border color */
 .border,
 .border-t,
 .border-b,
 .border-l,
 .border-r {
 	border-color: rgba(0, 0, 0, 0.1);
+	/* @apply dark:border-[rgba(255,255,255,.1)]; */
+}
+
+/* #endregion */
+/* #region ----------------------------------------------- Layout */
+
+html {
+	font-size: 14px;
+	/* Disable elastic scroll which looks terrible with sticky nav */
+	overscroll-behavior-y: none;
+}
+body {
+	display: flex;
+	flex-direction: column;
+	min-height: 100vh;
+	background: #ffffff;
+	@apply text-[var(--cb-main)]
+		dark:bg-[rgba(0,0,0,.85)]
+		text-slate-900
+		dark:text-slate-200
+		dark:text-[var(--cb-soft-bg)];
+}
+
+/* Sidenav + page content wrapper */
+#main {
+	min-height: 100%;
+	flex: 1;
+	padding-top: 0.5rem;
+	padding-right: 0.25rem;
+	@apply md:pl-65;
+}
+#main > div {
+	height: 100%;
+}
+
+/* Page content grid wrapper */
+.cb_grid {
+	min-height: 100%;
+	@apply grid xl:grid-cols-3 lg:grid-cols-2 grid-cols-1;
+}
+
+/* Side nav wrapper */
+#side_nav_wrap {
+	flex: 0 0;
+	position: fixed;
+	width: 16rem;
+	padding-top: 0.5rem;
+	background: var(--cb-soft-bg);
+	@apply dark:bg-[var(--cb-main)]
+		md:block hidden;
+}
+
+/* Page columns */
+.page-column {
+	padding: 2rem;
+	margin: 0 0.25rem 0.5rem 0.25rem;
+	background: var(--cb-soft-bg);
+	@apply dark:bg-[var(--cb-main)];
+}
+
+/* Section headers */
+.section-header {
+	border-bottom: solid 1px var(--cb-soft-text);
+	font-weight: bold;
+	padding-bottom: 0.5rem;
+	margin-bottom: 2rem;
+	@apply dark:border-[rgba(255,255,255,.2)];
+}
+.section-header-right {
+	display: flex;
+	flex-direction: row;
+	justify-content: end;
+	flex-grow: 1;
+}
+
+/* #endregion */
+/* #region ----------------------------------------------- Buttons */
+
+.cb_button {
+	height: 3rem;
+	background: var(--cb-blue);
+	border: none;
+	color: #fff;
+	padding: 0 32px 0 16px;
+	font-family: var(--cb-font-fam);
+	font-size: var(--cb-font-size);
+	cursor: pointer;
+
+	/* For icons */
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.5em;
+
+	@apply hover:bg-[var(--cb-blue-hover)];
+}
+.cb_button.secondary {
+	color: #fff;
+	background: var(--cb-main);
+	@apply dark:bg-[rgba(255,255,255,.1)]
+		hover:bg-[var(--cb-main-weak)]
+		dark:hover:bg-[rgba(255,255,255,.05)];
+}
+.cb_button.tertiary {
+	background: transparent;
+	color: var(--cb-main);
+	border: 1px solid var(--cb-main);
+}
+.cb_button.tertiary:hover {
+	border-color: var(--cb-blue-hover);
+}
+
+.cb-button-wrap {
+	display: flex;
+	flex-direction: row;
+	gap: 0.5rem;
+}
+
+/* #endregion */
+/* #region ----------------------------------------------- Inputs */
+
+/* Form labels */
+label {
+	font-size: var(--text-sm);
+	display: block;
+	margin-bottom: 0.25rem;
+	color: var(--cb-main-weak);
+	@apply dark:text-[var(--cb-soft-text)];
+}
+
+/* Text inputs & dropdown */
+select,
+input:not([type="checkbox"]):not([type="radio"]) {
+	background: white;
+	height: 3rem;
+	padding: 0 1rem;
+	border-bottom: solid 1px var(--cb-main);
+	/* Text inputs are white so text should stay dark */
+	@apply dark:text-[var(--cb-main)];
+}
+
+/* Text inputs & dropdown - focus */
+select:focus,
+input:not([type="checkbox"]):not([type="radio"]):focus {
+	outline: solid 2px var(--cb-blue);
+	border-bottom-color: transparent;
+}
+
+/* Text inputs & dropdown - icons */
+input:not([type="checkbox"]):not([type="radio"]) ~ .input-icon {
+	position: absolute;
+	right: 1em;
+	top: 50%;
+	margin-top: -8px;
+}
+
+/* Grouped input + submit button */
+.input-submit > div {
+	display: flex;
+	gap: 0.5rem;
+}
+
+/* #endregion */
+/* #region ----------------------------------------------- Tables */
+
+.table-display {
+	width: calc(100% + 2rem);
+	padding: 0.5rem 1rem;
+	margin-left: -1rem;
+	margin-left: -1rem;
+	text-align: left;
+	background: white;
+	@apply dark:bg-[rgba(0,0,0,.3)];
+}
+
+/* Row borders */
+.table-display tr {
+	border-bottom: solid 1px var(--cb-soft-border);
+	@apply dark:border-[rgba(255,255,255,.1)];
+}
+.table-display tr:not(.expandable):last-child,
+.table-display tr.expandable:nth-last-child(2) {
+	border-bottom: none;
+}
+
+/* Header */
+.table-display thead tr {
+	background: var(--cb-soft-border);
+	@apply dark:bg-[rgba(0,0,0,.4)];
+}
+
+/* Cells */
+.table-display td,
+.table-display th {
+	padding: 0.5rem 1rem;
+}
+
+/* Clickable rows */
+.table-display tr.clickable {
+	cursor: pointer;
+}
+
+/* Expandable row */
+.table-display tr.expandable {
+	cursor: pointer;
+	position: relative;
+}
+.table-display tr.expandable:not(.expanded) + tr {
+	display: none;
+}
+
+/* Expanded state */
+.table-display tr.expanded {
+	border-bottom: none;
+	font-weight: bold;
+}
+.table-display tr.expanded,
+.table-display tr.expanded + tr {
+	position: relative;
+	@apply dark:bg-[rgba(255,255,255,0.05)];
+}
+.table-display tr.expanded td::before,
+.table-display tr.expanded + tr td::before {
+	content: "";
+	display: block;
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 3px;
+	height: calc(100% + 1px);
+	background: var(--cb-blue);
+}
+.table-display tr:not(.expandable):last-child td::before {
+	/* Last row doesn't have bottom border */
+	height: 100%;
+}
+
+/* Expandable tray */
+.table-display tr.expandable + tr {
+	font-size: 0.9rem;
+	position: relative;
+}
+.table-display tr.expandable + tr td {
+	padding-bottom: 2rem;
+}
+.table-display tr.expandable + tr::after {
+	content: "";
+	display: block;
+	position: absolute;
+	top: 0;
+	left: 1rem;
+	width: calc(100% - 2rem);
+	border-bottom: dashed 1px var(--cb-soft-border);
+	@apply dark:border-[rgba(255,255,255,.2)];
+}
+
+/* Code blocks */
+.table-display code {
+	margin: 0.25rem 0;
+}
+
+/* Clickable / expandable hover */
+.table-display tr.clickable,
+.table-display tr.expandable:not(.expanded) {
+	@apply hover:bg-[var(--cb-highlight)]
+		dark:hover:bg-[rgba(255,247,204,0.2)];
+}
+
+/* #endregion */
+/* #region ----------------------------------------------- Various UI Elements */
+
+/**
+ * Subscription options
+ */
+
+ul.sub-options li {
+	display: flex;
+	gap: 1rem;
+	height: 40px;
+	line-height: 40px;
+	cursor: pointer;
+	margin: 0 -1rem;
+	padding: 0 1rem;
+	@apply hover:bg-[rgba(255,255,255,.5)]
+		dark:hover:bg-[rgba(0,0,0,.2)];
+}
+ul.sub-options li label {
+	flex: 1;
+	margin-bottom: 0;
+	font-size: var(--text-base);
+	user-select: none;
+	cursor: pointer;
+}
+ul.sub-options li:has(input:checked) {
+	background: white;
+	@apply dark:bg-[rgba(0,0,0,.3)];
 }
 
 /**
- * Navigation
+ * Code blocks
  */
 
-/* .menu_selected {
-	@apply bg-[rgba(0,0,0,.08)] dark:bg-[rgba(255,255,255,.1)] border-l-2 border-[var(--cb-blue)];
-} */
+code {
+	color: var(--cb-highlight);
+	position: relative;
+	cursor: pointer;
+	background: var(--cb-main);
+	@apply dark:bg-[rgba(0,0,0,.3)];
+}
+code.block {
+	display: block;
+	border-radius: 3px;
+	padding: 0.7rem 1rem;
+}
+code .copy {
+	position: absolute;
+	z-index: 1;
+	top: 5px;
+	right: 8px;
+	text-align: right;
+	display: none;
+	color: white;
+}
+code .copy::before {
+	content: "";
+	position: absolute;
+	z-index: -1;
+	top: 0;
+	right: 0;
+	bottom: 0;
+	left: 0;
+	background: var(--cb-main);
+	filter: blur(4px);
+}
+code.copied,
+code.copied .copy::before {
+	animation: code-copied 120ms 3;
+	color: #9c9882;
+}
+code.copied .copy {
+	display: block;
+}
 
+@media (hover: hover) {
+	code:not(.copied):hover {
+		background: var(--cb-main-strong);
+	}
+}
+
+@keyframes code-copied {
+	0% {
+		background: green;
+	}
+	49% {
+		background: green;
+	}
+	50% {
+		background: var(--cb-main);
+	}
+	100% {
+		background: var(--cb-main);
+	}
+}
+
+/* #endregion */
+/* #region ----------------------------------------------- Navigation */
+
+/**
+ * Top navigation bar
+ */
+
+#navigation {
+	background: var(--cb-main);
+	color: white;
+	position: sticky;
+	top: 0;
+	z-index: 10;
+	width: 100%;
+	flex: none;
+	@apply dark:bg-[var(--cb-main-strong)];
+}
+
+/**
+ * Desktop side nav
+ */
+
+#menu_big .menu-item {
+	display: flex;
+	align-items: center;
+	gap: 1rem;
+	height: 3.5rem;
+	padding-left: 1.5rem;
+}
+#menu_big .menu-item.menu_selected {
+	pointer-events: none;
+	border-left: solid 3px var(--cb-blue);
+	background: rgba(0, 0, 0, 0.08);
+	@apply dark:bg-[rgba(0,0,0,.3)];
+}
+#menu_big .menu-item:not(.menu_selected):hover {
+	@media (hover: hover) {
+		background: rgba(0, 0, 0, 0.04);
+	}
+}
+
+/**
+ * Mobile side nav
+ */
+
+#menu_button {
+	@apply relative
+		inline-flex
+		items-center
+		justify-center
+		p-2
+		text-gray-400
+		hover:text-white
+		cursor-pointer;
+}
+#menu_button:focus {
+	outline: none;
+	box-shadow: none;
+}
+#menu {
+	position: fixed;
+	flex-direction: column;
+	left: 0;
+	top: 3rem;
+	width: 100%;
+	box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
+	/* padding-bottom: 1rem; */
+	background: var(--cb-soft-bg);
+	@apply dark:bg-[#121619];
+}
+#menu > a {
+	display: block;
+	padding: 0.75rem 1rem;
+	background: var(--cb-soft-bg);
+	@apply dark:bg-[#121619]
+		hover:bg-[rgba(0,0,0,.2)]
+		dark:hover:bg-[#4d5358];
+}
+#menu::before {
+	content: "";
+	position: fixed;
+	top: 0;
+	left: 0;
+	bottom: 0;
+	right: 0;
+	z-index: -1;
+	background: rgba(0, 0, 0, 0.7);
+}
 .mobile_menu_selected {
-	@apply border-l-4 border-[var(--cb-blue)];
+	border-left: 4px solid var(--cb-blue);
 }
 
-/**
- * Various
- */
+/* #endregion */
+/* #region ----------------------------------------------- Animations */
+
+.cb-blink {
+	animation: blink 2s infinite;
+}
+
+@keyframes blink {
+	0% {
+		opacity: 1;
+	}
+	49% {
+		opacity: 1;
+	}
+	50% {
+		opacity: 0.3;
+	}
+	100% {
+		opacity: 0.3;
+	}
+}
+
+/* #endregion */
+/* #region ----------------------------------------------- Various */
+
+.soft-text {
+	color: var(--cb-soft-text);
+	@apply dark:text-[rgba(255,255,255,.4)];
+}
 
 .htmx-indicator {
 	opacity: 0;
@@ -68,3 +558,5 @@ body {
 	opacity: 1;
 	transition: opacity 200ms ease-in;
 }
+
+/* #endregion */
