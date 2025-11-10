@@ -36,6 +36,7 @@ impl NotebookSpec {
         env_to_add: Vec<(String, String)>,
     ) -> Self {
         let notebook_image = CONFIG.notebooks.get(notebook_image_name).unwrap();
+        // TODO: remove these clones if possible
         let mut notebook_env = notebook_image.notebook_env.clone().unwrap_or_default();
 
         // get resource limit from notebook config

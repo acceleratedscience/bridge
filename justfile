@@ -91,7 +91,7 @@ local-mongo:
 local-keydb:
 	podman run -d --rm --name keydb \
 	-e KEYDB_PASSWORD="admin123456789" \
-	-p 6379:6379 bitnami/keydb:latest
+	-p 6379:6379 eqalpha/keydb
 
 down-local-mongo:
 	podman stop mongodb

@@ -14,22 +14,19 @@ use tera::{Context, Tera};
 use tracing::instrument;
 
 use crate::{
-    auth::COOKIE_NAME,
-    db::{
+    auth::COOKIE_NAME, config::CONFIG, db::{
         Database,
         models::{
             AdminTab, AdminTabs, BridgeCookie, GROUP, Group, ModifyUser, NotebookStatusCookie,
             OWUICookie, USER, User, UserGroupMod, UserPortalRep, UserType,
         },
         mongo::DB,
-    },
-    errors::{BridgeError, Result},
-    web::{
+    }, errors::{BridgeError, Result}, web::{
         bridge_middleware::{HTMX_ERROR_RES, Htmx},
         helper::{self, bson},
         route::portal::helper::check_admin,
         services::CATALOG,
-    },
+    }
 };
 
 #[cfg(feature = "notebook")]
@@ -143,6 +140,7 @@ pub(super) async fn group(
 
     let bcj = serde_json::to_string(&bridge_cookie)?;
     let bc = Cookie::build(COOKIE_NAME, bcj)
+        .domain(&CONFIG.bridge_url)
         .path("/")
         .same_site(SameSite::Strict)
         .secure(true)

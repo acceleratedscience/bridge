@@ -24,7 +24,7 @@ jobs:
         ports:
           - 27017:27017
       keydb:
-        image: bitnami/keydb:latest
+        image: eqalpha/keydb:latest
         env:
           KEYDB_PASSWORD: "admin123456789"
         ports:

@@ -94,6 +94,7 @@ async fn index(data: Option<ReqData<BridgeCookie>>, db: Data<&DB>) -> Result<Htt
                 bridge_cookie.resources = group_sub;
                 let bridge_cookie_json = serde_json::to_string(&bridge_cookie)?;
                 let cookie = Cookie::build(COOKIE_NAME, bridge_cookie_json)
+                    .domain(&CONFIG.bridge_url)
                     .same_site(SameSite::Strict)
                     .path("/")
                     .http_only(true)
@@ -223,6 +224,7 @@ async fn search_by_email(
 async fn logout(#[cfg(feature = "observe")] req: HttpRequest) -> HttpResponse {
     // clear all the cookie
     let mut cookie_remove = Cookie::build(COOKIE_NAME, "")
+        .domain(&CONFIG.bridge_url)
         .same_site(SameSite::Strict)
         .path("/")
         .http_only(true)

@@ -1,8 +1,8 @@
 use actix_web::{HttpRequest, HttpResponse, dev::PeerAddr, http::Method, web};
 use actix_web_httpauth::extractors::bearer::BearerAuth;
-use tracing::{instrument, warn};
 #[cfg(feature = "observe")]
 use tracing::info;
+use tracing::{instrument, warn};
 
 #[cfg(feature = "observe")]
 use crate::logger::{PERSIST_META, PERSIST_TIME};
@@ -10,7 +10,10 @@ use crate::{
     auth::jwt::validate_token,
     config::CONFIG,
     errors::{BridgeError, Result},
-    web::{helper::{self, forwarding::Config}, services::CATALOG},
+    web::{
+        helper::{self, forwarding::Config},
+        services::CATALOG,
+    },
 };
 
 const MCP_PREFIX: &str = "/mcp/";
@@ -68,8 +71,19 @@ async fn forward(
         }
         new_url.set_query(req.uri().query());
 
-        helper::forwarding::forward(req, payload, method, peer_addr, client, new_url, Config{inference: true, ..Default::default()})
-            .await
+        helper::forwarding::forward(
+            req,
+            payload,
+            method,
+            peer_addr,
+            client,
+            new_url,
+            Config {
+                inference: true,
+                ..Default::default()
+            },
+        )
+        .await
     } else {
         warn!("MCP service not found in url request");
         Err(BridgeError::MCPParseIssue)

@@ -143,7 +143,7 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
 
         #[cfg(feature = "openwebui")]
         let app = {
-            use self::bridge_middleware::OWUICookieCheck;
+            use self::bridge_middleware::{CookieCheck, OWUICookieCheck};
             app.service(
                 web::scope("")
                     .guard(guard::Host(&CONFIG.openweb_url))
@@ -153,8 +153,8 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
             .service(
                 web::scope("")
                     .guard(guard::Host(&CONFIG.moleviewer_url))
-                    .wrap(OWUICookieCheck)
-                    .configure(route::openwebui::config_moleviewer),
+                    .wrap(CookieCheck)
+                    .configure(route::moleviewer::config_moleviewer),
             )
         };
 

@@ -29,7 +29,6 @@ pub async fn validator(
                 // TODO: handle unwrap_or better
                 let inference = r.to_str().unwrap_or("");
                 if claims.scp.contains(&inference.to_string()) {
-
                     #[cfg(feature = "observe")]
                     {
                         let now = time::OffsetDateTime::now_utc().unix_timestamp();
