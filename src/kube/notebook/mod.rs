@@ -22,17 +22,42 @@ pub struct NotebookSpec {
     template: NotebookTemplateSpec,
 }
 
+static CPU_HEAVY_DEFAULT: &str = "4";
+static MEM_HEAVY_DEFAULT: &str = "8Gi";
+
 impl NotebookSpec {
     pub fn new(
         name: String,
         notebook_image_name: &str,
         volume_name: String,
+        tolerations: Option<Vec<Toleration>>,
         notebook_start_url: &mut Option<String>,
         max_idle_time: &mut Option<u64>,
         env_to_add: Vec<(String, String)>,
     ) -> Self {
         let notebook_image = CONFIG.notebooks.get(notebook_image_name).unwrap();
+        // TODO: remove these clones if possible
         let mut notebook_env = notebook_image.notebook_env.clone().unwrap_or_default();
+
+        // get resource limit from notebook config
+        let (cpu, mem) = {
+            if tolerations.is_some() {
+                (
+                    notebook_image
+                        .scheduling
+                        .as_ref()
+                        .map(|v| v.cpu_heavy.as_ref())
+                        .unwrap_or(CPU_HEAVY_DEFAULT),
+                    notebook_image
+                        .scheduling
+                        .as_ref()
+                        .map(|v| v.mem_heavy.as_ref())
+                        .unwrap_or(MEM_HEAVY_DEFAULT),
+                )
+            } else {
+                ("2", "4Gi")
+            }
+        };
 
         notebook_env.push(format!(
             "--ServerApp.base_url='notebook/{}/{}'",
@@ -68,12 +93,12 @@ impl NotebookSpec {
                         image: notebook_image.url.clone(),
                         resources: Some(ResourceRequirements {
                             requests: BTreeMap::from([
-                                ("cpu".to_string(), "2".to_string()),
-                                ("memory".to_string(), "4Gi".to_string()),
+                                ("cpu".to_string(), cpu.to_string()),
+                                ("memory".to_string(), mem.to_string()),
                             ]),
                             limits: BTreeMap::from([
-                                ("cpu".to_string(), "2".to_string()),
-                                ("memory".to_string(), "4Gi".to_string()),
+                                ("cpu".to_string(), cpu.to_string()),
+                                ("memory".to_string(), mem.to_string()),
                             ]),
                         }),
                         image_pull_policy: notebook_image.pull_policy.clone(),
@@ -86,6 +111,7 @@ impl NotebookSpec {
                         workingdir: notebook_image.working_dir.clone(),
                         env: Some(env),
                     }],
+                    tolerations,
                     image_pull_secrets: notebook_image
                         .secret
                         .clone()
@@ -114,7 +140,29 @@ pub struct PodSpec {
     containers: Vec<ContainerSpec>,
     #[serde(rename = "imagePullSecrets")]
     image_pull_secrets: Option<Vec<ImagePullSecret>>,
+    tolerations: Option<Vec<Toleration>>,
     volumes: Option<Vec<VolumeSpec>>,
+}
+
+#[derive(Deserialize, Serialize, Clone, Debug, JsonSchema)]
+pub struct Toleration {
+    pub effect: Option<std::string::String>,
+    pub key: Option<std::string::String>,
+    pub operator: Option<std::string::String>,
+    pub toleration_seconds: Option<i64>,
+    pub value: Option<std::string::String>,
+}
+
+impl Toleration {
+    pub fn new(key: String, value: String) -> Self {
+        Self {
+            effect: Some("NoSchedule".to_string()),
+            key: Some(key),
+            operator: Some("Equal".to_string()),
+            toleration_seconds: None,
+            value: Some(value),
+        }
+    }
 }
 
 #[derive(Deserialize, Serialize, Clone, Debug, JsonSchema)]
@@ -228,6 +276,7 @@ mod test {
             name,
             "open_ad_workbench",
             volume_name,
+            None,
             &mut start_url,
             &mut max_idle_time,
             vec![],
@@ -273,6 +322,7 @@ mod test {
                             }
                         ],
                     }],
+                    "tolerations": null,
                     "imagePullSecrets": [
                         {
                             "name": "ibmdpdev-openad-pull-secret"

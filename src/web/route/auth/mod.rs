@@ -230,6 +230,7 @@ async fn code_to_response(
     let cookie = Cookie::build(COOKIE_NAME, content)
         .same_site(SameSite::Strict)
         .expires(time::OffsetDateTime::now_utc() + time::Duration::days(1))
+        .domain(&CONFIG.bridge_url)
         .path("/")
         .http_only(true)
         .secure(true)

@@ -1,0 +1,89 @@
+### main_page
+
+# @accept chunked
+
+GET https://open.accelerate.science HTTP/2
+Accept: text/html
+
+
+### proxy
+
+# @secret TOKEN
+# @accept chunked
+
+< {%
+	// Pre-request script
+	const crypto = require('crypto');
+	const nonce = crypto.randomBytes(16).toString('hex');
+
+	// Set request-scoped variables
+	request.variables.set('NONCE', nonce);
+%}
+
+POST https://open.accelerate.science/proxy/post HTTP/2
+Content-Type: application/json
+Accept: application/json
+Inference-Service: postman
+Authorization: Bearer {{TOKEN}}
+
+{
+  "hello": "{{$uuid}}",
+  "previous": "{{main_page.response.body.*}}",
+  "world": "{{NONCE}}"
+}
+
+
+### MCP
+
+POST http://open.accelerate.science/mcp/vms/proxy/8024/smol/CC%28%3DO%29Oc1ccccc1C%28%3DO%29O HTTP/2
+Content-Type: application/json
+Accept: application/json
+Authorization: Bearer {{TOKEN}}
+
+
+### Something
+
+POST https://open.accelerate.science/proxy/service/collections/demo HTTP/2
+Inference-Service: neural-pde-solvers
+Authorization: Bearer {{TOKEN}}
+
+--boundary-string
+Content-Disposition: form-data; name="file"; filename="decimated_mesh.vtk"
+Content-Type: application/octet-stream
+
+< /home/dchoi/Downloads/decimated_mesh.vtk
+--boundary-string--
+
+
+### MCP
+
+POST https://open.accelerate.science/mcp/ollama/api/generate HTTP/2
+Content-Type: application/json
+Accept: application/json
+Authorization: Bearer {{TOKEN}}
+
+{
+  "model": "llama3.1:8b",
+  "prompt": "Why is the sky blue?",
+  "stream": false
+}
+
+### MCP
+
+POST https://open.accelerate.science/mcp/bioverse/v1/chat/completions HTTP/2
+Content-Type: application/json
+Accept: application/json
+Authorization: Bearer {{TOKEN}}
+
+{
+  "model": "bioverse-llm",
+    "messages": [
+    {
+      "role": "user",
+      "content": "analyze the following sequence QVQLVETGGGLVQAGGSLRLSCAASGNINSFNAMGWFRQAPGKQRELVAAITFGGRTNYADSVKGRFTISRDNTKGSVYLQMNSLKPEDTAVYYCAASENNLLTGVWHYWGRGTQVTVSS"
+    }
+    ],
+    "temperature": 0.7,
+    "top_p": 0.95,
+    "max_tokens": 1024
+}

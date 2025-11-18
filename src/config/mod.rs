@@ -45,6 +45,8 @@ pub struct Configuration {
     pub openweb_url: String,
     #[cfg(feature = "openwebui")]
     pub moleviewer_url: String,
+    #[cfg(feature = "openwebui")]
+    pub moleviewer_internal_url: String,
     pub bridge_url: String,
 }
 
@@ -71,6 +73,15 @@ pub struct Notebook {
     pub args: Option<Vec<String>>,
     pub start_up_url: Option<String>,
     pub max_idle_time: Option<u64>,
+    pub scheduling: Option<Scheduling>,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct Scheduling {
+    pub cpu_heavy: String,
+    pub mem_heavy: String,
+    pub toleration_key: String,
+    pub toleration_value: String,
 }
 
 const OIDC_PROVIDER: [OpenIDProvider; 2] = [OpenIDProvider::W3, OpenIDProvider::IbmId];
@@ -222,11 +233,15 @@ pub fn init_once() -> Configuration {
     .unwrap();
 
     #[cfg(feature = "openwebui")]
-    let (owui_namespace, openweb_url, moleviewer_url) = {
+    let (owui_namespace, openweb_url, moleviewer_url, moleviewer_internal_url) = {
         (
             app_conf["owui_namespace"].as_str().unwrap().to_string(),
             app_conf["openweb_url"].as_str().unwrap().to_string(),
             app_conf["moleviewer_url"].as_str().unwrap().to_string(),
+            app_conf["moleviewer_internal_url"]
+                .as_str()
+                .unwrap()
+                .to_string(),
         )
     };
 
@@ -256,6 +271,8 @@ pub fn init_once() -> Configuration {
         openweb_url,
         #[cfg(feature = "openwebui")]
         moleviewer_url,
+        #[cfg(feature = "openwebui")]
+        moleviewer_internal_url,
         bridge_url,
     }
 }
