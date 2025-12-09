@@ -118,7 +118,7 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
     let server = HttpServer::new(move || {
         let tera_data = Data::new(templating::start_template_eng());
         let mut context = Context::new();
-        context.insert("application", "OpenBridge");
+        context.insert("application", "Bridge");
         context.insert("application_version", "v0.1.0");
         context.insert("app_name", &CONFIG.app_name);
         context.insert("company", &CONFIG.company);
@@ -157,6 +157,14 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
                     .configure(route::moleviewer::config_moleviewer),
             )
         };
+
+        #[cfg(feature = "moleviewer")]
+        {
+            todo!();
+        }
+
+        #[cfg(feature = "chemchat")]
+        {}
 
         let app = app.service(actix_files::Files::new("/static", "static"));
 
