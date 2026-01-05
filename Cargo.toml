@@ -19,7 +19,7 @@ chemchat = []
 observe = []
 mcp = []
 moleviewer = []
-full = ["notebook", "lifecycle", "observe", "mcp", "openwebui"]
+full = ["notebook", "lifecycle", "observe", "mcp", "openwebui", "chemchat"]
 
 [dependencies]
 # Async dep
@@ -39,7 +39,7 @@ actix-web = { version = "~4.12", features = ["rustls-0_23", "cookies"] }
 actix-web-httpauth = "0.8"
 actix-files = "0.6.6"
 tera = { version = "1.20.0", features= ["builtins"] }
-reqwest = { version = "0.12", features = ["stream", "json"] }
+reqwest = { version = "0.13", features = ["stream", "json"] }
 url = "2.5.0"
 toml = "0.9.0"
 urlencoding = "2.1.3"

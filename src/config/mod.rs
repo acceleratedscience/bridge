@@ -39,6 +39,10 @@ pub struct Configuration {
     pub company: String,
     pub oidc: HashMap<String, OIDC>,
     pub observability_cred: Option<(String, String)>,
+    #[cfg(feature = "chemchat")]
+    pub chemchat_url: String,
+    #[cfg(feature = "chemchat")]
+    pub chemchat_internal_url: String,
     #[cfg(feature = "openwebui")]
     pub owui_namespace: String,
     #[cfg(feature = "openwebui")]
@@ -245,6 +249,17 @@ pub fn init_once() -> Configuration {
         )
     };
 
+    #[cfg(feature = "chemchat")]
+    let (chemchat_url, chemchat_internal_url) = {
+        (
+            app_conf["chemchat_url"].as_str().unwrap().to_string(),
+            app_conf["chemchat_internal_url"]
+                .as_str()
+                .unwrap()
+                .to_string(),
+        )
+    };
+
     let bridge_url = app_conf["bridge_url"].as_str().unwrap().to_string();
 
     Configuration {
@@ -265,6 +280,10 @@ pub fn init_once() -> Configuration {
         company,
         oidc: oidc_map,
         observability_cred,
+        #[cfg(feature = "chemchat")]
+        chemchat_url,
+        #[cfg(feature = "chemchat")]
+        chemchat_internal_url,
         #[cfg(feature = "openwebui")]
         owui_namespace,
         #[cfg(feature = "openwebui")]

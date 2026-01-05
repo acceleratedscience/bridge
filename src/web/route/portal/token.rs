@@ -9,18 +9,17 @@ use mongodb::bson::{doc, oid::ObjectId};
 use tera::Tera;
 
 use crate::{
-    auth::jwt,
-    config::{AUD, CONFIG},
     db::{
         Database,
-        models::{BridgeCookie, GROUP, Group, USER, User},
+        models::{BridgeCookie, USER, User},
         mongo::DB,
     },
     errors::{BridgeError, Result},
-    web::helper::{self, bson},
+    web::{
+        helper::{self, bson},
+        route::auth,
+    },
 };
-
-const TOKEN_LIFETIME: usize = const { 60 * 60 * 24 * 30 };
 
 #[get("token")]
 pub async fn get_token_for_user(
@@ -39,43 +38,11 @@ pub async fn get_token_for_user(
             );
         }
     };
+
     let id =
         ObjectId::from_str(&gc.subject).map_err(|e| BridgeError::GeneralError(e.to_string()))?;
 
-    // get information about user
-    let user: User = helper::log_with_level!(
-        db.find(
-            doc! {
-                "_id": id,
-            },
-            USER,
-        )
-        .await,
-        error
-    )?;
-
-    let scp = if user.groups.is_empty() {
-        vec!["".to_string()]
-    } else {
-        // get models
-        let group: Group = helper::log_with_level!(
-            db.find(
-                doc! {
-                    "name": &user.groups[0]
-                },
-                GROUP,
-            )
-            .await,
-            error
-        )?;
-        group.subscriptions
-    };
-
-    // Generate bridge token
-    let (token, exp) = helper::log_with_level!(
-        jwt::get_token_and_exp(&CONFIG.encoder, TOKEN_LIFETIME, &gc.subject, AUD[0], scp),
-        error
-    )?;
+    let (token, exp, user) = auth::generate_token_with_cookie(&id, &gc, &db).await?;
 
     // store thew newly create token in the database
     let r = helper::log_with_level!(

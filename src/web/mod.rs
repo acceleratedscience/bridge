@@ -110,7 +110,7 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
 
     // Lifecycle with "advisory lock"
     #[cfg(all(feature = "notebook", feature = "lifecycle"))]
-    let handle = tokio::spawn(async move {
+    let notebook_lock_handle = tokio::spawn(async move {
         let stream = LifecycleStream::new(notebook_lifecycle);
         Medium::new(LIFECYCLE_TIME, SIGTERM_FREQ, db, stream, recv.recv()).await;
     });
@@ -158,13 +158,22 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
             )
         };
 
-        #[cfg(feature = "moleviewer")]
-        {
-            todo!();
-        }
+        // #[cfg(feature = "moleviewer")]
+        // {
+        //     todo!();
+        // }
 
         #[cfg(feature = "chemchat")]
-        {}
+        let app = {
+            use self::bridge_middleware::CookieCheck;
+
+            app.service(
+                web::scope("")
+                    .guard(guard::Host(&CONFIG.chemchat_url))
+                    .wrap(CookieCheck)
+                    .configure(route::chemchat::config_chemchat),
+            )
+        };
 
         let app = app.service(actix_files::Files::new("/static", "static"));
 
@@ -209,9 +218,12 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
             .run()
             .await?;
 
-        if let Some(handler) = redirect_handle {
-            handler.await??;
-        }
+        if let Some(handler) = redirect_handle
+            && handler.await?.is_err()
+        {
+            // error in shutdown for redirect server not a big deal, so just log and move on
+            tracing::error!("HTTPS redirect server shutdown failed");
+        };
     } else {
         server.bind(("0.0.0.0", 8080))?.run().await?;
     }
@@ -221,7 +233,7 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
 
     // If the lock was acquired, release it
     #[cfg(all(feature = "notebook", feature = "lifecycle"))]
-    handle.await?;
+    notebook_lock_handle.await?;
 
     Ok(())
 }
