@@ -11,16 +11,13 @@ use tera::{Context, Tera};
 use tracing::instrument;
 
 use crate::{
-    auth::COOKIE_NAME,
-    db::{
+    auth::COOKIE_NAME, config::CONFIG, db::{
         Database,
         models::{
             BridgeCookie, GROUP, Group, NotebookStatusCookie, OWUICookie, USER, User, UserType,
         },
         mongo::DB,
-    },
-    errors::{BridgeError, Result},
-    web::{helper, route::portal::user_htmx::Profile},
+    }, errors::{BridgeError, Result}, web::{helper, route::portal::user_htmx::Profile}
 };
 
 const USER_PAGE: &str = "pages/portal_user.html";
@@ -99,6 +96,7 @@ pub(super) async fn user(
 
         let bcj = serde_json::to_string(&bridge_cookie)?;
         let bc = Cookie::build(COOKIE_NAME, bcj)
+            .domain(&CONFIG.bridge_url)
             .path("/")
             .same_site(SameSite::Strict)
             .secure(true)

@@ -18,7 +18,6 @@ use crate::{
 };
 
 const OWUI_PORT: &str = "8080";
-const MOLE_VIEW_PORT: &str = "8024";
 
 pub static OWUI_NAMESPACE: LazyLock<&str> = LazyLock::new(|| &CONFIG.owui_namespace);
 static WHITELIST_ENDPOINTS: LazyLock<HashSet<&str>> = LazyLock::new(|| {
@@ -53,7 +52,7 @@ async fn openwebui_ws(
         }
     };
 
-    let mut url = Url::from_str(&make_forward_url("ws", &owui_cookie.subject, false))?;
+    let mut url = Url::from_str(&make_forward_url("ws", &owui_cookie.subject))?;
     url.set_path("ws/socket.io/");
     url.set_query(req.uri().query());
 
@@ -78,7 +77,7 @@ async fn openwebui_forward(
         }
     };
 
-    let mut url = Url::from_str(&make_forward_url("http", &owui_cookie.subject, false))?;
+    let mut url = Url::from_str(&make_forward_url("http", &owui_cookie.subject))?;
     let path = req.path();
     url.set_path(path);
 
@@ -104,57 +103,15 @@ async fn openwebui_forward(
     .await
 }
 
-#[instrument(skip(payload))]
-async fn moleviewer_forward(
-    req: HttpRequest,
-    payload: web::Payload,
-    method: Method,
-    peer_addr: Option<PeerAddr>,
-    owui_cookie: Option<ReqData<OWUICookie>>,
-    client: web::Data<reqwest::Client>,
-) -> Result<HttpResponse> {
-    let owui_cookie = match owui_cookie {
-        Some(cookie) => cookie.into_inner(),
-        None => {
-            return Err(BridgeError::Unauthorized(
-                "OWUI cookie not found".to_string(),
-            ));
-        }
-    };
-
-    let mut url = Url::from_str(&make_forward_url("http", &owui_cookie.subject, true))?;
-    let path = req.path();
-    url.set_path(path);
-    url.set_query(req.uri().query());
-
-    helper::forwarding::forward(
-        req,
-        payload,
-        method,
-        peer_addr,
-        client,
-        url,
-        forwarding::Config {
-            ..Default::default()
-        },
-    )
-    .await
-}
-
 #[inline]
-pub(crate) fn make_forward_url(protocol: &str, subject: &str, mole: bool) -> String {
+pub(crate) fn make_forward_url(protocol: &str, subject: &str) -> String {
     let namespace = *OWUI_NAMESPACE;
-    let port = if mole { MOLE_VIEW_PORT } else { OWUI_PORT };
-    format!("{protocol}://u{subject}-openwebui.{namespace}.svc.cluster.local:{port}")
+    format!("{protocol}://u{subject}-openwebui.{namespace}.svc.cluster.local:{OWUI_PORT}")
 }
 
 pub fn config_openwebui(cfg: &mut web::ServiceConfig) {
     cfg.service(openwebui_ws)
         .default_service(web::to(openwebui_forward));
-}
-
-pub fn config_moleviewer(cfg: &mut web::ServiceConfig) {
-    cfg.default_service(web::to(moleviewer_forward));
 }
 
 #[cfg(test)]
@@ -169,7 +126,7 @@ mod tests {
         let expected_url =
             format!("{protocol}://u{subject}-openwebui.{namespace}.svc.cluster.local:{port}");
         assert_eq!(
-            super::make_forward_url(protocol, subject, false),
+            super::make_forward_url(protocol, subject),
             expected_url
         );
     }

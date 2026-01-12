@@ -70,6 +70,7 @@ async fn resource_http(
         })?;
         Some(
             Cookie::build(COOKIE_NAME, content)
+                .domain(&CONFIG.bridge_url)
                 .same_site(SameSite::Strict)
                 .expires(time::OffsetDateTime::now_utc() + time::Duration::days(1))
                 .path("/")

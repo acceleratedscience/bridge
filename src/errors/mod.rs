@@ -147,7 +147,6 @@ impl ResponseError for BridgeError {
                     jsonwebtoken::errors::ErrorKind::Json(_) => StatusCode::BAD_REQUEST,
                     // Internal errors
                     jsonwebtoken::errors::ErrorKind::Utf8(_) => StatusCode::INTERNAL_SERVER_ERROR,
-                    jsonwebtoken::errors::ErrorKind::Crypto(_) => StatusCode::INTERNAL_SERVER_ERROR,
                     jsonwebtoken::errors::ErrorKind::InvalidEcdsaKey => {
                         StatusCode::INTERNAL_SERVER_ERROR
                     }

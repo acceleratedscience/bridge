@@ -17,24 +17,63 @@ notebook_env = [
 secret = "ibmdpdev-openad-pull-secret"
 start_up_url = "lab/tree/start_menu.ipynb"
 max_idle_time = 86400
+[open_ad_workbench.scheduling]
+cpu_heavy = "4"
+mem_heavy = "32Gi"
+toleration_key = "worker/cpu"
+toleration_value = "large"
 [open_ad_workbench.env]
 PROXY_URL = "https://open.accelerate.science/proxy"
 
 [datascience_notebook]
-name = "Data Science Notebook"
-url = "jupyter/base-notebook:latest"
-pull_policy = "IfNotPresent"
-working_dir = "/home/jovyan"
-volume_mnt_path = "/home/jovyan/"
+name = "CC Science Notebook"
+url = "image-registry.openshift-image-registry.svc:5000/notebook-openad/biomed-discovery-nb:latest"
+pull_policy = "Always"
+working_dir = "/workspace"
+volume_mnt_path = "/workspace"
 notebook_env = [
 	"--ServerApp.token=''",
 	"--ServerApp.password=''",
-	"--ServerApp.notebook_dir='/home/jovyan'",
+	# "--ServerApp.notebook_dir='/workspace'",
+	"--ServerApp.root_dir='/workspace'",
 	"--ServerApp.quit_button=False",
 	"--ServerApp.disable_check_xsrf=True",
 	"--ServerApp.allow_origin='*'",
+	"--ServerApp.trust_xheaders=True",
+	"--ServerApp.ip=0.0.0.0",
 	# base-url is taken care by bridge
 ]
+secret = "default-dockercfg-nk8f9"
+start_up_url = "lab/tree/biomed-discovery-agentic-workflow/Evidence_Agents.ipynb"
 max_idle_time = 86400
+[datascience_notebook.scheduling]
+cpu_heavy = "1"
+mem_heavy = "12Gi"
+toleration_key = "worker/cpu"
+toleration_value = "large"
 [datascience_notebook.env]
-PROXY_URL = ""
+PROXY_URL = "https://open.accelerate.science/proxy"
+
+# [datascience_notebook]
+# name = "Data Science Notebook"
+# url = "jupyter/base-notebook:latest"
+# pull_policy = "IfNotPresent"
+# working_dir = "/home/jovyan"
+# volume_mnt_path = "/home/jovyan/"
+# notebook_env = [
+# 	"--ServerApp.token=''",
+# 	"--ServerApp.password=''",
+# 	"--ServerApp.notebook_dir='/home/jovyan'",
+# 	"--ServerApp.quit_button=False",
+# 	"--ServerApp.disable_check_xsrf=True",
+# 	"--ServerApp.allow_origin='*'",
+# 	# base-url is taken care by bridge
+# ]
+# max_idle_time = 86400
+# [datascience_notebook.scheduling]
+# cpu_heavy = "4"
+# mem_heavy = "8Gi"
+# toleration_key = "worker/cpu"
+# toleration_value = ""
+# [datascience_notebook.env]
+# PROXY_URL = ""
