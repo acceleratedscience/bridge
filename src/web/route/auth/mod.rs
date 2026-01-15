@@ -72,6 +72,7 @@ async fn login(req: HttpRequest) -> Result<HttpResponse> {
 async fn callback(
     req: HttpRequest,
     data: Data<Tera>,
+    ctx: Data<Context>,
     db: Data<&DB>,
     cache: Data<Option<&CacheDB>>,
     path: web::Path<String>,
@@ -94,7 +95,7 @@ async fn callback(
     let openid = helper::log_with_level!(get_openid_provider(openid_kind), error)?;
 
     // get token from auth server
-    code_to_response(callback_response.code, req, openid, data, db, cache).await
+    code_to_response(callback_response.code, req, openid, data, ctx, db, cache).await
 }
 
 #[instrument(skip_all, parent = None)]
@@ -103,6 +104,7 @@ async fn code_to_response(
     req: HttpRequest,
     openid: &OpenID,
     data: Data<Tera>,
+    ctx: Data<Context>,
     db: Data<&DB>,
     cache: Data<Option<&CacheDB>>,
 ) -> Result<HttpResponse> {
@@ -236,7 +238,7 @@ async fn code_to_response(
         .secure(true)
         .finish();
 
-    let mut ctx = Context::new();
+    let mut ctx = (**ctx).clone();
     ctx.insert("name", &name);
     let rendered = helper::log_with_level!(data.render("pages/login_success.html", &ctx), error)?;
 
