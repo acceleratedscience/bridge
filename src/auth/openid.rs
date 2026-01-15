@@ -96,7 +96,7 @@ pub fn get_openid_provider(provider: OpenIDProvider) -> Result<&'static OpenID> 
 
 pub struct OpenID {
     client: OIDC,
-    reqwest_client: reqwest::Client,
+    reqwest_client: openidconnect::reqwest::Client,
 }
 
 pub static OPENID_W3: OnceLock<OpenID> = OnceLock::new();
@@ -110,7 +110,7 @@ impl OpenID {
             .get(table_name)
             .ok_or_else(|| BridgeError::TomlLookupError)?;
 
-        let reqwest_client = reqwest::Client::new();
+        let reqwest_client = openidconnect::reqwest::Client::new();
 
         let provider_metadata = core::CoreProviderMetadata::discover_async(
             IssuerUrl::new(oidc.url.to_owned())?,

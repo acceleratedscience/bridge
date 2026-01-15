@@ -73,12 +73,15 @@ build-full: (build-features "notebook,lifecycle,observe,mcp,openwebui")
 
 # --- Frontend & Minification ---
 mini-js:
-	npx uglifyjs ./static/js/main.js -o ./static/js/main.js -c -m
+	uglifyjs ./static/js/main.js -o ./static/js/main.js -c -m
 
 build-front:
-	npx tailwindcss -i ./static/css/input.css -o ./static/css/output.css --minify
-	npx tsc
-	npx uglifyjs ./static/js/main.js -o ./static/js/main.js -c -m
+	# get your flavor of tailwindcss
+	tailwindcss -i ./static/css/input.css -o ./static/css/output.css --minify
+	# npm i -Dg typescript
+	tsc
+	# npm i -g uglify-js
+	uglifyjs ./static/js/main.js -o ./static/js/main.js -c -m
 
 # --- Local Development Services ---
 local-mongo:
@@ -112,11 +115,20 @@ watch-backend:
 watch:
 	bacon --features "notebook lifecycle"
 
+start-port-forward:
+	sudo iptables -t nat -A OUTPUT -p tcp -d 127.255.255.254 --dport 443 -j DNAT --to-destination 127.255.255.254:8080
+
+stop-port-forward:
+	sudo iptables -t nat -D OUTPUT -p tcp -d 127.255.255.254 --dport 443 -j DNAT --to-destination 127.255.255.254:8080
+
+check-port-foward:
+	sudo iptables -t nat -L OUTPUT
+
 # --- Certificates ---
 certs:
 	mkdir certs
 	@openssl req -x509 -newkey rsa:2048 -nodes -keyout certs/key.pem -out certs/cert.pem -days 365 -subj '/CN=open.accelerator.cafe'
 
-gen-curve:
+gen_curve:
 	@openssl ecparam -name prime256v1 -genkey -noout -out certs/private.ec.key
 	@openssl ec -in certs/private.ec.key -pubout -out certs/public-key.pem

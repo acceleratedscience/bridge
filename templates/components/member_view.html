@@ -42,7 +42,7 @@
 				{{ user.email }}
 			</td>
 			<td class="max-sm:hidden" title="{{ user.updated_at }}">
-				{{ user.updated_at | time_ago }}
+				{{ user.updated_at }}
 			</td>
 			<td id="_{{ user.sub | slugify }}_remove">
 				<button class="font-medium text-red-600 dark:text-red-500 cursor-pointer" hx-patch="group_admin/hx/user"

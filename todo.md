@@ -22,7 +22,6 @@
 -   [ ] **Group management > Create Group:** Instead of "Group updated" message, go to new group detail page
 -   [ ] **Group management > Edit User:** Clear "User x edited" message after 2 seconds (otherwise no more feedback when you edit again)
 -   [ ] **Group management > Delete User:** Instead of "User x deleted", return to list
--   [ ] Review time_ago_filter (vibe coded)
 
 ## WISH LIST
 

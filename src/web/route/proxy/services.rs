@@ -9,7 +9,9 @@ use crate::errors::{BridgeError, Result};
 pub struct Catalog(pub toml::Table);
 
 pub static CATALOG: LazyLock<Catalog> = LazyLock::new(|| {
-    let service_config = {
+    let service_config = if cfg!(debug_assertions) {
+        "config/services_sample.toml"
+    } else {
         "config/services.toml"
     };
 

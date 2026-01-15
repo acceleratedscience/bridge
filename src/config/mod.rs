@@ -148,10 +148,11 @@ pub fn init_once() -> Configuration {
     validation.set_audience(&AUD);
     validation.leeway = 0;
 
-    let (config_location_str, database_location_str) = (
-        "config/configurations.toml",
-        "config/database.toml",
-    );
+    let (config_location_str, database_location_str) = if cfg!(debug_assertions) {
+        ("config/configurations.toml", "config/database_sample.toml")
+    } else {
+        ("config/configurations.toml", "config/database.toml")
+    };
 
     let conf_table: toml::Table =
         toml::from_str(&read_to_string(PathBuf::from_str(config_location_str).unwrap()).unwrap())
@@ -241,7 +242,12 @@ pub fn init_once() -> Configuration {
         )
     };
 
-    let bridge_url = app_conf["bridge_url"].as_str().unwrap().to_string();
+    let bridge_url = if cfg!(debug_assertions) {
+        // make sure you spoof bridge.dev locally
+        "dev.open.accelerate.science".to_string()
+    } else {
+        app_conf["bridge_url"].as_str().unwrap().to_string()
+    };
 
     Configuration {
         encoder,

@@ -11,7 +11,7 @@
 		<tr class="clickable" hx-get="system_admin/hx/tab?tab=UserModify&user={{user.email}}" hx-target="#system_admin_user">
 			<td>{{ user.user_name }}</td>
 			<td>{{ user.email }}</td>
-			<td title="{{ user.updated_at }}">{{ user.updated_at | time_ago }}</td>
+			<td title="{{ user.updated_at }}">{{ user.updated_at }}</td>
 		</tr>
 		{% endfor %}
 	</tbody>

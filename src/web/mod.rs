@@ -49,7 +49,7 @@ const LIFECYCLE_TIME: Duration = Duration::from_secs(3600);
 #[cfg(all(feature = "notebook", feature = "lifecycle"))]
 const SIGTERM_FREQ: Duration = Duration::from_secs(5);
 
-/// Starts the OpenBridge server either with or without TLS. If with TLS, please ensure you have the
+/// Starts the Bridge server either with or without TLS. If with TLS, please ensure you have the
 /// appropriate certs in the `certs` directory.
 ///
 /// # Example
@@ -118,7 +118,7 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
     let server = HttpServer::new(move || {
         let tera_data = Data::new(templating::start_template_eng());
         let mut context = Context::new();
-        context.insert("application", "OpenBridge");
+        context.insert("application", "Bridge");
         context.insert("application_version", "v0.1.0");
         context.insert("app_name", &CONFIG.app_name);
         context.insert("company", &CONFIG.company);
@@ -180,13 +180,20 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
         })
     });
 
+    let ip_addr = if cfg!(debug_assertions) {
+        // make sure you map this to spoof bridge.dev on your local machine
+        "127.255.255.254"
+    } else {
+        "0.0.0.0"
+    };
+
     if with_tls {
         // Application level https redirect, but only in release mode
         let redirect_handle = if cfg!(not(debug_assertions)) {
             Some(tokio::spawn(
                 HttpServer::new(move || App::new().wrap(HttpRedirect))
                     .workers(1)
-                    .bind(("0.0.0.0", 8000))?
+                    .bind((ip_addr, 8000))?
                     .run(),
             ))
         } else {
@@ -195,7 +202,7 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
 
         server
             .bind_rustls_0_23(
-                ("0.0.0.0", 8080),
+                (ip_addr, 8080),
                 tls::load_certs("certs/fullchain.cer", "certs/open.accelerate.science.key"),
             )?
             .run()
@@ -205,7 +212,7 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
             handler.await??;
         }
     } else {
-        server.bind(("0.0.0.0", 8080))?.run().await?;
+        server.bind((ip_addr, 8080))?.run().await?;
     }
 
     // shutdown signal

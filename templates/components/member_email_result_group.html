@@ -12,7 +12,7 @@
 		<tr>
 			<td>{{ user.user_name }}</td>
 			<td>{{ user.email }}</td>
-			<td title="{{ user.updated_at }}">{{ user.updated_at | time_ago }}</td>
+			<td title="{{ user.updated_at }}">{{ user.updated_at }}</td>
 			<td id="_{{ user.sub | slugify }}_add">
 				<button class="font-medium dark:text-green-700 text-green-900 hover:underline cursor-pointer"
 					hx-patch="group_admin/hx/user"
