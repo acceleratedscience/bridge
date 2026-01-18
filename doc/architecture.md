@@ -1,4 +1,4 @@
-[&#8592; Back](../#OpenBridge)
+[&#8592; Back](../#Bridge)
 
 # Architecture
 
@@ -7,7 +7,7 @@
 
 <br>
 
-### Technology powering OpenBridge
+### Technology powering Bridge
 
 -   Front-end:
     -   HTMX

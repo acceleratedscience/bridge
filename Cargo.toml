@@ -1,10 +1,10 @@
 [package]
-name = "openbridge"
+name = "bridge"
 version = "0.1.0"
 edition = "2024"
 
 [[bin]]
-name = "openbridge"
+name = "bridge"
 path = "./src/main.rs"
 
 [workspace]

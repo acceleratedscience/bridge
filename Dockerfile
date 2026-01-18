@@ -46,7 +46,7 @@ WORKDIR /app
 
 RUN apt update -y && apt install openssl -y && apt install ca-certificates
 
-COPY --from=builder /app/target/release/openbridge .
+COPY --from=builder /app/target/release/bridge .
 COPY ./certs ./certs
 COPY ./config ./config
 COPY ./templates ./templates
@@ -59,4 +59,4 @@ USER 1001
 EXPOSE 8080
 EXPOSE 8000 
 
-CMD ["./openbridge"]
+CMD ["./bridge"]

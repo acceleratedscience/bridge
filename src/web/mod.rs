@@ -49,7 +49,7 @@ const LIFECYCLE_TIME: Duration = Duration::from_secs(3600);
 #[cfg(all(feature = "notebook", feature = "lifecycle"))]
 const SIGTERM_FREQ: Duration = Duration::from_secs(5);
 
-/// Starts the OpenBridge server either with or without TLS. If with TLS, please ensure you have the
+/// Starts the Bridge server either with or without TLS. If with TLS, please ensure you have the
 /// appropriate certs in the `certs` directory.
 ///
 /// # Example
@@ -118,7 +118,7 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
     let server = HttpServer::new(move || {
         let tera_data = Data::new(templating::start_template_eng());
         let mut context = Context::new();
-        context.insert("application", "OpenBridge");
+        context.insert("application", "Bridge");
         context.insert("application_version", "v0.1.0");
         context.insert("app_name", &CONFIG.app_name);
         context.insert("company", &CONFIG.company);

@@ -487,6 +487,59 @@ dependencies = [
 ]
 
 [[package]]
+name = "bridge"
+version = "0.1.0"
+dependencies = [
+ "actix-files",
+ "actix-web",
+ "actix-web-httpauth",
+ "actix-ws",
+ "base64 0.22.1",
+ "either",
+ "futures",
+ "futures-util",
+ "jsonwebkey",
+ "jsonwebtoken",
+ "k8s-openapi",
+ "kube",
+ "mimalloc",
+ "mongodb",
+ "num-bigint",
+ "openidconnect",
+ "openssl",
+ "p256",
+ "parking_lot",
+ "pin-project",
+ "rand 0.9.2",
+ "redis",
+ "regex",
+ "reqwest 0.13.1",
+ "rust-argon2",
+ "rustls",
+ "rustls-pemfile",
+ "rustls-pki-types",
+ "schemars 1.2.0",
+ "serde",
+ "serde_json",
+ "serde_urlencoded",
+ "sha2",
+ "tera",
+ "thiserror 2.0.17",
+ "time",
+ "tokio",
+ "tokio-rustls",
+ "tokio-stream",
+ "tokio-tungstenite",
+ "toml",
+ "tracing",
+ "tracing-subscriber",
+ "url",
+ "urlencoding",
+ "utils",
+ "uuid",
+]
+
+[[package]]
 name = "brotli"
 version = "8.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2614,59 +2667,6 @@ checksum = "42f5e15c9953c5e4ccceeb2e7382a716482c34515315f7b03532b8b4e8393d2d"
 dependencies = [
  "critical-section",
  "portable-atomic",
-]
-
-[[package]]
-name = "openbridge"
-version = "0.1.0"
-dependencies = [
- "actix-files",
- "actix-web",
- "actix-web-httpauth",
- "actix-ws",
- "base64 0.22.1",
- "either",
- "futures",
- "futures-util",
- "jsonwebkey",
- "jsonwebtoken",
- "k8s-openapi",
- "kube",
- "mimalloc",
- "mongodb",
- "num-bigint",
- "openidconnect",
- "openssl",
- "p256",
- "parking_lot",
- "pin-project",
- "rand 0.9.2",
- "redis",
- "regex",
- "reqwest 0.13.1",
- "rust-argon2",
- "rustls",
- "rustls-pemfile",
- "rustls-pki-types",
- "schemars 1.2.0",
- "serde",
- "serde_json",
- "serde_urlencoded",
- "sha2",
- "tera",
- "thiserror 2.0.17",
- "time",
- "tokio",
- "tokio-rustls",
- "tokio-stream",
- "tokio-tungstenite",
- "toml",
- "tracing",
- "tracing-subscriber",
- "url",
- "urlencoding",
- "utils",
- "uuid",
 ]
 
 [[package]]
