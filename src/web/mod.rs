@@ -180,13 +180,19 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
         })
     });
 
+    let ip_addr = if cfg!(debug_assertions) {
+        "127.255.255.254"
+    } else {
+        "0.0.0.0"
+    };
+
     if with_tls {
         // Application level https redirect, but only in release mode
         let redirect_handle = if cfg!(not(debug_assertions)) {
             Some(tokio::spawn(
                 HttpServer::new(move || App::new().wrap(HttpRedirect))
                     .workers(1)
-                    .bind(("0.0.0.0", 8000))?
+                    .bind((ip_addr, 8000))?
                     .run(),
             ))
         } else {
@@ -195,7 +201,7 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
 
         server
             .bind_rustls_0_23(
-                ("0.0.0.0", 8080),
+                (ip_addr, 8080),
                 tls::load_certs("certs/fullchain.cer", "certs/open.accelerate.science.key"),
             )?
             .run()
@@ -205,7 +211,7 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
             handler.await??;
         }
     } else {
-        server.bind(("0.0.0.0", 8080))?.run().await?;
+        server.bind((ip_addr, 8080))?.run().await?;
     }
 
     // shutdown signal
