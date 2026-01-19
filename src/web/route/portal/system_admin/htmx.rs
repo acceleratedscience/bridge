@@ -4,7 +4,7 @@ use tera::Tera;
 use crate::errors::Result;
 
 pub struct GroupContent {
-    pub items: Vec<String>,
+    pub items: Vec<&'static str>,
 }
 
 pub(super) static VIEW_GROUP: &str = "components/group_view.html";
@@ -16,7 +16,7 @@ impl GroupContent {
         Self { items: Vec::new() }
     }
 
-    pub fn add(&mut self, item: String) {
+    pub fn add(&mut self, item: &'static str) {
         self.items.push(item);
     }
 

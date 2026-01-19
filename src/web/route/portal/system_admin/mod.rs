@@ -16,7 +16,9 @@ use tera::{Context, Tera};
 use tracing::instrument;
 
 use crate::{
-    auth::COOKIE_NAME, config::CONFIG, db::{
+    auth::COOKIE_NAME,
+    config::CONFIG,
+    db::{
         Database,
         models::{
             AdminTab, AdminTabs, BridgeCookie, GROUP, Group, GroupForm, GroupPortalRep,
@@ -24,12 +26,14 @@ use crate::{
             UserType,
         },
         mongo::DB,
-    }, errors::{BridgeError, Result}, web::{
+    },
+    errors::{BridgeError, Result},
+    web::{
         bridge_middleware::{HTMX_ERROR_RES, Htmx},
         helper::{self, bson, payload_to_struct},
         route::portal::helper::{check_admin, get_all_groups},
         services::CATALOG,
-    }
+    },
 };
 
 #[cfg(feature = "notebook")]
@@ -373,9 +377,9 @@ async fn system_tab_htmx(
         | AdminTab::GroupView => {
             let mut group_form = GroupContent::new();
 
-            CATALOG.get_all_by_name().iter().for_each(|name| {
+            CATALOG.get_all().iter().for_each(|name| {
                 // TODO: remove this clone and use &'static str
-                group_form.add(name.clone());
+                group_form.add(name.0);
             });
 
             match tab.tab {
@@ -437,8 +441,8 @@ async fn system_tab_htmx(
                         let mut selections = group_form
                             .items
                             .iter()
-                            .map(|v| (v.clone(), group_info.subscriptions.contains(v)))
-                            .collect::<Vec<(String, bool)>>();
+                            .map(|&v| (v, group_info.subscriptions.iter().any(|s| s.eq(v))))
+                            .collect::<Vec<(&str, bool)>>();
                         selections.sort_by_key(|(_, b)| !*b);
 
                         group_form.render(

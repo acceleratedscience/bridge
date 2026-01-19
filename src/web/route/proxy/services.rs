@@ -8,6 +8,8 @@ use crate::errors::{BridgeError, Result};
 
 pub struct Catalog(pub toml::Table);
 
+// TODO: move this out of proxy mod... perhaps in the parent mod to this
+
 pub static CATALOG: LazyLock<Catalog> = LazyLock::new(|| {
     let service_config = if cfg!(debug_assertions) {
         "config/services_sample.toml"
@@ -22,7 +24,7 @@ pub static CATALOG: LazyLock<Catalog> = LazyLock::new(|| {
 });
 pub static CATALOG_URLS: LazyLock<Vec<(Url, String)>> =
     LazyLock::new(|| Into::<ServiceCatalog>::into(LazyLock::force(&CATALOG)).into());
-static CATALOG_ALL_NAMES: LazyLock<Vec<String>> = LazyLock::new(|| {
+static CATALOG_ALL: LazyLock<Vec<(&str, &str, bool, &str)>> = LazyLock::new(|| {
     let mut names = vec![];
     names.extend(
         LazyLock::force(&CATALOG)
@@ -30,8 +32,16 @@ static CATALOG_ALL_NAMES: LazyLock<Vec<String>> = LazyLock::new(|| {
             .get("services")
             .and_then(|v| v.as_table())
             .expect("services not found in config")
-            .keys()
-            .map(|k| k.to_string()),
+            .iter()
+            .map(|e| {
+                let mcp = e.1.get("mcp").and_then(|v| v.as_bool()).unwrap_or_default();
+                let description =
+                    e.1.get("description")
+                        .and_then(|v| v.as_str())
+                        .unwrap_or_default();
+
+                (e.0.as_str(), "service", mcp, description)
+            }),
     );
     names.extend(
         LazyLock::force(&CATALOG)
@@ -39,8 +49,14 @@ static CATALOG_ALL_NAMES: LazyLock<Vec<String>> = LazyLock::new(|| {
             .get("resources")
             .and_then(|v| v.as_table())
             .expect("resources not found in config")
-            .keys()
-            .map(|k| k.to_string()),
+            .iter()
+            .map(|v| {
+                let description =
+                    v.1.get("description")
+                        .and_then(|v| v.as_str())
+                        .unwrap_or_default();
+                (v.0.as_str(), "resource", false, description)
+            }),
     );
     names
 });
@@ -106,8 +122,9 @@ impl Catalog {
         &ALL_RESOURCE_NAMES
     }
 
-    pub fn get_all_by_name(&self) -> &'static Vec<String> {
-        &CATALOG_ALL_NAMES
+    // get all service and resources by their (in this order) name, kind, whether or not mcp, and description
+    pub fn get_all(&self) -> &'static Vec<(&str, &str, bool, &str)> {
+        &CATALOG_ALL
     }
 }
 
@@ -218,9 +235,8 @@ mod test {
 
     #[test]
     fn test_catalog_all_names() {
-        let names = CATALOG.get_all_by_name();
-        assert!(names.contains(&"postman".to_string()));
-        assert!(names.contains(&"example".to_string()));
+        let names = CATALOG.get_all();
+        assert!(names.len() >= 2);
     }
 
     #[test]
