@@ -104,13 +104,13 @@ watch-tailwind:
 	tailwindcss -i ./static/css/input.css -o ./static/css/output.css --minify --watch
 
 watch-rust:
-	bacon run-long --features "notebook lifecycle"
+	bacon run-long --features "full"
 
 watch-backend:
-	bacon . --features "notebook lifecycle"
+	bacon . --features "full"
 
 watch:
-	bacon --features "notebook lifecycle"
+	bacon --features "full"
 
 # -- Local Dev Networking --
 start-port-forward:

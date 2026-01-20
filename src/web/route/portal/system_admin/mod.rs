@@ -1,4 +1,4 @@
-use std::{marker::PhantomData, str::FromStr};
+use std::{marker::PhantomData, ops::Sub, str::FromStr};
 
 mod htmx;
 
@@ -31,7 +31,10 @@ use crate::{
     web::{
         bridge_middleware::{HTMX_ERROR_RES, Htmx},
         helper::{self, bson, payload_to_struct},
-        route::portal::helper::{check_admin, get_all_groups},
+        route::portal::{
+            helper::{check_admin, get_all_groups},
+            user_htmx::Subscription,
+        },
         services::CATALOG,
     },
 };
@@ -92,7 +95,22 @@ pub(super) async fn system(
     let subscriptions: Result<Group> = db.find(doc! {"name": group_name}, GROUP).await;
     let (subs, group_created_at, group_updated_at, group_last_updated) = match subscriptions {
         Ok(g) => (
-            g.subscriptions,
+            {
+                let mut sub_details: Vec<Subscription> = Vec::new();
+
+                g.subscriptions.iter().for_each(|name| {
+                    if let Some(sub) = CATALOG.get_all().get(name.as_str()) {
+                        sub_details.push(Subscription {
+                            name: name.to_owned(),
+                            kind: sub.0,
+                            kind_designation: if sub.1 { "mcp" } else { "inference" },
+                            description: sub.2,
+                        });
+                    }
+                });
+
+                sub_details
+            },
             g.created_at.to_string(),
             g.updated_at.to_string(),
             g.last_updated_by.to_string(),
@@ -124,7 +142,7 @@ pub(super) async fn system(
 
     // add notebook tab if user has a notebook subscription
     #[cfg(feature = "notebook")]
-    let nb_cookies = notebook_bookkeeping(&user, nsc, &mut bridge_cookie, &mut ctx, subs).await?;
+    let nb_cookies = notebook_bookkeeping(&user, nsc, &mut bridge_cookie, &mut ctx, &subs).await?;
 
     #[cfg(feature = "notebook")]
     if let Some(ref conf) = bridge_cookie.config {
@@ -377,9 +395,10 @@ async fn system_tab_htmx(
         | AdminTab::GroupView => {
             let mut group_form = GroupContent::new();
 
-            CATALOG.get_all().iter().for_each(|name| {
-                // TODO: remove this clone and use &'static str
-                group_form.add(name.0);
+            // TODO: Move this into some cache so you don't do this over and over. For now the only
+            // cost is creation of a Vec in the GroupContent struct where each item is &'static str
+            CATALOG.get_all().iter().for_each(|(&name, (_, _, _))| {
+                group_form.add(name);
             });
 
             match tab.tab {

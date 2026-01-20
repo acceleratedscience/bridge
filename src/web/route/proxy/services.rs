@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::sync::LazyLock;
 use std::{fs::read_to_string, path::PathBuf, str::FromStr};
 
@@ -24,40 +25,45 @@ pub static CATALOG: LazyLock<Catalog> = LazyLock::new(|| {
 });
 pub static CATALOG_URLS: LazyLock<Vec<(Url, String)>> =
     LazyLock::new(|| Into::<ServiceCatalog>::into(LazyLock::force(&CATALOG)).into());
-static CATALOG_ALL: LazyLock<Vec<(&str, &str, bool, &str)>> = LazyLock::new(|| {
-    let mut names = vec![];
-    names.extend(
-        LazyLock::force(&CATALOG)
-            .0
-            .get("services")
-            .and_then(|v| v.as_table())
-            .expect("services not found in config")
-            .iter()
-            .map(|e| {
-                let mcp = e.1.get("mcp").and_then(|v| v.as_bool()).unwrap_or_default();
-                let description =
-                    e.1.get("description")
-                        .and_then(|v| v.as_str())
-                        .unwrap_or_default();
+static CATALOG_ALL: LazyLock<HashMap<&str, (&str, bool, &str)>> = LazyLock::new(|| {
+    let mut names = HashMap::new();
 
-                (e.0.as_str(), "service", mcp, description)
-            }),
-    );
-    names.extend(
-        LazyLock::force(&CATALOG)
-            .0
-            .get("resources")
-            .and_then(|v| v.as_table())
-            .expect("resources not found in config")
-            .iter()
-            .map(|v| {
-                let description =
-                    v.1.get("description")
-                        .and_then(|v| v.as_str())
-                        .unwrap_or_default();
-                (v.0.as_str(), "resource", false, description)
-            }),
-    );
+    let service_iter = LazyLock::force(&CATALOG)
+        .0
+        .get("services")
+        .and_then(|v| v.as_table())
+        .expect("services not found in config")
+        .iter()
+        .map(|e| {
+            let mcp = e.1.get("mcp").and_then(|v| v.as_bool()).unwrap_or_default();
+            let description =
+                e.1.get("description")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or_default();
+
+            (e.0.as_str(), "service", mcp, description)
+        });
+    let resource_iter = LazyLock::force(&CATALOG)
+        .0
+        .get("resources")
+        .and_then(|v| v.as_table())
+        .expect("resources not found in config")
+        .iter()
+        .map(|v| {
+            let description =
+                v.1.get("description")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or_default();
+            (v.0.as_str(), "resource", false, description)
+        });
+
+    service_iter
+        .into_iter()
+        .chain(resource_iter)
+        .for_each(|entry| {
+            names.insert(entry.0, (entry.1, entry.2, entry.3));
+        });
+
     names
 });
 static ALL_RESOURCE_NAMES: LazyLock<Vec<&str>> = LazyLock::new(|| {
@@ -123,7 +129,7 @@ impl Catalog {
     }
 
     // get all service and resources by their (in this order) name, kind, whether or not mcp, and description
-    pub fn get_all(&self) -> &'static Vec<(&str, &str, bool, &str)> {
+    pub fn get_all(&self) -> &'static HashMap<&str, (&str, bool, &str)> {
         &CATALOG_ALL
     }
 }
