@@ -49,7 +49,7 @@ const LIFECYCLE_TIME: Duration = Duration::from_secs(3600);
 #[cfg(all(feature = "notebook", feature = "lifecycle"))]
 const SIGTERM_FREQ: Duration = Duration::from_secs(5);
 
-/// Starts the OpenBridge server either with or without TLS. If with TLS, please ensure you have the
+/// Starts the Bridge server either with or without TLS. If with TLS, please ensure you have the
 /// appropriate certs in the `certs` directory.
 ///
 /// # Example
@@ -197,13 +197,19 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
         })
     });
 
+    let ip_addr = if cfg!(debug_assertions) {
+        "127.255.255.254"
+    } else {
+        "0.0.0.0"
+    };
+
     if with_tls {
         // Application level https redirect, but only in release mode
         let redirect_handle = if cfg!(not(debug_assertions)) {
             Some(tokio::spawn(
                 HttpServer::new(move || App::new().wrap(HttpRedirect))
                     .workers(1)
-                    .bind(("0.0.0.0", 8000))?
+                    .bind((ip_addr, 8000))?
                     .run(),
             ))
         } else {
@@ -212,7 +218,7 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
 
         server
             .bind_rustls_0_23(
-                ("0.0.0.0", 8080),
+                (ip_addr, 8080),
                 tls::load_certs("certs/fullchain.cer", "certs/open.accelerate.science.key"),
             )?
             .run()
@@ -225,7 +231,7 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
             tracing::error!("HTTPS redirect server shutdown failed");
         };
     } else {
-        server.bind(("0.0.0.0", 8080))?.run().await?;
+        server.bind((ip_addr, 8080))?.run().await?;
     }
 
     // shutdown signal

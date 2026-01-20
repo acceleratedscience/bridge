@@ -2,6 +2,7 @@ use actix_web::{
     cookie::Cookie,
     web::{Data, ReqData},
 };
+use serde::Serialize;
 use tera::{Context, Tera};
 
 use crate::{
@@ -13,9 +14,17 @@ use crate::{
 #[cfg(feature = "notebook")]
 use super::helper::notebook_bookkeeping;
 
+#[derive(Serialize, Clone)]
+pub struct Subscription<'s> {
+    pub name: String,
+    pub kind: &'s str,
+    pub kind_designation: &'s str,
+    pub description: &'s str,
+}
+
 pub struct Profile<'p> {
     pub groups: Vec<String>,
-    pub subscriptions: Vec<String>,
+    pub subscriptions: Vec<Subscription<'p>>,
     user: &'p User,
 }
 
@@ -35,7 +44,7 @@ impl<'p> Profile<'p> {
         self.groups.push(group);
     }
 
-    pub fn add_subscription(&mut self, subscription: String) {
+    pub fn add_subscription(&mut self, subscription: Subscription<'p>) {
         self.subscriptions.push(subscription);
     }
 
@@ -90,8 +99,7 @@ impl<'p> Profile<'p> {
 
         #[cfg(feature = "notebook")]
         let nb_cookies =
-            notebook_bookkeeping(self.user, nsc, bc, &mut context, self.subscriptions.clone())
-                .await?;
+            notebook_bookkeeping(self.user, nsc, bc, &mut context, &self.subscriptions).await?;
 
         // TODO: with the notebook flow refactor '25... this doesn't exactly fit anymore... right now
         // it should not affect the functionality of the application for keeping this around.  But
