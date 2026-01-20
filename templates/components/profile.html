@@ -5,6 +5,7 @@
 		<p class="pt-2">Email: {{ email }}</p>
 		<p class="pt-2">User type: {{ user_type }}</p>
 	</div>
+
 	<div id="group_info" class="px-3 py-3 mx-3 xl:my-0 mb-4 rounded-md dark:bg-[#343a3f] bg-[#f4f4f4]">
 		<p class="border-b font-bold">Group Info</p>
 		<table class="w-full mt-4">
@@ -13,24 +14,45 @@
 				<td>{{ group | first }}</td>
 			</tr>
 			<tr>
-				<td class="align-top pt-2">Subscriptions:</td>
+				<td title="Your Subscriptions" class="align-top pt-2">Subs:</td>
 				<td class="pt-2">
 					{% if subscriptions | length > 0 %}
-					<ul>
+					<ul class="space-y-1">
 						{% for sub in subscriptions %}
-						<li class="{% if loop.index is odd %}bg-white dark:bg-[#42484e]{% endif %} p-1 rounded-md">
-							{{ sub }}
+						<li class="p-2 rounded-md {% if loop.index is odd %}bg-white dark:bg-[#42484e]{% endif %}">
+							<div class="flex justify-between items-center w-full">
+								<span class="font-medium">{{ sub.name }}</span>
+								<span
+									class="text-xs px-2 py-0.5 rounded bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300">
+									{% if sub.kind == "resource" %}
+									Web App
+									{% elif sub.kind_designation == "mcp" %}
+									Model Context Protocol
+									{% elif sub.kind_designation == "inference" %}
+									Inference API
+									{% else %}
+									{{ sub.kind }}
+									{% endif %}
+								</span>
+							</div>
+
+							{% if sub.description %}
+							<p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+								{{ sub.description }}
+							</p>
+							{% endif %}
 						</li>
 						{% endfor %}
 					</ul>
 					{% else %}
-					None
+					<span class="text-gray-500 italic">None</span>
 					{% endif %}
 				</td>
 			</tr>
 		</table>
 	</div>
+
 	<div id="token" class="flex flex-col px-3 py-3 mx-3 xl:my-0 rounded-md dark:bg-[#343a3f] bg-[#f4f4f4]">
-		{%include "components/token.html" %}
+		{% include "components/token.html" %}
 	</div>
 </div>

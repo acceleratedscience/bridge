@@ -14,19 +14,23 @@ use tera::{Context, Tera};
 use tracing::instrument;
 
 use crate::{
-    auth::COOKIE_NAME, config::CONFIG, db::{
+    auth::COOKIE_NAME,
+    config::CONFIG,
+    db::{
         Database,
         models::{
             AdminTab, AdminTabs, BridgeCookie, GROUP, Group, ModifyUser, NotebookStatusCookie,
             OWUICookie, USER, User, UserGroupMod, UserPortalRep, UserType,
         },
         mongo::DB,
-    }, errors::{BridgeError, Result}, web::{
+    },
+    errors::{BridgeError, Result},
+    web::{
         bridge_middleware::{HTMX_ERROR_RES, Htmx},
         helper::{self, bson},
-        route::portal::helper::check_admin,
+        route::portal::{helper::check_admin, user_htmx::Subscription},
         services::CATALOG,
-    }
+    },
 };
 
 #[cfg(feature = "notebook")]
@@ -86,7 +90,22 @@ pub(super) async fn group(
     let subscriptions: Result<Group> = db.find(doc! {"name": group_name}, GROUP).await;
     let (subs, group_created_at, group_updated_at, group_last_updated) = match subscriptions {
         Ok(g) => (
-            g.subscriptions,
+            {
+                let mut sub_details: Vec<Subscription> = Vec::new();
+
+                g.subscriptions.iter().for_each(|name| {
+                    if let Some(sub) = CATALOG.get_all().get(name.as_str()) {
+                        sub_details.push(Subscription {
+                            name: name.to_owned(),
+                            kind: sub.0,
+                            kind_designation: if sub.1 { "mcp" } else { "inference" },
+                            description: sub.2,
+                        });
+                    }
+                });
+
+                sub_details
+            },
             g.created_at.to_string(),
             g.updated_at.to_string(),
             g.last_updated_by.to_string(),
@@ -118,7 +137,7 @@ pub(super) async fn group(
 
     // add notebook tab if user has a notebook subscription
     #[cfg(feature = "notebook")]
-    let nb_cookies = notebook_bookkeeping(&user, nsc, &mut bridge_cookie, &mut ctx, subs).await?;
+    let nb_cookies = notebook_bookkeeping(&user, nsc, &mut bridge_cookie, &mut ctx, &subs).await?;
 
     #[cfg(feature = "notebook")]
     if let Some(ref conf) = bridge_cookie.config {

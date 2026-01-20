@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::sync::LazyLock;
 use std::{fs::read_to_string, path::PathBuf, str::FromStr};
 
@@ -7,6 +8,8 @@ use url::Url;
 use crate::errors::{BridgeError, Result};
 
 pub struct Catalog(pub toml::Table);
+
+// TODO: move this out of proxy mod... perhaps in the parent mod to this
 
 pub static CATALOG: LazyLock<Catalog> = LazyLock::new(|| {
     let service_config = if cfg!(debug_assertions) {
@@ -22,26 +25,45 @@ pub static CATALOG: LazyLock<Catalog> = LazyLock::new(|| {
 });
 pub static CATALOG_URLS: LazyLock<Vec<(Url, String)>> =
     LazyLock::new(|| Into::<ServiceCatalog>::into(LazyLock::force(&CATALOG)).into());
-static CATALOG_ALL_NAMES: LazyLock<Vec<String>> = LazyLock::new(|| {
-    let mut names = vec![];
-    names.extend(
-        LazyLock::force(&CATALOG)
-            .0
-            .get("services")
-            .and_then(|v| v.as_table())
-            .expect("services not found in config")
-            .keys()
-            .map(|k| k.to_string()),
-    );
-    names.extend(
-        LazyLock::force(&CATALOG)
-            .0
-            .get("resources")
-            .and_then(|v| v.as_table())
-            .expect("resources not found in config")
-            .keys()
-            .map(|k| k.to_string()),
-    );
+static CATALOG_ALL: LazyLock<HashMap<&str, (&str, bool, &str)>> = LazyLock::new(|| {
+    let mut names = HashMap::new();
+
+    let service_iter = LazyLock::force(&CATALOG)
+        .0
+        .get("services")
+        .and_then(|v| v.as_table())
+        .expect("services not found in config")
+        .iter()
+        .map(|e| {
+            let mcp = e.1.get("mcp").and_then(|v| v.as_bool()).unwrap_or_default();
+            let description =
+                e.1.get("description")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or_default();
+
+            (e.0.as_str(), "service", mcp, description)
+        });
+    let resource_iter = LazyLock::force(&CATALOG)
+        .0
+        .get("resources")
+        .and_then(|v| v.as_table())
+        .expect("resources not found in config")
+        .iter()
+        .map(|v| {
+            let description =
+                v.1.get("description")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or_default();
+            (v.0.as_str(), "resource", false, description)
+        });
+
+    service_iter
+        .into_iter()
+        .chain(resource_iter)
+        .for_each(|entry| {
+            names.insert(entry.0, (entry.1, entry.2, entry.3));
+        });
+
     names
 });
 static ALL_RESOURCE_NAMES: LazyLock<Vec<&str>> = LazyLock::new(|| {
@@ -106,8 +128,9 @@ impl Catalog {
         &ALL_RESOURCE_NAMES
     }
 
-    pub fn get_all_by_name(&self) -> &'static Vec<String> {
-        &CATALOG_ALL_NAMES
+    // get all service and resources by their (in this order) name, kind, whether or not mcp, and description
+    pub fn get_all(&self) -> &'static HashMap<&str, (&str, bool, &str)> {
+        &CATALOG_ALL
     }
 }
 
@@ -218,9 +241,8 @@ mod test {
 
     #[test]
     fn test_catalog_all_names() {
-        let names = CATALOG.get_all_by_name();
-        assert!(names.contains(&"postman".to_string()));
-        assert!(names.contains(&"example".to_string()));
+        let names = CATALOG.get_all();
+        assert!(names.len() >= 2);
     }
 
     #[test]

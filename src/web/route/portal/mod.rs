@@ -32,7 +32,6 @@ use crate::{
 
 mod group_admin;
 mod helper;
-mod profile_htmx;
 mod system_admin;
 mod token;
 mod user;

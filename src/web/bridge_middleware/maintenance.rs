@@ -53,7 +53,7 @@ where
             && let Some(rg) = MAINTENANCE_WINDOWS.try_read()
             && *rg
         {
-            // OpenBridge under maintenance
+            // Bridge under maintenance
             return Box::pin(async move {
                 Ok(req.into_response(
                     HttpResponse::Found()

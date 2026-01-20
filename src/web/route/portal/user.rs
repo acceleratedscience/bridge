@@ -11,13 +11,21 @@ use tera::{Context, Tera};
 use tracing::instrument;
 
 use crate::{
-    auth::COOKIE_NAME, config::CONFIG, db::{
+    auth::COOKIE_NAME,
+    config::CONFIG,
+    db::{
         Database,
         models::{
             BridgeCookie, GROUP, Group, NotebookStatusCookie, OWUICookie, USER, User, UserType,
         },
         mongo::DB,
-    }, errors::{BridgeError, Result}, web::{helper, route::portal::user_htmx::Profile}
+    },
+    errors::{BridgeError, Result},
+    web::{
+        helper,
+        route::portal::user_htmx::{Profile, Subscription},
+        services::CATALOG,
+    },
 };
 
 const USER_PAGE: &str = "pages/portal_user.html";
@@ -76,8 +84,20 @@ pub(super) async fn user(
             user.groups.iter().for_each(|group| {
                 profile.add_group(group.to_string());
             });
-            group.subscriptions.iter().for_each(|subscription| {
-                profile.add_subscription(subscription.to_string());
+            group.subscriptions.into_iter().for_each(|subscription| {
+                if let Some(subscription_detail) = CATALOG.get_all().get(subscription.as_str()) {
+                    profile.add_subscription(Subscription {
+                        name: subscription,
+                        kind: subscription_detail.0,
+                        kind_designation: if subscription_detail.1 {
+                            // TODO: remove this hardcode
+                            "mcp"
+                        } else {
+                            "inference"
+                        },
+                        description: subscription_detail.2,
+                    });
+                }
             });
         }
         let content = helper::log_with_level!(

@@ -26,6 +26,9 @@ use crate::{
 #[cfg(feature = "notebook")]
 use k8s_openapi::api::core::v1::Pod;
 
+#[cfg(feature = "notebook")]
+use super::user_htmx::Subscription;
+
 #[allow(dead_code)]
 #[allow(unused_variables)]
 pub(super) fn portal_hygienic_group(gc: &BridgeCookie, doc: &dyn Any) -> Result<bool> {
@@ -84,22 +87,18 @@ where
 #[cfg(feature = "notebook")]
 /// This is a helper function that takes care of the notebook setup for all users
 /// Is the user does not have access to notebooks, None is returned
-pub(super) async fn notebook_bookkeeping<'c, C>(
+pub(super) async fn notebook_bookkeeping<'c>(
     user: &User,
     nsc: Option<ReqData<NotebookStatusCookie>>,
     bc: &mut BridgeCookie,
     ctx: &mut Context,
-    subscription: Vec<C>,
-) -> Result<Option<[Cookie<'c>; 2]>>
-where
-    C: Deref<Target = str>,
-{
+    subscription: &Vec<Subscription<'c>>,
+) -> Result<Option<[Cookie<'c>; 2]>> {
     // Check is user is allowed to access the notebook
     if subscription
         .iter()
-        .map(Deref::deref)
-        .collect::<Vec<&str>>()
-        .contains(&NOTEBOOK_SUB_NAME)
+        .map(|v| &v.name)
+        .any(|name| name == NOTEBOOK_SUB_NAME)
     {
         // For notwbook UI component
         let mut user_notebook = Into::<UserNotebook>::into(user);

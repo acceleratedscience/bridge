@@ -104,13 +104,21 @@ watch-tailwind:
 	tailwindcss -i ./static/css/input.css -o ./static/css/output.css --minify --watch
 
 watch-rust:
-	bacon run-long --features "notebook lifecycle"
+	bacon run-long --features "full"
 
 watch-backend:
-	bacon . --features "notebook lifecycle"
+	bacon . --features "full"
 
 watch:
-	bacon --features "notebook lifecycle"
+	bacon --features "full"
+
+# -- Local Dev Networking --
+start-port-forward:
+	sudo iptables -t nat -A OUTPUT -p tcp -d 127.255.255.254 --dport 443 -j DNAT --to-destination 127.255.255.254:8080
+check-port-forward:
+	sudo iptables -t nat -L OUTPUT -n -v
+stop-port-forward:
+	sudo iptables -t nat -D OUTPUT -p tcp -d 127.255.255.254 --dport 443 -j DNAT --to-destination 127.255.255.254:8080
 
 # --- Certificates ---
 certs:

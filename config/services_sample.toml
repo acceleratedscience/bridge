@@ -5,12 +5,14 @@
 	readiness = "/get"
 	check = true
 	mcp = false
+	description = "Postman echo server for testing purposes"
 
 	[services.postman-mcp]
 	url = "https://postman-echo.com"
 	readiness = "/get"
 	check = true
 	mcp = true
+	description = "Postman echo server for mcp testing purposes"
 
 	# Not a service with a readiness check, see services.rs for more details
 	[services.notebook]
@@ -39,9 +41,11 @@
 	readiness = "/"
 	check = true
 	show = true
+	description = "Example.com for testing purposes"
 
 	[resources.reddit]
 	url = "https://www.reddit.com"
 	readiness = "/"
 	check = true
 	show = false
+	description = "Reddit.com for testing purposes. This is a much longer text description. Blah blah blah blah. Also this resource should not show up in the side menu."
