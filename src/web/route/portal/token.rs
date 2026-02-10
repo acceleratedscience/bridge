@@ -17,7 +17,7 @@ use crate::{
     errors::{BridgeError, Result},
     web::{
         helper::{self, bson},
-        route::auth,
+        route::auth::{self, TOKEN_LIFETIME},
     },
 };
 
@@ -42,7 +42,8 @@ pub async fn get_token_for_user(
     let id =
         ObjectId::from_str(&gc.subject).map_err(|e| BridgeError::GeneralError(e.to_string()))?;
 
-    let (token, exp, user) = auth::generate_token_with_cookie(&id, &gc, &db).await?;
+    let (token, exp, user) =
+        auth::generate_token_with_cookie(&id, &gc, &db, TOKEN_LIFETIME).await?;
 
     // store thew newly create token in the database
     let r = helper::log_with_level!(

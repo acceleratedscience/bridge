@@ -43,7 +43,8 @@ mod deserialize;
 mod oauth;
 
 const NONCE_COOKIE: &str = "nonce";
-pub static TOKEN_LIFETIME: usize = 60 * 60 * 24; // 24 hours
+pub static TOKEN_LIFETIME: usize = 60 * 60 * 24 * 30; // 24 hours
+pub static COOKIE_TOKEN_LIFETIME: usize = 60 * 60 * 24; // 24 hours
 
 #[get("/login")]
 #[instrument]

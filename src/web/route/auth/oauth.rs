@@ -25,7 +25,7 @@ use crate::{
     errors::{BridgeError, Result},
     web::{
         helper::{self, generate_salt},
-        route::auth::TOKEN_LIFETIME,
+        route::auth::{COOKIE_TOKEN_LIFETIME, TOKEN_LIFETIME},
     },
 };
 
@@ -49,7 +49,7 @@ pub async fn get_token(
     let id =
         ObjectId::from_str(&bc.subject).map_err(|e| BridgeError::GeneralError(e.to_string()))?;
 
-    let (token, _, _) = generate_token_with_cookie(&id, &bc, &db).await?;
+    let (token, _, _) = generate_token_with_cookie(&id, &bc, &db, COOKIE_TOKEN_LIFETIME).await?;
 
     let payload = json!({
         "access_token": token,
@@ -218,6 +218,7 @@ pub async fn generate_token_with_cookie(
     id: &ObjectId,
     bc: &BridgeCookie,
     db: &DB,
+    token_lifetime: usize,
 ) -> Result<(String, String, User)> {
     // get information about user
     let user: User = helper::log_with_level!(
@@ -250,7 +251,7 @@ pub async fn generate_token_with_cookie(
 
     // Generate bridge token
     let (token, exp) = helper::log_with_level!(
-        jwt::get_token_and_exp(&CONFIG.encoder, TOKEN_LIFETIME, &bc.subject, AUD[0], scp),
+        jwt::get_token_and_exp(&CONFIG.encoder, token_lifetime, &bc.subject, AUD[0], scp),
         error
     )?;
     Ok((token, exp, user))
