@@ -29,7 +29,7 @@ use crate::{
 static TOKEN_LIFETIME: usize = 60 * 60 * 24; // 24 hours
 
 #[instrument(skip(payload, db))]
-async fn resource_http(
+pub async fn resource_http(
     req: HttpRequest,
     payload: web::Payload,
     db: Data<&DB>,

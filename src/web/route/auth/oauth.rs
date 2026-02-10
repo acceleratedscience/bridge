@@ -1,28 +1,64 @@
-use std::marker::PhantomData;
+use std::{marker::PhantomData, str::FromStr};
 
 use actix_web::{
     HttpMessage, HttpRequest, HttpResponse, get,
     http::header::{ContentType, WWW_AUTHENTICATE},
     post,
-    web::{self, Data},
+    web::{self, Data, ReqData},
 };
 use actix_web_httpauth::extractors::{basic::BasicAuth, bearer::BearerAuth};
-use mongodb::bson::doc;
+use mongodb::bson::{doc, oid::ObjectId};
 use regex::Regex;
 use serde_json::{Value, json};
 use tracing::error;
 
 use crate::{
-    auth::jwt::validate_token,
-    config::CONFIG,
+    auth::jwt::{self, validate_token},
+    config::{AUD, CONFIG},
     db::{
         Database,
-        models::{APPS, AppPayload, Apps, GroupSubs, USER, User, UserType},
+        models::{
+            APPS, AppPayload, Apps, BridgeCookie, GROUP, Group, GroupSubs, USER, User, UserType,
+        },
         mongo::{DB, ObjectID},
     },
-    errors::Result,
-    web::helper::{self, generate_salt},
+    errors::{BridgeError, Result},
+    web::{
+        helper::{self, generate_salt},
+        route::auth::{COOKIE_TOKEN_LIFETIME, TOKEN_LIFETIME},
+    },
 };
+
+#[post("token")]
+pub async fn get_token(
+    subject: Option<ReqData<BridgeCookie>>,
+    db: Data<&DB>,
+) -> Result<HttpResponse> {
+    let bc = match subject {
+        Some(cookie_subject) => cookie_subject.into_inner(),
+        None => {
+            return helper::log_with_level!(
+                Err(BridgeError::UserNotFound(
+                    "subject not passed from middleware".to_string(),
+                )),
+                error
+            );
+        }
+    };
+
+    let id =
+        ObjectId::from_str(&bc.subject).map_err(|e| BridgeError::GeneralError(e.to_string()))?;
+
+    let (token, _, _) = generate_token_with_cookie(&id, &bc, &db, COOKIE_TOKEN_LIFETIME).await?;
+
+    let payload = json!({
+        "access_token": token,
+        "token_type": "Bearer",
+        "expires_in": TOKEN_LIFETIME,
+    });
+
+    Ok(HttpResponse::Ok().json(payload))
+}
 
 #[post("introspection")]
 pub async fn introspection(
@@ -176,4 +212,47 @@ fn extract_token(payload: &str) -> Option<String> {
     let re = Regex::new(r"(?i)token\s*=\s*([^&]+)").ok();
     re?.captures(payload)
         .and_then(|cap| cap.get(1).map(|m| m.as_str().to_string()))
+}
+
+pub async fn generate_token_with_cookie(
+    id: &ObjectId,
+    bc: &BridgeCookie,
+    db: &DB,
+    token_lifetime: usize,
+) -> Result<(String, String, User)> {
+    // get information about user
+    let user: User = helper::log_with_level!(
+        db.find(
+            doc! {
+                "_id": id,
+            },
+            USER,
+        )
+        .await,
+        error
+    )?;
+
+    let scp = if user.groups.is_empty() {
+        vec!["".to_string()]
+    } else {
+        // get models
+        let group: Group = helper::log_with_level!(
+            db.find(
+                doc! {
+                    "name": &user.groups[0]
+                },
+                GROUP,
+            )
+            .await,
+            error
+        )?;
+        group.subscriptions
+    };
+
+    // Generate bridge token
+    let (token, exp) = helper::log_with_level!(
+        jwt::get_token_and_exp(&CONFIG.encoder, token_lifetime, &bc.subject, AUD[0], scp),
+        error
+    )?;
+    Ok((token, exp, user))
 }

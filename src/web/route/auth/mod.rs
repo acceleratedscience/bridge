@@ -25,20 +25,26 @@ use crate::{
         mongo::DB,
     },
     errors::{BridgeError, Result},
-    web::helper::{self},
+    web::{
+        bridge_middleware::CookieCheck,
+        helper::{self},
+    },
 };
 #[cfg(feature = "observe")]
 use crate::{config::CONFIG, logger::MESSAGE_DELIMITER};
 
+pub use self::oauth::generate_token_with_cookie;
 use self::{
     deserialize::CallBackResponse,
-    oauth::{introspection, jwks, register_app},
+    oauth::{get_token, introspection, jwks, register_app},
 };
 
 mod deserialize;
 mod oauth;
 
 const NONCE_COOKIE: &str = "nonce";
+pub static TOKEN_LIFETIME: usize = 60 * 60 * 24 * 30; // 24 hours
+pub static COOKIE_TOKEN_LIFETIME: usize = 60 * 60 * 24; // 24 hours
 
 #[get("/login")]
 #[instrument]
@@ -261,6 +267,7 @@ pub fn config_auth(cfg: &mut web::ServiceConfig) {
             .service(callback)
             .service(introspection)
             .service(register_app)
-            .service(jwks),
+            .service(jwks)
+            .service(web::scope("").wrap(CookieCheck).service(get_token)),
     );
 }

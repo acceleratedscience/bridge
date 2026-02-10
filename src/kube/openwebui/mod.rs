@@ -7,4 +7,5 @@ pub const OWUI: &str = "owui";
 // This is a placeholder for openwebui CRD
 struct OpenWebUI {
     _p: PhantomData<()>,
+    _id: uuid::Uuid,
 }

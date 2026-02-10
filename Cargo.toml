@@ -15,9 +15,11 @@ kubernetes = ["dep:kube", "dep:k8s-openapi", "dep:schemars", "dep:either"]
 notebook = ["kubernetes"]
 openwebui = ["kubernetes"]
 lifecycle = ["notebook"]
+chemchat = []
 observe = []
 mcp = []
-full = ["notebook", "lifecycle", "observe", "mcp", "openwebui"]
+moleviewer = []
+full = ["notebook", "lifecycle", "observe", "mcp", "openwebui", "chemchat"]
 
 [dependencies]
 # Async dep

@@ -1,5 +1,5 @@
 # Stage 1 build
-FROM rust:1.90.0 AS builder
+FROM rust:1.92.0 AS builder
 
 WORKDIR /app
 
@@ -10,6 +10,7 @@ ARG LIFECYCLE=false
 ARG OBSERVE=false
 ARG MCP=false
 ARG OWUI=false
+ARG CHEMCHAT=false
 
 RUN <<EOF
 #!/bin/bash
@@ -28,6 +29,9 @@ if [ "$MCP" = "true" ]; then
 fi
 if [ "$OWUI" = "true" ]; then
 	flags+=("openwebui")
+fi
+if [ "$CHEMCHAT" = "true" ]; then
+	flags+=("chemchat")
 fi
 if [ ${#flags[@]} -eq 0 ]; then
 	echo "Building with no features..."
