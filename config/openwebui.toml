@@ -1,0 +1,17 @@
+[openwebui]
+namespace = "openwebui"
+service_port = 8080
+
+[openwebui.image]
+registry = "quay.io"
+repository = "ibmdpdev/open-webui-spati"
+tag = "latest"
+pull_policy = "Always"
+
+[openwebui.persistence]
+size = "5Gi"
+storage_class = "gp3"
+
+[openwebui.env]
+MOLVIEWER_URL = "moleviewer.open.accelerate.science"
+WEBUI_SECRET = "1GOKv7uv358t82Km2iPrd4hXNuwFlDwNlg72l9sOyLI6EK"
