@@ -52,6 +52,7 @@ struct OpenWebUI {
     #[serde(rename = "servicePort")]
     service_port: u16,
     image: Image,
+    persistence: Persistence,
     env: Vec<Env>,
 }
 
@@ -79,10 +80,11 @@ struct Env {
 
 #[cfg(test)]
 mod test {
-    use crate::kube::KubeAPI;
+    // use crate::config::CONFIG;
+    // use crate::kube::KubeAPI;
 
-    #[test]
-    fn test_deserialize_owui() {
+    #[tokio::test]
+    async fn test_deserialize_owui() {
         // let yaml_data = r#"
         //     apiVersion: accelerate.science/v1
         //     kind: Owui
@@ -138,6 +140,10 @@ mod test {
                         value: "idontcarewhatthisisbecuasethisisrequiredforsomereason".to_string(),
                     },
                 ],
+                persistence: super::Persistence {
+                    size: "2Gi".to_string(),
+                    storage_class: "gp3".to_string(),
+                },
             },
             metadata: kube::api::ObjectMeta {
                 name: Some("u67aceff11a66c1fa7c99726c-openwebui".to_string()),
@@ -145,12 +151,20 @@ mod test {
                 ..Default::default()
             },
         };
-        // print as json
+        // ensure that we can serialize the OpenWebUI struct to JSON
         match serde_json::to_string_pretty(&owui) {
             Ok(json) => println!("Successfully serialized OpenWebUI to JSON:\n{}", json),
             Err(e) => eprintln!("Failed to serialize OpenWebUI to JSON: {}", e),
         }
 
-        // KubeAPI::new(owui);
+        // rustls::crypto::ring::default_provider()
+        //     .install_default()
+        //     .expect("Cannot install default provider with ring");
+        // crate::kube::init_once().await;
+        //
+        // KubeAPI::new(owui)
+        //     .create(CONFIG.owui_namespace.as_str())
+        //     .await
+        //     .unwrap();
     }
 }
