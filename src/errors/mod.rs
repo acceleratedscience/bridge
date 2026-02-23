@@ -27,6 +27,8 @@ pub enum BridgeError {
     NotAdmin,
     #[error("{0}")]
     Unauthorized(String),
+    #[error("{0}")]
+    Forbidden(String),
     #[error("Inference-Service header not found")]
     InferenceServiceHeaderNotFound,
     #[error("Service {0} does does not exist")]
@@ -184,6 +186,7 @@ impl ResponseError for BridgeError {
 
             BridgeError::UserNotFound(_) => StatusCode::FORBIDDEN,
             BridgeError::NotAdmin => StatusCode::FORBIDDEN,
+            BridgeError::Forbidden(_) => StatusCode::FORBIDDEN,
             #[cfg(feature = "notebook")]
             BridgeError::NotebookAccessError(_) => StatusCode::FORBIDDEN,
 

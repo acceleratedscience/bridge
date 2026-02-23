@@ -94,7 +94,7 @@ impl<'p> Profile<'p> {
             use crate::config::CONFIG;
 
             context.insert("openwebui", &owui_cookie.subject);
-            context.insert("owui_url", &CONFIG.openweb_url);
+            context.insert("owui_url", &CONFIG.owui.url);
         }
 
         #[cfg(feature = "notebook")]

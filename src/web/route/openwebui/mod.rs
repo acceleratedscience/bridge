@@ -1,4 +1,4 @@
-use std::{collections::HashSet, str::FromStr, sync::LazyLock};
+use std::{borrow::Cow, collections::HashSet, marker::PhantomData, str::FromStr, sync::LazyLock};
 
 use actix_web::{
     HttpRequest, HttpResponse,
@@ -7,19 +7,29 @@ use actix_web::{
     http::Method,
     web::{self, ReqData},
 };
+use kube::api::ObjectMeta;
+use mongodb::bson::doc;
 use tracing::instrument;
 use url::Url;
 
 use crate::{
     config::CONFIG,
-    db::models::OWUICookie,
+    db::{
+        Database,
+        models::{OWUICookie, OwuiInfo, USER, User},
+        mongo::DB,
+    },
     errors::{BridgeError, Result},
-    web::helper::{self, forwarding},
+    kube::{Env, Image, KubeAPI, OpenWebUI, Owui, Persistence},
+    web::{
+        bson,
+        helper::{self, forwarding},
+    },
 };
 
 const OWUI_PORT: &str = "8080";
 
-pub static OWUI_NAMESPACE: LazyLock<&str> = LazyLock::new(|| &CONFIG.owui_namespace);
+pub static OWUI_NAMESPACE: LazyLock<&str> = LazyLock::new(|| &CONFIG.owui.namespace);
 static WHITELIST_ENDPOINTS: LazyLock<HashSet<&str>> = LazyLock::new(|| {
     HashSet::from([
         "/api/v1/auths",
@@ -103,6 +113,131 @@ async fn openwebui_forward(
     .await
 }
 
+async fn create_owui(
+    req: HttpRequest,
+    payload: web::Payload,
+    method: Method,
+    peer_addr: Option<PeerAddr>,
+    owui_cookie: Option<ReqData<OWUICookie>>,
+    db: web::Data<&DB>,
+    client: web::Data<reqwest::Client>,
+) -> Result<HttpResponse> {
+    if let Some(owui_cookie) = owui_cookie {
+        let subject = &owui_cookie.into_inner().subject;
+        let name = format!("u{}-openwebui", subject);
+
+        let user: User = helper::log_with_level!(
+            db.find(
+                doc! {
+                    "_id": subject,
+                },
+                USER,
+            )
+            .await,
+            error
+        )?;
+
+        // check if an instance alreadu exists
+        let list_owui = KubeAPI::<Owui>::get_crds(&CONFIG.owui.namespace).await?;
+        if list_owui
+            .iter()
+            .any(|o| o.metadata.name.as_ref().unwrap_or(&"".to_string()) == &name)
+        {
+            return Err(BridgeError::CRDExistsError(format!(
+                "OWUI instance already exists for user {}",
+                name
+            )));
+        }
+
+        let persist = req
+            .uri()
+            .query()
+            .map(|q| q.contains("persist=true"))
+            .unwrap_or(false);
+
+        // create instance
+        let owui = Owui {
+            metadata: ObjectMeta {
+                name: Some(name),
+                namespace: Some(CONFIG.owui.namespace.clone()),
+                ..Default::default()
+            },
+            spec: OpenWebUI {
+                replica: 1, // TODO: this needs to be removed from the operator.., for now set to 1
+                retain_pvc: persist,
+                service_port: CONFIG.owui.service_port,
+                image: Image {
+                    registry: Cow::from(&CONFIG.owui.registry),
+                    repository: Cow::from(&CONFIG.owui.repository),
+                    tag: Cow::from(&CONFIG.owui.tag),
+                    pull_policy: Cow::from(&CONFIG.owui.pull_policy),
+                },
+                persistence: Persistence {
+                    size: Cow::from(&CONFIG.owui.persistence_size),
+                    storage_class: Cow::from(&CONFIG.owui.persistence_storage_class),
+                },
+                env: CONFIG
+                    .owui
+                    .env
+                    .iter()
+                    .map(|kv| Env {
+                        name: Cow::from(&kv.0),
+                        value: Cow::from(&kv.1),
+                    })
+                    .collect(),
+            },
+        };
+        if let Err(e) = KubeAPI::new(owui).create(&CONFIG.owui.namespace).await {
+            return helper::log_with_level!(
+                Err(BridgeError::GeneralError(format!(
+                    "Failed to create OWUI instance: {e}"
+                ))),
+                error
+            );
+        }
+
+        // update DB with instance information
+        let current_time = time::OffsetDateTime::now_utc();
+        let r = db
+            .update(
+                doc! {
+                    "_id": subject,
+                },
+                doc! {
+                    "$set": doc! {
+                        "updated_at": bson(current_time)?,
+                        "owui": bson(OwuiInfo{
+                            start_time: Some(current_time),
+                            last_active: None,
+                            persist_pvc: persist,
+                        })?,
+                        "last_updated_by": &user.sub,
+                    },
+                },
+                USER,
+                PhantomData::<User>,
+            )
+            .await;
+
+        // return
+    }
+    helper::log_with_level!(
+        Err(BridgeError::Forbidden(
+            "User does not have access to OWUI... middleware should have prevented this"
+                .to_string()
+        )),
+        error
+    )
+}
+
+async fn delete_owui() -> Result<HttpResponse> {
+    todo!()
+}
+
+async fn status_owui() -> Result<HttpResponse> {
+    todo!()
+}
+
 #[inline]
 pub(crate) fn make_forward_url(protocol: &str, subject: &str) -> String {
     let namespace = *OWUI_NAMESPACE;
@@ -125,9 +260,6 @@ mod tests {
         let port = "8080";
         let expected_url =
             format!("{protocol}://u{subject}-openwebui.{namespace}.svc.cluster.local:{port}");
-        assert_eq!(
-            super::make_forward_url(protocol, subject),
-            expected_url
-        );
+        assert_eq!(super::make_forward_url(protocol, subject), expected_url);
     }
 }

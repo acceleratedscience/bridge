@@ -1,5 +1,7 @@
 #![allow(dead_code)]
 
+use std::borrow::Cow;
+
 use kube::CustomResource;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -13,41 +15,43 @@ pub const OWUI: &str = "owui";
     kind = "Owui",
     namespaced
 )]
-struct OpenWebUI {
-    replica: u8,
+pub struct OpenWebUI {
+    pub replica: u8,
     #[serde(rename = "retainPVC")]
-    retain_pvc: bool,
+    pub retain_pvc: bool,
     #[serde(rename = "servicePort")]
-    service_port: u16,
-    image: Image,
-    persistence: Persistence,
-    env: Vec<Env>,
+    pub service_port: u16,
+    pub image: Image,
+    pub persistence: Persistence,
+    pub env: Vec<Env>,
 }
 
 #[derive(Clone, Deserialize, Serialize, Debug, JsonSchema)]
-struct Image {
-    registry: String,
-    repository: String,
-    tag: String,
+pub struct Image {
+    pub registry: Cow<'static, str>,
+    pub repository: Cow<'static, str>,
+    pub tag: Cow<'static, str>,
     #[serde(rename = "pullPolicy")]
-    pull_policy: String,
+    pub pull_policy: Cow<'static, str>,
 }
 
 #[derive(Clone, Deserialize, Serialize, Debug, JsonSchema)]
-struct Persistence {
-    size: String,
+pub struct Persistence {
+    pub size: Cow<'static, str>,
     #[serde(rename = "storageClass")]
-    storage_class: String,
+    pub storage_class: Cow<'static, str>,
 }
 
 #[derive(Clone, Deserialize, Serialize, Debug, JsonSchema)]
-struct Env {
-    name: String,
-    value: String,
+pub struct Env {
+    pub name: Cow<'static, str>,
+    pub value: Cow<'static, str>,
 }
 
 #[cfg(test)]
 mod test {
+    use std::borrow::Cow;
+
     #[test]
     fn test_deserialize_owui() {
         let owui = super::Owui {
@@ -56,24 +60,24 @@ mod test {
                 retain_pvc: false,
                 service_port: 8080,
                 image: super::Image {
-                    registry: "quay.io".to_string(),
-                    repository: "ibmdpdev/open-webui-spati".to_string(),
-                    tag: "latest".to_string(),
-                    pull_policy: "Always".to_string(),
+                    registry: Cow::from("quay.io"),
+                    repository: Cow::from("ibmdpdev/open-webui-spati"),
+                    tag: Cow::from("latest"),
+                    pull_policy: Cow::from("Always"),
                 },
                 env: vec![
                     super::Env {
-                        name: "MOLVIEWER_URL".to_string(),
-                        value: "moleviewer.open.accelerate.science".to_string(),
+                        name: Cow::from("MOLVIEWER_URL"),
+                        value: Cow::from("moleviewer.open.accelerate.science"),
                     },
                     super::Env {
-                        name: "WEBUI_SECRET_KEY".to_string(),
-                        value: "idontcarewhatthisisbecuasethisisrequiredforsomereason".to_string(),
+                        name: Cow::from("WEBUI_SECRET_KEY"),
+                        value: Cow::from("idontcarewhatthisisbecuasethisisrequiredforsomereason"),
                     },
                 ],
                 persistence: super::Persistence {
-                    size: "2Gi".to_string(),
-                    storage_class: "gp3".to_string(),
+                    size: Cow::from("2Gi"),
+                    storage_class: Cow::from("gp3"),
                 },
             },
             metadata: kube::api::ObjectMeta {
@@ -87,5 +91,12 @@ mod test {
             Ok(json) => println!("Successfully serialized OpenWebUI to JSON:\n{}", json),
             Err(e) => panic!("Failed to serialize OpenWebUI to JSON: {}", e),
         }
+        // rustls::crypto::ring::default_provider()
+        //     .install_default()
+        //     .expect("Cannot install default provider with ring");
+        //
+        // crate::kube::init_once().await;
+        // let k = KubeAPI::new(owui);
+        // k.create("openwebui").await.unwrap();
     }
 }

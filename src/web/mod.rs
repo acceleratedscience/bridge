@@ -146,7 +146,7 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
             use self::bridge_middleware::{CookieCheck, OWUICookieCheck};
             app.service(
                 web::scope("")
-                    .guard(guard::Host(&CONFIG.openweb_url))
+                    .guard(guard::Host(&CONFIG.owui.url))
                     .wrap(OWUICookieCheck)
                     .configure(route::openwebui::config_openwebui),
             )

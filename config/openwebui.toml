@@ -1,6 +1,7 @@
 [openwebui]
 namespace = "openwebui"
 service_port = 8080
+openweb_url = "oweb.open.accelerate.science"
 
 [openwebui.image]
 registry = "quay.io"

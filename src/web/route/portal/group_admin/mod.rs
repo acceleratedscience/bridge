@@ -132,7 +132,7 @@ pub(super) async fn group(
         use crate::config::CONFIG;
 
         ctx.insert("openwebui", &owui_cookie.subject);
-        ctx.insert("owui_url", &CONFIG.openweb_url);
+        ctx.insert("owui_url", &CONFIG.owui.url);
     }
 
     // add notebook tab if user has a notebook subscription

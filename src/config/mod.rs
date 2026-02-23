@@ -44,14 +44,26 @@ pub struct Configuration {
     #[cfg(feature = "chemchat")]
     pub chemchat_internal_url: String,
     #[cfg(feature = "openwebui")]
-    pub owui_namespace: String,
-    #[cfg(feature = "openwebui")]
-    pub openweb_url: String,
+    pub owui: OwuiConfig,
     #[cfg(feature = "openwebui")]
     pub moleviewer_url: String,
     #[cfg(feature = "openwebui")]
     pub moleviewer_internal_url: String,
     pub bridge_url: String,
+}
+
+#[cfg(feature = "openwebui")]
+pub struct OwuiConfig {
+    pub namespace: String,
+    pub service_port: u16,
+    pub url: String,
+    pub registry: String,
+    pub repository: String,
+    pub tag: String,
+    pub pull_policy: String,
+    pub env: Vec<(String, String)>,
+    pub persistence_size: String,
+    pub persistence_storage_class: String,
 }
 
 pub struct Database {
@@ -169,6 +181,12 @@ pub fn init_once() -> Configuration {
         toml::from_str(&read_to_string(PathBuf::from_str(database_location_str).unwrap()).unwrap())
             .unwrap();
 
+    #[cfg(feature = "openwebui")]
+    let owui_table: toml::Table = toml::from_str(
+        &read_to_string(PathBuf::from_str("config/openwebui.toml").unwrap()).unwrap(),
+    )
+    .unwrap();
+
     let mongo_table = db_table["mongodb"].as_table().unwrap();
     let db = Database {
         url: if cfg!(debug_assertions) {
@@ -236,19 +254,6 @@ pub fn init_once() -> Configuration {
     )
     .unwrap();
 
-    #[cfg(feature = "openwebui")]
-    let (owui_namespace, openweb_url, moleviewer_url, moleviewer_internal_url) = {
-        (
-            app_conf["owui_namespace"].as_str().unwrap().to_string(),
-            app_conf["openweb_url"].as_str().unwrap().to_string(),
-            app_conf["moleviewer_url"].as_str().unwrap().to_string(),
-            app_conf["moleviewer_internal_url"]
-                .as_str()
-                .unwrap()
-                .to_string(),
-        )
-    };
-
     #[cfg(feature = "chemchat")]
     let (chemchat_url, chemchat_internal_url) = {
         (
@@ -261,6 +266,51 @@ pub fn init_once() -> Configuration {
     };
 
     let bridge_url = app_conf["bridge_url"].as_str().unwrap().to_string();
+
+    #[cfg(feature = "openwebui")]
+    let (moleviewer_url, moleviewer_internal_url) = {
+        (
+            app_conf["moleviewer_url"].as_str().unwrap().to_string(),
+            app_conf["moleviewer_internal_url"]
+                .as_str()
+                .unwrap()
+                .to_string(),
+        )
+    };
+
+    #[cfg(feature = "openwebui")]
+    let owui = {
+        let owui_config = owui_table["openwebui"].as_table().unwrap();
+        let image = owui_config["image"].as_table();
+        let persistence = owui_config["persistence"].as_table();
+        let env: Vec<_> = owui_config["env"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|item| {
+                let item = item.as_table().unwrap();
+                let name = item["name"].as_str().unwrap().to_string();
+                let value = item["value"].as_str().unwrap().to_string();
+                (name, value)
+            })
+            .collect();
+
+        OwuiConfig {
+            namespace: owui_config["namespace"].as_str().unwrap().to_string(),
+            service_port: owui_config["service_port"].as_integer().unwrap() as u16,
+            url: owui_config["url"].as_str().unwrap().to_string(),
+            registry: image.unwrap()["registry"].as_str().unwrap().to_string(),
+            repository: image.unwrap()["repository"].as_str().unwrap().to_string(),
+            tag: image.unwrap()["tag"].as_str().unwrap().to_string(),
+            pull_policy: image.unwrap()["pull_policy"].as_str().unwrap().to_string(),
+            env,
+            persistence_size: persistence.unwrap()["size"].as_str().unwrap().to_string(),
+            persistence_storage_class: persistence.unwrap()["storage_class"]
+                .as_str()
+                .unwrap()
+                .to_string(),
+        }
+    };
 
     Configuration {
         encoder,
@@ -284,10 +334,7 @@ pub fn init_once() -> Configuration {
         chemchat_url,
         #[cfg(feature = "chemchat")]
         chemchat_internal_url,
-        #[cfg(feature = "openwebui")]
-        owui_namespace,
-        #[cfg(feature = "openwebui")]
-        openweb_url,
+        owui,
         #[cfg(feature = "openwebui")]
         moleviewer_url,
         #[cfg(feature = "openwebui")]
