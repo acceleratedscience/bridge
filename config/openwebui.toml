@@ -1,7 +1,7 @@
 [openwebui]
 namespace = "openwebui"
 service_port = 8080
-openweb_url = "oweb.open.accelerate.science"
+url = "oweb.open.accelerate.science"
 
 [openwebui.image]
 registry = "quay.io"
@@ -13,6 +13,7 @@ pull_policy = "Always"
 size = "5Gi"
 storage_class = "gp3"
 
-[openwebui.env]
+[[openwebui.env]]
 MOLVIEWER_URL = "moleviewer.open.accelerate.science"
+[[openwebui.env]]
 WEBUI_SECRET = "1GOKv7uv358t82Km2iPrd4hXNuwFlDwNlg72l9sOyLI6EK"

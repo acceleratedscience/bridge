@@ -166,7 +166,7 @@ pub fn init_once() -> Configuration {
 
     let (config_location_str, database_location_str) = if cfg!(debug_assertions) {
         (
-            "config/configurations_sample.toml",
+            "config/configurations.toml",
             "config/database_sample.toml",
         )
     } else {
@@ -289,9 +289,9 @@ pub fn init_once() -> Configuration {
             .iter()
             .map(|item| {
                 let item = item.as_table().unwrap();
-                let name = item["name"].as_str().unwrap().to_string();
-                let value = item["value"].as_str().unwrap().to_string();
-                (name, value)
+                let name = item.keys().next().unwrap();
+                let value = item.values().next().unwrap();
+                (name.to_string(), value.to_string())
             })
             .collect();
 

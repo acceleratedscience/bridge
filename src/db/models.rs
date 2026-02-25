@@ -97,7 +97,6 @@ pub struct NotebookInfo {
 pub struct OwuiInfo {
     pub start_time: Option<time::OffsetDateTime>,
     pub last_active: Option<time::OffsetDateTime>,
-    pub persist_pvc: bool,
 }
 
 #[derive(Debug, Deserialize, Serialize)]

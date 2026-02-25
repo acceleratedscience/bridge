@@ -136,7 +136,7 @@ pub(super) async fn system(
     if let Some(owui_cookie) = oc {
         use crate::config::CONFIG;
 
-        ctx.insert("openwebui", &owui_cookie.subject);
+        ctx.insert("owui_subject", &owui_cookie.subject);
         ctx.insert("owui_url", &CONFIG.owui.url);
     }
 

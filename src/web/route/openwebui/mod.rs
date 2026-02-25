@@ -1,14 +1,17 @@
 use std::{borrow::Cow, collections::HashSet, marker::PhantomData, str::FromStr, sync::LazyLock};
 
 use actix_web::{
-    HttpRequest, HttpResponse,
+    HttpRequest, HttpResponse, delete,
     dev::PeerAddr,
     get,
-    http::Method,
+    http::{Method, header::ContentType},
+    post,
     web::{self, ReqData},
 };
+use k8s_openapi::api::core::v1::PersistentVolumeClaim;
 use kube::api::ObjectMeta;
 use mongodb::bson::doc;
+use tera::{Context, Tera};
 use tracing::instrument;
 use url::Url;
 
@@ -16,14 +19,14 @@ use crate::{
     config::CONFIG,
     db::{
         Database,
-        models::{OWUICookie, OwuiInfo, USER, User},
+        models::{BridgeCookie, OWUICookie, OwuiInfo, USER, User},
         mongo::DB,
     },
     errors::{BridgeError, Result},
     kube::{Env, Image, KubeAPI, OpenWebUI, Owui, Persistence},
     web::{
         bson,
-        helper::{self, forwarding},
+        helper::{self, forwarding, observability_post},
     },
 };
 
@@ -113,14 +116,14 @@ async fn openwebui_forward(
     .await
 }
 
+#[post("create")]
 async fn create_owui(
     req: HttpRequest,
-    payload: web::Payload,
-    method: Method,
-    peer_addr: Option<PeerAddr>,
     owui_cookie: Option<ReqData<OWUICookie>>,
+    bcookie: Option<ReqData<BridgeCookie>>,
     db: web::Data<&DB>,
-    client: web::Data<reqwest::Client>,
+    data: web::Data<Tera>,
+    ctx: web::Data<Context>,
 ) -> Result<HttpResponse> {
     if let Some(owui_cookie) = owui_cookie {
         let subject = &owui_cookie.into_inner().subject;
@@ -149,11 +152,11 @@ async fn create_owui(
             )));
         }
 
-        let persist = req
-            .uri()
-            .query()
-            .map(|q| q.contains("persist=true"))
-            .unwrap_or(false);
+        // let persist = req
+        //     .uri()
+        //     .query()
+        //     .map(|q| q.contains("persist=true"))
+        //     .unwrap_or(false);
 
         // create instance
         let owui = Owui {
@@ -164,7 +167,7 @@ async fn create_owui(
             },
             spec: OpenWebUI {
                 replica: 1, // TODO: this needs to be removed from the operator.., for now set to 1
-                retain_pvc: persist,
+                retain_pvc: true,
                 service_port: CONFIG.owui.service_port,
                 image: Image {
                     registry: Cow::from(&CONFIG.owui.registry),
@@ -198,7 +201,7 @@ async fn create_owui(
 
         // update DB with instance information
         let current_time = time::OffsetDateTime::now_utc();
-        let r = db
+        let _r = db
             .update(
                 doc! {
                     "_id": subject,
@@ -209,7 +212,6 @@ async fn create_owui(
                         "owui": bson(OwuiInfo{
                             start_time: Some(current_time),
                             last_active: None,
-                            persist_pvc: persist,
                         })?,
                         "last_updated_by": &user.sub,
                     },
@@ -217,9 +219,16 @@ async fn create_owui(
                 USER,
                 PhantomData::<User>,
             )
-            .await;
+            .await?;
 
-        // return
+        if let Some(bc) = bcookie {
+            observability_post("owui instance has been created", &bc);
+        }
+
+        let context = data.render("components/owui/poll.html", &ctx)?;
+        return Ok(HttpResponse::Ok()
+            .content_type(ContentType::form_url_encoded())
+            .body(context));
     }
     helper::log_with_level!(
         Err(BridgeError::Forbidden(
@@ -230,12 +239,96 @@ async fn create_owui(
     )
 }
 
-async fn delete_owui() -> Result<HttpResponse> {
-    todo!()
+#[delete("delete")]
+async fn delete_owui(
+    req: HttpRequest,
+    // payload: web::Payload,
+    // method: Method,
+    // peer_addr: Option<PeerAddr>,
+    owui_cookie: Option<ReqData<OWUICookie>>,
+    bcookie: Option<ReqData<BridgeCookie>>,
+    db: web::Data<&DB>,
+    // data: web::Data<Tera>,
+    // ctx: web::Data<Context>,
+) -> Result<HttpResponse> {
+    if let Some(owui_cookie) = owui_cookie {
+        let subject = &owui_cookie.into_inner().subject;
+        let name = format!("u{}-openwebui", subject);
+        let pvc_name = format!("owui1-{}-openwebui-0", subject);
+
+        let persist_pvc = req.query_string().contains("save");
+
+        helper::log_with_level!(
+            KubeAPI::<Owui>::delete(&name, &CONFIG.owui.namespace).await,
+            error
+        )?;
+
+        if !persist_pvc {
+            // don't stop due to error here so we can remove the rest
+            let _ = helper::log_with_level!(
+                KubeAPI::<PersistentVolumeClaim>::delete(&pvc_name, &CONFIG.owui.namespace).await,
+                error
+            );
+        }
+
+        let current_time = time::OffsetDateTime::now_utc();
+        let _r = db
+            .update(
+                doc! {
+                    "_id": subject,
+                },
+                doc! {
+                    "$set": doc! {
+                        "updated_at": bson(current_time)?,
+                        "owui": null,
+                    },
+                },
+                USER,
+                PhantomData::<User>,
+            )
+            .await?;
+
+        if let Some(bc) = bcookie {
+            observability_post("owui instance has been deleted", &bc);
+        }
+    }
+    helper::log_with_level!(
+        Err(BridgeError::Forbidden(
+            "User does not have access to OWUI... middleware should have prevented this"
+                .to_string()
+        )),
+        error
+    )
 }
 
-async fn status_owui() -> Result<HttpResponse> {
-    todo!()
+#[get("status")]
+async fn status_owui(
+    owui_cookie: Option<ReqData<OWUICookie>>,
+    data: web::Data<Tera>,
+    ctx: web::Data<Context>,
+    client: web::Data<reqwest::Client>,
+) -> Result<HttpResponse> {
+    if let Some(owui_cookie) = owui_cookie {
+        let subject = &owui_cookie.into_inner().subject;
+        let url = make_forward_url("http", subject);
+
+        if !client.get(url).send().await?.status().is_success() {
+            return Ok(HttpResponse::ServiceUnavailable().finish());
+        }
+
+        let content = data.render("components/owui/ready.html", &ctx)?;
+
+        return Ok(HttpResponse::Ok()
+            .content_type(ContentType::form_url_encoded())
+            .body(content));
+    }
+    helper::log_with_level!(
+        Err(BridgeError::Forbidden(
+            "User does not have access to OWUI... middleware should have prevented this"
+                .to_string()
+        )),
+        error
+    )
 }
 
 #[inline]
