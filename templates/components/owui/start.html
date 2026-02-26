@@ -31,7 +31,7 @@
 	{% endif %}
 	<a id="owui_start_button"
 		class="lg:w-[300px] w-[220px] h-[50px] py-2 flex justify-center items-center relative cb_button cursor-pointer {% if cooloff %} hidden{% endif %}"
-		hx-post="/owui_manage/hx/create{% if pvc_exists %}?clear{% endif %}" hx-target="#owui_panel"
+		hx-post="/owui_manage/hx/create{% if pvc_exists_owui %}?clear{% endif %}" hx-target="#owui_panel"
 		hx-trigger="click" hx-swap="innerHTML" tabindex="0"
 		hx-confirm="You are about to spin up a new instance">
 		{#
@@ -45,7 +45,7 @@
 		#}
 		{{ launch_icon | safe }}Create instance
 	</a>
-	{% if pvc_exists %}
+	{% if pvc_exists_owui %}
 	<a id="owui_resume_button"
 		class="lg:w-[300px] w-[220px] h-[50px] py-2 mt-4 flex justify-center items-center relative cb_button_secondary cursor-pointer {% if cooloff %} hidden{% endif %}"
 		hx-post="/owui_manage/hx/create" hx-target="#owui_panel" hx-trigger="click" hx-swap="innerHTML"

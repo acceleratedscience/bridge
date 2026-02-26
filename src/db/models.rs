@@ -100,6 +100,13 @@ pub struct OwuiInfo {
 }
 
 #[derive(Debug, Deserialize, Serialize)]
+pub struct UserOwui {
+    pub name: String,
+    pub start_time: String,
+    pub status: String,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
 pub struct UserNotebook {
     pub name: String,
     pub url: String,

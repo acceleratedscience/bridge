@@ -3,10 +3,14 @@ use std::{any::Any, ops::Deref};
 #[cfg(feature = "notebook")]
 use actix_web::cookie::{Cookie, SameSite};
 use actix_web::web::ReqData;
+#[cfg(feature = "openwebui")]
+use k8s_openapi::api::core::v1::PersistentVolumeClaim;
 use mongodb::bson::doc;
 #[cfg(feature = "notebook")]
 use tera::Context;
 
+#[cfg(feature = "openwebui")]
+use crate::{config::CONFIG, db::models::UserOwui, kube::Owui, web::route::health::status};
 use crate::{
     db::{
         Database,
@@ -82,6 +86,57 @@ where
         Ok(groups) => groups,
         Err(e) => return helper::log_with_level!(Err(e), warn),
     })
+}
+
+#[cfg(feature = "openwebui")]
+pub(super) async fn owui_bookkeeping(user: &User) -> (Option<UserOwui>, bool) {
+    let id = user._id.to_string();
+    let name = format!("u{}-openwebui", &id);
+    let pod_name = format!("u{}-openwebui-0", id);
+    let pvc_name = format!("owui1-u{}-openwebui-0", id);
+
+    let pvc_exists =
+        KubeAPI::<PersistentVolumeClaim>::check_pvc_exists(&pvc_name, &CONFIG.owui.namespace)
+            .await
+            .unwrap_or_default();
+
+    match KubeAPI::<Owui>::get_crds(&CONFIG.owui.namespace).await {
+        Ok(list) => {
+            // find the Owui that match name with metaname
+            if !list
+                .iter()
+                .any(|owui| owui.metadata.name.as_ref().unwrap_or(&"".to_string()) == &name)
+            {
+                return (None, pvc_exists);
+            }
+        }
+        Err(e) => return (None, pvc_exists),
+    }
+
+    match KubeAPI::<Pod>::check_pod_running(&pod_name, &CONFIG.owui.namespace).await {
+        Ok(running) => {
+            let state = if running {
+                "Ready".to_string()
+            } else {
+                "Pending".to_string()
+            };
+
+            (
+                Some(UserOwui {
+                    name,
+                    start_time: user
+                        .owui
+                        .as_ref()
+                        .map(|v| v.start_time.unwrap_or(time::OffsetDateTime::now_utc()))
+                        .map(|v| v.to_string())
+                        .unwrap_or_default(),
+                    status: state,
+                }),
+                pvc_exists,
+            )
+        }
+        Err(e) => (None, pvc_exists),
+    }
 }
 
 #[cfg(feature = "notebook")]

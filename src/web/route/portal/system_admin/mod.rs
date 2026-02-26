@@ -135,9 +135,15 @@ pub(super) async fn system(
     #[cfg(feature = "openwebui")]
     if let Some(owui_cookie) = oc {
         use crate::config::CONFIG;
+        use crate::web::route::portal::helper::owui_bookkeeping;
+
+        let (owui, pvc_exists) = owui_bookkeeping(&user).await;
+        println!("OWUI BOOKKEEPING RESULT: {owui:?}");
 
         ctx.insert("owui_subject", &owui_cookie.subject);
         ctx.insert("owui_url", &CONFIG.owui.url);
+        ctx.insert("pvc_exists_owui", &pvc_exists);
+        ctx.insert("owui", &owui);
     }
 
     // add notebook tab if user has a notebook subscription

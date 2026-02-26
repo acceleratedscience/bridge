@@ -10,10 +10,10 @@ tag = "latest"
 pull_policy = "Always"
 
 [openwebui.persistence]
-size = "5Gi"
+size = "2Gi"
 storage_class = "gp3"
 
 [[openwebui.env]]
 MOLVIEWER_URL = "moleviewer.open.accelerate.science"
 [[openwebui.env]]
-WEBUI_SECRET = "1GOKv7uv358t82Km2iPrd4hXNuwFlDwNlg72l9sOyLI6EK"
+WEBUI_SECRET_KEY = "idontcarewhatthisisbecuasethisisrequiredforsomereason"

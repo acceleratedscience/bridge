@@ -3,7 +3,7 @@
 		hx-ext='response-targets'>
 		<p class="border-b font-bold">Your Open Web UI</p>
 		<div id="owui_panel" class="flex flex-col flex-grow">
-			{% if owui.start_time == "None" %}
+			{% if not owui %}
 			{# No owui up #}
 			{% include 'components/owui/start.html' %}
 			{% else %}

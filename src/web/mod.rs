@@ -193,6 +193,8 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
                 .configure(route::foo::config_foo);
             #[cfg(feature = "mcp")]
             let scope = scope.configure(route::mcp::config_mcp);
+            #[cfg(feature = "openwebui")]
+            let scope = scope.configure(route::openwebui::config_openwebui_manage);
             scope
         })
     });
