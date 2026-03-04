@@ -24,7 +24,7 @@ use crate::{
     web::{
         helper,
         route::portal::user_htmx::{Profile, Subscription},
-        services::CATALOG,
+        services,
     },
 };
 
@@ -85,17 +85,17 @@ pub(super) async fn user(
                 profile.add_group(group.to_string());
             });
             group.subscriptions.into_iter().for_each(|subscription| {
-                if let Some(subscription_detail) = CATALOG.get_all().get(subscription.as_str()) {
+                if let Some(subscription_detail) = services::get_all().get(subscription.as_str()) {
                     profile.add_subscription(Subscription {
                         name: subscription,
-                        kind: subscription_detail.0,
-                        kind_designation: if subscription_detail.1 {
+                        kind: subscription_detail.kind.clone(),
+                        kind_designation: if subscription_detail.mcp {
                             // TODO: remove this hardcode
-                            "mcp"
+                            "mcp".to_string()
                         } else {
-                            "inference"
+                            "inference".to_string()
                         },
-                        description: subscription_detail.2,
+                        description: subscription_detail.description.clone(),
                     });
                 }
             });

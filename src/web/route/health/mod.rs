@@ -11,7 +11,7 @@ use tracing::{error, instrument};
 use crate::{
     db::keydb::CacheDB,
     errors::Result,
-    web::{bridge_middleware::Htmx, helper, services::CATALOG_URLS},
+    web::{bridge_middleware::Htmx, helper, services},
 };
 
 mod inference_services;
@@ -32,8 +32,9 @@ async fn status(
     client: Data<Client>,
     cache: Data<Option<&CacheDB>>,
 ) -> Result<HttpResponse> {
+    let catalog_urls = services::get_service_health_urls();
     let is = inference_services::InferenceServicesHealth::new(
-        &CATALOG_URLS,
+        &catalog_urls,
         client.as_ref().clone(),
         **cache,
     );

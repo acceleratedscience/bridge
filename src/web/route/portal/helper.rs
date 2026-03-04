@@ -92,7 +92,7 @@ pub(super) async fn notebook_bookkeeping<'c>(
     nsc: Option<ReqData<NotebookStatusCookie>>,
     bc: &mut BridgeCookie,
     ctx: &mut Context,
-    subscription: &Vec<Subscription<'c>>,
+    subscription: &Vec<Subscription>,
 ) -> Result<Option<[Cookie<'c>; 2]>> {
     // Check is user is allowed to access the notebook
     if subscription

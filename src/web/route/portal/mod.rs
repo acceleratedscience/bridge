@@ -26,7 +26,7 @@ use crate::{
     web::{
         bridge_middleware::{CookieCheck, HTMX_ERROR_RES, Htmx},
         helper::log_with_level,
-        services::CATALOG,
+        services,
     },
 };
 
@@ -51,7 +51,7 @@ async fn index(data: Option<ReqData<BridgeCookie>>, db: Data<&DB>) -> Result<Htt
             let mut resp = HttpResponse::SeeOther();
 
             if !groups.is_empty() {
-                let all_resources = CATALOG.get_all_resources_by_name();
+                let all_resources = services::get_all_resources_by_name();
 
                 let group_sub = groups
                     .pop()
@@ -85,7 +85,7 @@ async fn index(data: Option<ReqData<BridgeCookie>>, db: Data<&DB>) -> Result<Htt
                                         }
                                     }
                                 }
-                                all_resources.contains(&r.as_str())
+                                all_resources.iter().any(|resource_name| resource_name == r)
                             })
                             .collect::<Vec<_>>()
                     });

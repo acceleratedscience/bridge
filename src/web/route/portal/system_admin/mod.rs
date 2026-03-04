@@ -35,7 +35,7 @@ use crate::{
             helper::{check_admin, get_all_groups},
             user_htmx::Subscription,
         },
-        services::CATALOG,
+        services,
     },
 };
 
@@ -96,15 +96,20 @@ pub(super) async fn system(
     let (subs, group_created_at, group_updated_at, group_last_updated) = match subscriptions {
         Ok(g) => (
             {
+                let catalog_all = services::get_all();
                 let mut sub_details: Vec<Subscription> = Vec::new();
 
                 g.subscriptions.iter().for_each(|name| {
-                    if let Some(sub) = CATALOG.get_all().get(name.as_str()) {
+                    if let Some(sub) = catalog_all.get(name.as_str()) {
                         sub_details.push(Subscription {
                             name: name.to_owned(),
-                            kind: sub.0,
-                            kind_designation: if sub.1 { "mcp" } else { "inference" },
-                            description: sub.2,
+                            kind: sub.kind.clone(),
+                            kind_designation: if sub.mcp {
+                                "mcp".to_string()
+                            } else {
+                                "inference".to_string()
+                            },
+                            description: sub.description.clone(),
                         });
                     }
                 });
@@ -153,9 +158,7 @@ pub(super) async fn system(
         let resources: Vec<(&String, bool)> = resources
             .iter()
             .map(|r| {
-                let show = CATALOG
-                    .get_details("resources", r, "show")
-                    .map(|v| v.as_bool().unwrap_or(false));
+                let show = services::get_detail("resources", r, "show").and_then(|v| v.as_bool());
                 (r, show.unwrap_or(false))
             })
             .collect();
@@ -394,11 +397,12 @@ async fn system_tab_htmx(
         | AdminTab::GroupCreate
         | AdminTab::GroupView => {
             let mut group_form = GroupContent::new();
+            let catalog_all = services::get_all();
 
             // TODO: Move this into some cache so you don't do this over and over. For now the only
             // cost is creation of a Vec in the GroupContent struct where each item is &'static str
-            CATALOG.get_all().iter().for_each(|(&name, (_, _, _))| {
-                group_form.add(name);
+            catalog_all.iter().for_each(|(name, _)| {
+                group_form.add(name.clone());
             });
 
             match tab.tab {
@@ -460,8 +464,8 @@ async fn system_tab_htmx(
                         let mut selections = group_form
                             .items
                             .iter()
-                            .map(|&v| (v, group_info.subscriptions.iter().any(|s| s.eq(v))))
-                            .collect::<Vec<(&str, bool)>>();
+                            .map(|v| (v.clone(), group_info.subscriptions.iter().any(|s| s.eq(v))))
+                            .collect::<Vec<(String, bool)>>();
                         selections.sort_by_key(|(_, b)| !*b);
 
                         group_form.render(
@@ -518,6 +522,16 @@ async fn system_tab_htmx(
         .body(content))
 }
 
+#[post("reload-services")]
+async fn system_reload_services(subject: Option<ReqData<BridgeCookie>>) -> Result<HttpResponse> {
+    let _ = check_admin(subject, UserType::SystemAdmin)?;
+    services::reload()?;
+
+    Ok(HttpResponse::Ok()
+        .content_type(ContentType::form_url_encoded())
+        .body("<p>Service catalog reloaded</p>"))
+}
+
 pub fn config_system(cfg: &mut web::ServiceConfig) {
     cfg.service(
         web::scope("/system_admin").service(system).service(
@@ -527,7 +541,8 @@ pub fn config_system(cfg: &mut web::ServiceConfig) {
                 .service(system_create_group)
                 .service(system_update_group)
                 .service(system_update_user)
-                .service(system_delete_user),
+                .service(system_delete_user)
+                .service(system_reload_services),
         ),
         // .service(system_delete_group)
     );

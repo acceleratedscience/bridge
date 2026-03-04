@@ -75,6 +75,10 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
 
     // Singletons
     openid::init_once().await;
+    if let Err(e) = services::init_once() {
+        eprintln!("{e}");
+        exit(1);
+    }
     if let Err(e) = DB::init_once(&DBNAME).await {
         eprintln!("{e}");
         exit(1);

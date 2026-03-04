@@ -1,5 +1,11 @@
 <p class="border-b font-bold">Group Management</p>
 <div class="flex flex-col flex-grow pt-4 text-center justify-center items-center">
+	<button id="reload_services" hx-post="system_admin/hx/reload-services" hx-target="#system_admin_group_response"
+		hx-swap="innerHTML"
+		class="lg:w-[300px] w-[220px] h-[50px] py-2 mb-4 flex justify-center items-center cb_button_secondary cursor-pointer"
+		tabindex="0">
+		Reload Services
+	</button>
 	<a id="group_admin_add_member" hx-get="system_admin/hx/tab?tab=GroupCreate" hx-target="#system_admin_group"
 		class="lg:w-[300px] w-[220px] h-[50px] py-2 flex justify-center items-center cb_button cursor-pointer"
 		tabindex="0">
@@ -10,4 +16,5 @@
 		tabindex="0">
 		View Groups
 	</a>
+	<div id="system_admin_group_response" class="pt-3 text-sm"></div>
 </div>

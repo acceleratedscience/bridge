@@ -22,7 +22,7 @@ use crate::{
     web::{
         bridge_middleware::ResourceCookieCheck,
         helper::{self, forwarding::Config},
-        services::CATALOG,
+        services,
     },
 };
 
@@ -82,7 +82,7 @@ pub async fn resource_http(
         None
     };
 
-    let mut new_url = helper::log_with_level!(CATALOG.get_resource(&resource), error)?;
+    let mut new_url = helper::log_with_level!(services::get_resource(&resource), error)?;
     new_url.set_path(path);
     new_url.set_query(req.uri().query());
 
@@ -113,7 +113,7 @@ async fn resource_ws(
     let (_, resource) = resource.into_inner();
     let (_, path) = webpath.into_inner();
 
-    let mut new_url = helper::log_with_level!(CATALOG.get_resource(&resource), error)?;
+    let mut new_url = helper::log_with_level!(services::get_resource(&resource), error)?;
 
     helper::log_with_level!(
         new_url
@@ -138,7 +138,7 @@ async fn resource_wss(
 ) -> Result<HttpResponse> {
     let (_, resource) = resource.into_inner();
 
-    let mut new_url = helper::log_with_level!(CATALOG.get_resource(&resource), error)?;
+    let mut new_url = helper::log_with_level!(services::get_resource(&resource), error)?;
 
     helper::log_with_level!(
         new_url

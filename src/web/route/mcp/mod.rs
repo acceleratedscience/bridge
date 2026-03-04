@@ -12,7 +12,7 @@ use crate::{
     errors::{BridgeError, Result},
     web::{
         helper::{self, forwarding::Config},
-        services::CATALOG,
+        services,
     },
 };
 
@@ -38,7 +38,7 @@ async fn forward(
     if let Some(mcp) = path.split('/').next() {
         let path = path.strip_prefix(mcp).unwrap_or(path);
 
-        if !CATALOG.is_service_mcp(mcp)? {
+        if !services::is_service_mcp(mcp)? {
             return Err(BridgeError::ServiceDoesNotExist(mcp.to_string()));
         }
 
@@ -62,7 +62,7 @@ async fn forward(
             ));
         }
 
-        let mut new_url = helper::log_with_level!(CATALOG.get_service(mcp), error)?;
+        let mut new_url = helper::log_with_level!(services::get_service(mcp), error)?;
         // fastmcp temp(?) fix
         if mcp.ends_with(MCP_SUFFIX) {
             new_url.set_path(&format!("{path}/"));

@@ -18,6 +18,7 @@ use crate::{
         COOKIE_NAME,
         openid::{OpenID, OpenIDProvider, get_openid_provider},
     },
+    config::CONFIG,
     db::{
         Database,
         keydb::CacheDB,
@@ -31,7 +32,7 @@ use crate::{
     },
 };
 #[cfg(feature = "observe")]
-use crate::{config::CONFIG, logger::MESSAGE_DELIMITER};
+use crate::logger::MESSAGE_DELIMITER;
 
 pub use self::oauth::generate_token_with_cookie;
 use self::{

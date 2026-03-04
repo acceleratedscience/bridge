@@ -1,158 +1,82 @@
 use std::collections::HashMap;
 use std::sync::LazyLock;
-use std::{fs::read_to_string, path::PathBuf, str::FromStr};
+use std::{env, fs::read_to_string, path::PathBuf, str::FromStr};
 
+use parking_lot::RwLock;
 use toml::Value;
 use url::Url;
 
 use crate::errors::{BridgeError, Result};
 
-pub struct Catalog(pub toml::Table);
+const SERVICES_CONFIG_PATH_ENV: &str = "BRIDGE_SERVICES_CONFIG_PATH";
 
-// TODO: move this out of proxy mod... perhaps in the parent mod to this
+#[derive(Debug, Clone)]
+pub struct CatalogEntry {
+    pub kind: String,
+    pub mcp: bool,
+    pub description: String,
+}
 
-pub static CATALOG: LazyLock<Catalog> = LazyLock::new(|| {
-    let service_config = if cfg!(debug_assertions) {
-        "config/services_sample.toml"
-    } else {
-        "config/services.toml"
-    };
+#[derive(Default)]
+struct CatalogState {
+    catalog: toml::Table,
+    all: HashMap<String, CatalogEntry>,
+    all_resource_names: Vec<String>,
+    health_urls: Vec<(Url, String)>,
+}
 
-    Catalog(
-        toml::from_str(&read_to_string(PathBuf::from_str(service_config).unwrap()).unwrap())
-            .unwrap(),
-    )
-});
-pub static CATALOG_URLS: LazyLock<Vec<(Url, String)>> =
-    LazyLock::new(|| Into::<ServiceCatalog>::into(LazyLock::force(&CATALOG)).into());
-static CATALOG_ALL: LazyLock<HashMap<&str, (&str, bool, &str)>> = LazyLock::new(|| {
-    let mut names = HashMap::new();
+impl CatalogState {
+    fn from_catalog(catalog: toml::Table) -> Self {
+        let mut all = HashMap::new();
+        let mut all_resource_names = Vec::new();
 
-    let service_iter = LazyLock::force(&CATALOG)
-        .0
-        .get("services")
-        .and_then(|v| v.as_table())
-        .expect("services not found in config")
-        .iter()
-        .map(|e| {
-            let mcp = e.1.get("mcp").and_then(|v| v.as_bool()).unwrap_or_default();
-            let description =
-                e.1.get("description")
-                    .and_then(|v| v.as_str())
+        if let Some(services) = catalog.get("services").and_then(Value::as_table) {
+            for (name, service) in services {
+                let mcp = service
+                    .get("mcp")
+                    .and_then(Value::as_bool)
                     .unwrap_or_default();
+                let description = service
+                    .get("description")
+                    .and_then(Value::as_str)
+                    .unwrap_or_default()
+                    .to_string();
+                all.insert(
+                    name.to_string(),
+                    CatalogEntry {
+                        kind: "service".to_string(),
+                        mcp,
+                        description,
+                    },
+                );
+            }
+        }
 
-            (e.0.as_str(), "service", mcp, description)
-        });
-    let resource_iter = LazyLock::force(&CATALOG)
-        .0
-        .get("resources")
-        .and_then(|v| v.as_table())
-        .expect("resources not found in config")
-        .iter()
-        .map(|v| {
-            let description =
-                v.1.get("description")
-                    .and_then(|v| v.as_str())
-                    .unwrap_or_default();
-            (v.0.as_str(), "resource", false, description)
-        });
+        if let Some(resources) = catalog.get("resources").and_then(Value::as_table) {
+            for (name, resource) in resources {
+                let description = resource
+                    .get("description")
+                    .and_then(Value::as_str)
+                    .unwrap_or_default()
+                    .to_string();
+                all.insert(
+                    name.to_string(),
+                    CatalogEntry {
+                        kind: "resource".to_string(),
+                        mcp: false,
+                        description,
+                    },
+                );
+                all_resource_names.push(name.to_string());
+            }
+        }
 
-    service_iter
-        .into_iter()
-        .chain(resource_iter)
-        .for_each(|entry| {
-            names.insert(entry.0, (entry.1, entry.2, entry.3));
-        });
-
-    names
-});
-static ALL_RESOURCE_NAMES: LazyLock<Vec<&str>> = LazyLock::new(|| {
-    LazyLock::force(&CATALOG)
-        .0
-        .get("resources")
-        .and_then(|v| v.as_table())
-        .expect("resources not found in config")
-        .keys()
-        .map(|k| k.as_ref())
-        .collect()
-});
-
-impl Catalog {
-    #[inline]
-    fn get_inner(&self, type_: &str, name: &str) -> Result<Url> {
-        let catalog = self.0.get(type_).ok_or_else(|| {
-            BridgeError::GeneralError("services definition not found in config".to_string())
-        })?;
-        let service = catalog
-            .get(name)
-            .ok_or_else(|| BridgeError::ServiceDoesNotExist(name.to_string()))?;
-        let url = service.get("url").ok_or_else(|| {
-            BridgeError::GeneralError("url not found in service definition".to_string())
-        })?;
-
-        Url::parse(
-            url.as_str()
-                .ok_or_else(|| BridgeError::GeneralError("url not a string".to_string()))?,
-        )
-        .map_err(|e| BridgeError::GeneralError(e.to_string()))
-    }
-
-    pub fn get_service(&self, service_name: &str) -> Result<Url> {
-        self.get_inner("services", service_name)
-    }
-
-    #[cfg(feature = "mcp")]
-    pub fn is_service_mcp(&self, service_name: &str) -> Result<bool> {
-        Ok(self
-            .0
+        let health_urls: Vec<(Url, String)> = catalog
             .get("services")
-            .ok_or_else(|| {
-                BridgeError::GeneralError("services definition not found in config".to_string())
-            })?
-            .get(service_name)
-            .ok_or_else(|| BridgeError::ServiceDoesNotExist(service_name.to_string()))?
-            .get("mcp")
-            .and_then(Value::as_bool)
-            .unwrap_or(false))
-    }
-
-    pub fn get_resource(&self, resource_name: &str) -> Result<Url> {
-        self.get_inner("resources", resource_name)
-    }
-
-    pub fn get_details(&self, type_: &str, name: &str, field: &str) -> Option<&Value> {
-        self.0.get(type_)?.get(name)?.get(field)
-    }
-
-    pub fn get_all_resources_by_name(&self) -> &'static Vec<&str> {
-        &ALL_RESOURCE_NAMES
-    }
-
-    // get all service and resources by their (in this order) name, kind, whether or not mcp, and description
-    pub fn get_all(&self) -> &'static HashMap<&str, (&str, bool, &str)> {
-        &CATALOG_ALL
-    }
-}
-
-pub struct ResourceCatalog(Vec<(Url, String)>);
-impl From<ResourceCatalog> for Vec<(Url, String)> {
-    fn from(value: ResourceCatalog) -> Self {
-        value.0
-    }
-}
-pub struct ServiceCatalog(Vec<(Url, String)>);
-impl From<ServiceCatalog> for Vec<(Url, String)> {
-    fn from(value: ServiceCatalog) -> Self {
-        value.0
-    }
-}
-
-// For services
-impl From<&Catalog> for ServiceCatalog {
-    fn from(value: &Catalog) -> Self {
-        Self(match value.0.get("services").and_then(|v| v.as_table()) {
-            Some(map) => {
-                map.iter()
+            .and_then(Value::as_table)
+            .map(|services| {
+                services
+                    .iter()
                     .filter_map(|(name, service)| {
                         // In the services.toml, there are entries that are not services with health
                         // endpoints, such as notebooks. We need to filter them out.
@@ -174,31 +98,119 @@ impl From<&Catalog> for ServiceCatalog {
                             .and_then(Value::as_str)
                             .and_then(|url| Url::parse(url).ok())
                             .and_then(|url| url.join(health_endpoint).ok());
+
                         url.map(|url| (url, name.to_string()))
                     })
                     .collect()
-            }
-            None => vec![],
-        })
+            })
+            .unwrap_or_default();
+
+        Self {
+            catalog,
+            all,
+            all_resource_names,
+            health_urls,
+        }
     }
 }
 
-impl From<&Catalog> for ResourceCatalog {
-    fn from(value: &Catalog) -> Self {
-        Self(match value.0.get("resources").and_then(|v| v.as_table()) {
-            Some(map) => map
-                .iter()
-                .filter_map(|(name, service)| {
-                    let url = service
-                        .get("url")
-                        .and_then(Value::as_str)
-                        .and_then(|url| Url::parse(url).ok());
-                    url.map(|url| (url, name.to_string()))
-                })
-                .collect(),
-            None => vec![],
-        })
+// TODO: move this out of proxy mod... perhaps in the parent mod to this
+
+static CATALOG_STATE: LazyLock<RwLock<CatalogState>> =
+    LazyLock::new(|| RwLock::new(CatalogState::default()));
+
+fn default_service_config_path() -> &'static str {
+    if cfg!(debug_assertions) {
+        "config/services_sample.toml"
+    } else {
+        "config/services.toml"
     }
+}
+
+fn current_service_config_path() -> String {
+    env::var(SERVICES_CONFIG_PATH_ENV).unwrap_or_else(|_| default_service_config_path().to_string())
+}
+
+fn load_from_path(path: &str) -> Result<CatalogState> {
+    let catalog: toml::Table = toml::from_str(&read_to_string(PathBuf::from_str(path).map_err(
+        |e| BridgeError::GeneralError(format!("Invalid config path '{path}': {e}")),
+    )?)?)?;
+
+    Ok(CatalogState::from_catalog(catalog))
+}
+
+pub fn init_once() -> Result<()> {
+    reload()
+}
+
+pub fn reload() -> Result<()> {
+    let path = current_service_config_path();
+    let next_state = load_from_path(&path)?;
+    let mut guard = CATALOG_STATE.write();
+    *guard = next_state;
+    Ok(())
+}
+
+#[inline]
+fn get_inner(type_: &str, name: &str) -> Result<Url> {
+    let guard = CATALOG_STATE.read();
+    let catalog = guard.catalog.get(type_).ok_or_else(|| {
+        BridgeError::GeneralError("services definition not found in config".to_string())
+    })?;
+    let service = catalog
+        .get(name)
+        .ok_or_else(|| BridgeError::ServiceDoesNotExist(name.to_string()))?;
+    let url = service
+        .get("url")
+        .ok_or_else(|| BridgeError::GeneralError("url not found in service definition".to_string()))?;
+
+    Url::parse(
+        url.as_str()
+            .ok_or_else(|| BridgeError::GeneralError("url not a string".to_string()))?,
+    )
+    .map_err(|e| BridgeError::GeneralError(e.to_string()))
+}
+
+pub fn get_service(service_name: &str) -> Result<Url> {
+    get_inner("services", service_name)
+}
+
+#[cfg(feature = "mcp")]
+pub fn is_service_mcp(service_name: &str) -> Result<bool> {
+    let guard = CATALOG_STATE.read();
+    Ok(guard
+        .catalog
+        .get("services")
+        .ok_or_else(|| {
+            BridgeError::GeneralError("services definition not found in config".to_string())
+        })?
+        .get(service_name)
+        .ok_or_else(|| BridgeError::ServiceDoesNotExist(service_name.to_string()))?
+        .get("mcp")
+        .and_then(Value::as_bool)
+        .unwrap_or(false))
+}
+
+pub fn get_resource(resource_name: &str) -> Result<Url> {
+    get_inner("resources", resource_name)
+}
+
+pub fn get_detail(type_: &str, name: &str, field: &str) -> Option<Value> {
+    let guard = CATALOG_STATE.read();
+    guard.catalog.get(type_)?.get(name)?.get(field).cloned()
+}
+
+pub fn get_all_resources_by_name() -> Vec<String> {
+    CATALOG_STATE.read().all_resource_names.clone()
+}
+
+// get all service and resources by their (in this order) name, kind, whether or not mcp, and description
+pub fn get_all() -> HashMap<String, CatalogEntry> {
+    CATALOG_STATE.read().all.clone()
+}
+
+pub fn get_service_health_urls() -> Vec<(Url, String)> {
+    CATALOG_STATE.read().health_urls.clone()
 }
 
 #[cfg(test)]
@@ -207,48 +219,49 @@ mod test {
 
     #[test]
     fn test_catalog() {
-        let catalog = &CATALOG;
-        let service = catalog.get_service("postman").unwrap();
+        let service = get_service("postman");
+        assert!(service.is_err()); // not initialized yet
+
+        init_once().unwrap();
+        let service = get_service("postman").unwrap();
         assert_eq!(service.as_str(), "https://postman-echo.com/");
 
-        let resource = catalog.get_resource("example").unwrap();
+        let resource = get_resource("example").unwrap();
         assert_eq!(resource.as_str(), "https://www.example.com/");
 
-        let service = catalog.get_service("notebook");
+        let service = get_service("notebook");
         assert!(service.is_err());
     }
 
     #[test]
-    fn test_catalog_into() {
-        let catalog = &CATALOG;
-        let services: ServiceCatalog = LazyLock::force(catalog).into();
-        assert_ne!(services.0.len(), 0);
+    fn test_catalog_health_urls() {
+        init_once().unwrap();
+        let services = get_service_health_urls();
+        assert_ne!(services.len(), 0);
 
-        let resources: ResourceCatalog = Into::<ResourceCatalog>::into(LazyLock::force(&CATALOG));
-        assert!(resources.0.len().ge(&1));
-
-        let postman = services.0.iter().find(|(_, name)| name == "postman");
+        let postman = services.iter().find(|(_, name)| name == "postman");
         assert!(postman.is_some());
     }
 
     #[cfg(feature = "mcp")]
     #[test]
     fn test_mcp_bool() {
-        let catalog = &CATALOG;
-        let mcp = catalog.is_service_mcp("postman").unwrap();
+        init_once().unwrap();
+        let mcp = is_service_mcp("postman").unwrap();
         assert!(!mcp);
     }
 
     #[test]
     fn test_catalog_all_names() {
-        let names = CATALOG.get_all();
+        init_once().unwrap();
+        let names = get_all();
         assert!(names.len() >= 2);
     }
 
     #[test]
     fn test_get_details() {
-        let catalog = &CATALOG;
-        let Value::Boolean(b) = *catalog.get_details("resources", "example", "show").unwrap()
+        init_once().unwrap();
+        let Value::Boolean(b) = get_detail("resources", "example", "show").unwrap()
         else {
             panic!("show not found");
         };

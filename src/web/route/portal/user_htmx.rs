@@ -8,23 +8,23 @@ use tera::{Context, Tera};
 use crate::{
     db::models::{BridgeCookie, NotebookStatusCookie, OWUICookie, User},
     errors::Result,
-    web::services::CATALOG,
+    web::services,
 };
 
 #[cfg(feature = "notebook")]
 use super::helper::notebook_bookkeeping;
 
 #[derive(Serialize, Clone)]
-pub struct Subscription<'s> {
+pub struct Subscription {
     pub name: String,
-    pub kind: &'s str,
-    pub kind_designation: &'s str,
-    pub description: &'s str,
+    pub kind: String,
+    pub kind_designation: String,
+    pub description: String,
 }
 
 pub struct Profile<'p> {
     pub groups: Vec<String>,
-    pub subscriptions: Vec<Subscription<'p>>,
+    pub subscriptions: Vec<Subscription>,
     user: &'p User,
 }
 
@@ -44,7 +44,7 @@ impl<'p> Profile<'p> {
         self.groups.push(group);
     }
 
-    pub fn add_subscription(&mut self, subscription: Subscription<'p>) {
+    pub fn add_subscription(&mut self, subscription: Subscription) {
         self.subscriptions.push(subscription);
     }
 
@@ -80,9 +80,8 @@ impl<'p> Profile<'p> {
             let resources: Vec<(&String, bool)> = resources
                 .iter()
                 .map(|r| {
-                    let show = CATALOG
-                        .get_details("resources", r, "show")
-                        .map(|v| v.as_bool().unwrap_or(false));
+                    let show = services::get_detail("resources", r, "show")
+                        .and_then(|v| v.as_bool().map(|b| b.to_owned()));
                     (r, show.unwrap_or(false))
                 })
                 .collect();

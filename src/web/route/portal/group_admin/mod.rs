@@ -29,7 +29,7 @@ use crate::{
         bridge_middleware::{HTMX_ERROR_RES, Htmx},
         helper::{self, bson},
         route::portal::{helper::check_admin, user_htmx::Subscription},
-        services::CATALOG,
+        services,
     },
 };
 
@@ -91,15 +91,20 @@ pub(super) async fn group(
     let (subs, group_created_at, group_updated_at, group_last_updated) = match subscriptions {
         Ok(g) => (
             {
+                let catalog_all = services::get_all();
                 let mut sub_details: Vec<Subscription> = Vec::new();
 
                 g.subscriptions.iter().for_each(|name| {
-                    if let Some(sub) = CATALOG.get_all().get(name.as_str()) {
+                    if let Some(sub) = catalog_all.get(name.as_str()) {
                         sub_details.push(Subscription {
                             name: name.to_owned(),
-                            kind: sub.0,
-                            kind_designation: if sub.1 { "mcp" } else { "inference" },
-                            description: sub.2,
+                            kind: sub.kind.clone(),
+                            kind_designation: if sub.mcp {
+                                "mcp".to_string()
+                            } else {
+                                "inference".to_string()
+                            },
+                            description: sub.description.clone(),
                         });
                     }
                 });
@@ -148,9 +153,7 @@ pub(super) async fn group(
         let resources: Vec<(&String, bool)> = resources
             .iter()
             .map(|r| {
-                let show = CATALOG
-                    .get_details("resources", r, "show")
-                    .map(|v| v.as_bool().unwrap_or(false));
+                let show = services::get_detail("resources", r, "show").and_then(|v| v.as_bool());
                 (r, show.unwrap_or(false))
             })
             .collect();
