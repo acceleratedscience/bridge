@@ -92,9 +92,14 @@ impl<'p> Profile<'p> {
         #[cfg(feature = "openwebui")]
         if let Some(owui_cookie) = oc {
             use crate::config::CONFIG;
+            use crate::web::route::portal::helper::owui_bookkeeping;
 
-            context.insert("openwebui", &owui_cookie.subject);
+            let (owui, pvc_exists) = owui_bookkeeping(self.user).await;
+
+            context.insert("owui_subject", &owui_cookie.subject);
             context.insert("owui_url", &CONFIG.owui.url);
+            context.insert("pvc_exists_owui", &pvc_exists);
+            context.insert("owui", &owui);
         }
 
         #[cfg(feature = "notebook")]

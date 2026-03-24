@@ -26,25 +26,25 @@ pub fn start_logger(level: LevelFilter, _client: Client, _tx: Sender<()>) {
             .with_filter(level),
     );
 
-    // #[cfg(feature = "observe")]
-    // let ts = {
-    //     use crate::config::CONFIG;
-    //
-    //     if let Some((ref api_key, ref endpoint)) = CONFIG.observability_cred {
-    //         use crate::db::mongo::DBCONN;
-    //
-    //         let writer = observability::Observe::new(api_key, endpoint, _client)
-    //             .expect("Failed to create observability for logger");
-    //         let observe_layer = observability::ObserveEvents::new(
-    //             DBCONN.get().expect("DB connection not initialized"),
-    //             _tx,
-    //         );
-    //
-    //         ts.with(writer.wrap_layer(level)).with(observe_layer)
-    //     } else {
-    //         panic!("Observability credentials are not set in the configuration")
-    //     }
-    // };
+    #[cfg(feature = "observe")]
+    let ts = {
+        use crate::config::CONFIG;
+
+        if let Some((ref api_key, ref endpoint)) = CONFIG.observability_cred {
+            use crate::db::mongo::DBCONN;
+
+            let writer = observability::Observe::new(api_key, endpoint, _client)
+                .expect("Failed to create observability for logger");
+            let observe_layer = observability::ObserveEvents::new(
+                DBCONN.get().expect("DB connection not initialized"),
+                _tx,
+            );
+
+            ts.with(writer.wrap_layer(level)).with(observe_layer)
+        } else {
+            panic!("Observability credentials are not set in the configuration")
+        }
+    };
 
     ts.init()
 }

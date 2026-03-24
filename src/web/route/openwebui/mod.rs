@@ -9,7 +9,7 @@ use actix_web::{
     web::{self, ReqData},
 };
 use k8s_openapi::api::core::v1::PersistentVolumeClaim;
-use kube::{api::ObjectMeta, runtime::wait::delete};
+use kube::api::ObjectMeta;
 use mongodb::bson::doc;
 use tera::{Context, Tera};
 use tracing::{instrument, warn};

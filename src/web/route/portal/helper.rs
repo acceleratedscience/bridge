@@ -10,7 +10,7 @@ use mongodb::bson::doc;
 use tera::Context;
 
 #[cfg(feature = "openwebui")]
-use crate::{config::CONFIG, db::models::UserOwui, kube::Owui, web::route::health::status};
+use crate::{config::CONFIG, db::models::UserOwui, kube::Owui};
 use crate::{
     db::{
         Database,
@@ -110,7 +110,7 @@ pub(super) async fn owui_bookkeeping(user: &User) -> (Option<UserOwui>, bool) {
                 return (None, pvc_exists);
             }
         }
-        Err(e) => return (None, pvc_exists),
+        Err(_e) => return (None, pvc_exists),
     }
 
     match KubeAPI::<Pod>::check_pod_running(&pod_name, &CONFIG.owui.namespace).await {
@@ -135,7 +135,7 @@ pub(super) async fn owui_bookkeeping(user: &User) -> (Option<UserOwui>, bool) {
                 pvc_exists,
             )
         }
-        Err(e) => (None, pvc_exists),
+        Err(_e) => (None, pvc_exists),
     }
 }
 

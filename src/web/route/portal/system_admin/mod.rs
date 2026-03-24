@@ -138,7 +138,6 @@ pub(super) async fn system(
         use crate::web::route::portal::helper::owui_bookkeeping;
 
         let (owui, pvc_exists) = owui_bookkeeping(&user).await;
-        println!("OWUI BOOKKEEPING RESULT: {owui:?}");
 
         ctx.insert("owui_subject", &owui_cookie.subject);
         ctx.insert("owui_url", &CONFIG.owui.url);
