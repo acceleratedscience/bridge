@@ -84,8 +84,9 @@ pub(super) async fn user(
             user.groups.iter().for_each(|group| {
                 profile.add_group(group.to_string());
             });
+            let all_services = services::get_all();
             group.subscriptions.into_iter().for_each(|subscription| {
-                if let Some(subscription_detail) = services::get_all().get(subscription.as_str()) {
+                if let Some(subscription_detail) = all_services.get(subscription.as_str()) {
                     profile.add_subscription(Subscription {
                         name: subscription,
                         kind: subscription_detail.kind.clone(),

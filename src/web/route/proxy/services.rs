@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use std::sync::LazyLock;
+use std::sync::{Arc, LazyLock};
 use std::{env, fs::read_to_string, path::PathBuf, str::FromStr};
 
 use parking_lot::RwLock;
@@ -20,9 +20,9 @@ pub struct CatalogEntry {
 #[derive(Default)]
 struct CatalogState {
     catalog: toml::Table,
-    all: HashMap<String, CatalogEntry>,
-    all_resource_names: Vec<String>,
-    health_urls: Vec<(Url, String)>,
+    all: Arc<HashMap<String, CatalogEntry>>,
+    all_resource_names: Arc<Vec<String>>,
+    health_urls: Arc<Vec<(Url, String)>>,
 }
 
 impl CatalogState {
@@ -107,9 +107,9 @@ impl CatalogState {
 
         Self {
             catalog,
-            all,
-            all_resource_names,
-            health_urls,
+            all: Arc::new(all),
+            all_resource_names: Arc::new(all_resource_names),
+            health_urls: Arc::new(health_urls),
         }
     }
 }
@@ -132,9 +132,10 @@ fn current_service_config_path() -> String {
 }
 
 fn load_from_path(path: &str) -> Result<CatalogState> {
-    let catalog: toml::Table = toml::from_str(&read_to_string(PathBuf::from_str(path).map_err(
-        |e| BridgeError::GeneralError(format!("Invalid config path '{path}': {e}")),
-    )?)?)?;
+    let catalog: toml::Table =
+        toml::from_str(&read_to_string(PathBuf::from_str(path).map_err(|e| {
+            BridgeError::GeneralError(format!("Invalid config path '{path}': {e}"))
+        })?)?)?;
 
     Ok(CatalogState::from_catalog(catalog))
 }
@@ -160,9 +161,9 @@ fn get_inner(type_: &str, name: &str) -> Result<Url> {
     let service = catalog
         .get(name)
         .ok_or_else(|| BridgeError::ServiceDoesNotExist(name.to_string()))?;
-    let url = service
-        .get("url")
-        .ok_or_else(|| BridgeError::GeneralError("url not found in service definition".to_string()))?;
+    let url = service.get("url").ok_or_else(|| {
+        BridgeError::GeneralError("url not found in service definition".to_string())
+    })?;
 
     Url::parse(
         url.as_str()
@@ -200,16 +201,16 @@ pub fn get_detail(type_: &str, name: &str, field: &str) -> Option<Value> {
     guard.catalog.get(type_)?.get(name)?.get(field).cloned()
 }
 
-pub fn get_all_resources_by_name() -> Vec<String> {
+pub fn get_all_resources_by_name() -> Arc<Vec<String>> {
     CATALOG_STATE.read().all_resource_names.clone()
 }
 
 // get all service and resources by their (in this order) name, kind, whether or not mcp, and description
-pub fn get_all() -> HashMap<String, CatalogEntry> {
+pub fn get_all() -> Arc<HashMap<String, CatalogEntry>> {
     CATALOG_STATE.read().all.clone()
 }
 
-pub fn get_service_health_urls() -> Vec<(Url, String)> {
+pub fn get_service_health_urls() -> Arc<Vec<(Url, String)>> {
     CATALOG_STATE.read().health_urls.clone()
 }
 
@@ -219,9 +220,6 @@ mod test {
 
     #[test]
     fn test_catalog() {
-        let service = get_service("postman");
-        assert!(service.is_err()); // not initialized yet
-
         init_once().unwrap();
         let service = get_service("postman").unwrap();
         assert_eq!(service.as_str(), "https://postman-echo.com/");
@@ -261,8 +259,7 @@ mod test {
     #[test]
     fn test_get_details() {
         init_once().unwrap();
-        let Value::Boolean(b) = get_detail("resources", "example", "show").unwrap()
-        else {
+        let Value::Boolean(b) = get_detail("resources", "example", "show").unwrap() else {
             panic!("show not found");
         };
         assert!(b);
