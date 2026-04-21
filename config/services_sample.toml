@@ -49,3 +49,20 @@
 	check = true
 	show = false
 	description = "Reddit.com for testing purposes. This is a much longer text description. Blah blah blah blah. Also this resource should not show up in the side menu."
+	[resources.main-api]
+	url = "http://main-api.chemchat.svc.cluster.local:8000"
+	readiness = "/health"
+	check = true
+	show = false
+
+	[resources.chemchat]
+	url = "http://frontend.chemchat.svc.cluster.local:5173"
+	readiness = "/health"
+	check = true
+	show = true
+
+	[resources.cheminfo-services]
+	url = "http://cheminfo-services.chemchat.svc.cluster.local:8000"
+	readiness = "/health"
+	check = true
+	show = false

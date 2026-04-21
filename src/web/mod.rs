@@ -163,18 +163,6 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
         //     todo!();
         // }
 
-        #[cfg(feature = "chemchat")]
-        let app = {
-            use self::bridge_middleware::CookieCheck;
-
-            app.service(
-                web::scope("")
-                    .guard(guard::Host(&CONFIG.chemchat_url))
-                    .wrap(CookieCheck)
-                    .configure(route::chemchat::config_chemchat),
-            )
-        };
-
         let app = app.service(actix_files::Files::new("/static", "static"));
 
         #[cfg(feature = "notebook")]

@@ -4,7 +4,17 @@
 			"adapter": "CodeLLDB",
 			"configuration": {
 				"request": "launch",
-				"program": "./target/debug/${fileDirname}"
+				"program": "${workspaceFolder}/target/debug/${projectFolderBasename}"
+			}
+		},
+		"attach": {
+			"adapter": "CodeLLDB",
+			"filetypes": [ "rust", "c", "cpp", "jai" ],
+			"configuration": {
+				"request": "attach",
+				"program": "${workspaceRoot}/${fileBasenameNoExtension}",
+				"PID": "${PID}",
+				"sourceLanguages": [ "rust" ]
 			}
 		}
 	}

@@ -39,10 +39,6 @@ pub struct Configuration {
     pub company: String,
     pub oidc: HashMap<String, OIDC>,
     pub observability_cred: Option<(String, String)>,
-    #[cfg(feature = "chemchat")]
-    pub chemchat_url: String,
-    #[cfg(feature = "chemchat")]
-    pub chemchat_internal_url: String,
     #[cfg(feature = "openwebui")]
     pub owui: OwuiConfig,
     #[cfg(feature = "openwebui")]
@@ -50,6 +46,7 @@ pub struct Configuration {
     #[cfg(feature = "openwebui")]
     pub moleviewer_internal_url: String,
     pub bridge_url: String,
+    pub custom_resource_csp: HashMap<String, String>,
 }
 
 #[cfg(feature = "openwebui")]
@@ -254,17 +251,6 @@ pub fn init_once() -> Configuration {
     )
     .unwrap();
 
-    #[cfg(feature = "chemchat")]
-    let (chemchat_url, chemchat_internal_url) = {
-        (
-            app_conf["chemchat_url"].as_str().unwrap().to_string(),
-            app_conf["chemchat_internal_url"]
-                .as_str()
-                .unwrap()
-                .to_string(),
-        )
-    };
-
     let bridge_url = app_conf["bridge_url"].as_str().unwrap().to_string();
 
     #[cfg(feature = "openwebui")]
@@ -312,6 +298,13 @@ pub fn init_once() -> Configuration {
         }
     };
 
+    let custom_resource_csp = conf_table["custom_resource_csp"]
+        .as_table()
+        .unwrap()
+        .into_iter()
+        .map(|s| (s.0.clone(), s.1.as_str().unwrap().into()))
+        .collect();
+
     Configuration {
         encoder,
         decoder,
@@ -330,16 +323,14 @@ pub fn init_once() -> Configuration {
         company,
         oidc: oidc_map,
         observability_cred,
-        #[cfg(feature = "chemchat")]
-        chemchat_url,
-        #[cfg(feature = "chemchat")]
-        chemchat_internal_url,
+        #[cfg(feature = "openwebui")]
         owui,
         #[cfg(feature = "openwebui")]
         moleviewer_url,
         #[cfg(feature = "openwebui")]
         moleviewer_internal_url,
         bridge_url,
+        custom_resource_csp,
     }
 }
 
@@ -398,5 +389,17 @@ mod tests {
         let cred = config.observability_cred.as_ref().unwrap();
         assert!(!cred.1.is_empty());
         assert!(cred.1.len() > 10);
+    }
+
+    #[test]
+    fn test_skip_csp_path() {
+        let config = init_once();
+        let map = &config.custom_resource_csp;
+
+        let scp = map.get("foo").unwrap();
+        assert_eq!(scp, "bar");
+
+        let scp = map.get("baz").unwrap();
+        assert_eq!(scp, "zap");
     }
 }
