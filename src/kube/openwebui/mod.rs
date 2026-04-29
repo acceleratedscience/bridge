@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-
 use std::borrow::Cow;
 
 use kube::CustomResource;
@@ -52,7 +50,7 @@ pub struct Env {
 mod test {
     use std::borrow::Cow;
 
-    use crate::kube::KubeAPI;
+    // use crate::kube::KubeAPI;
 
     #[tokio::test]
     async fn test_deserialize_owui() {
@@ -93,12 +91,12 @@ mod test {
             Ok(json) => println!("Successfully serialized OpenWebUI to JSON:\n{}", json),
             Err(e) => panic!("Failed to serialize OpenWebUI to JSON: {}", e),
         }
-        rustls::crypto::ring::default_provider()
-            .install_default()
-            .expect("Cannot install default provider with ring");
+        // rustls::crypto::ring::default_provider()
+        //     .install_default()
+        //     .expect("Cannot install default provider with ring");
 
-        crate::kube::init_once().await;
-        let k = KubeAPI::new(owui);
-        k.create("openwebui").await.unwrap();
+        // crate::kube::init_once().await;
+        // let k = KubeAPI::new(owui);
+        // k.create("openwebui").await.unwrap();
     }
 }

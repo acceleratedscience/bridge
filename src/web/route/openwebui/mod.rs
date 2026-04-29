@@ -404,9 +404,9 @@ impl From<&User> for UserOwui {
 pub(crate) fn make_forward_url(protocol: &str, subject: &str) -> String {
     let namespace = *OWUI_NAMESPACE;
     // if in dev mode
-    if cfg!(debug_assertions) {
-        return format!("{protocol}://0.0.0.0:{OWUI_PORT}");
-    }
+    // if cfg!(debug_assertions) {
+    //     return format!("{protocol}://0.0.0.0:{OWUI_PORT}");
+    // }
     format!("{protocol}://u{subject}-openwebui.{namespace}.svc.cluster.local:{OWUI_PORT}")
 }
 
