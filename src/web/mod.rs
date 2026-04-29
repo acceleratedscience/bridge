@@ -146,7 +146,7 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
             use self::bridge_middleware::{CookieCheck, OWUICookieCheck};
             app.service(
                 web::scope("")
-                    .guard(guard::Host(&CONFIG.openweb_url))
+                    .guard(guard::Host(&CONFIG.owui.url))
                     .wrap(OWUICookieCheck)
                     .configure(route::openwebui::config_openwebui),
             )
@@ -162,18 +162,6 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
         // {
         //     todo!();
         // }
-
-        #[cfg(feature = "chemchat")]
-        let app = {
-            use self::bridge_middleware::CookieCheck;
-
-            app.service(
-                web::scope("")
-                    .guard(guard::Host(&CONFIG.chemchat_url))
-                    .wrap(CookieCheck)
-                    .configure(route::chemchat::config_chemchat),
-            )
-        };
 
         let app = app.service(actix_files::Files::new("/static", "static"));
 
@@ -193,6 +181,8 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
                 .configure(route::foo::config_foo);
             #[cfg(feature = "mcp")]
             let scope = scope.configure(route::mcp::config_mcp);
+            #[cfg(feature = "openwebui")]
+            let scope = scope.configure(route::openwebui::config_openwebui_manage);
             scope
         })
     });

@@ -371,6 +371,7 @@ async fn notebook_create(
         let bridge_cookie = Cookie::build(COOKIE_NAME, bridge_cookie_json)
             .path("/")
             .same_site(SameSite::Strict)
+            .domain(&CONFIG.bridge_url)
             .secure(true)
             .http_only(true)
             .max_age(time::Duration::days(1))

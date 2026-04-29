@@ -181,6 +181,7 @@ async fn code_to_response(
                         user_type: UserType::User,
                         token: None,
                         notebook: None,
+                        owui: None,
                         created_at: time,
                         updated_at: time,
                         last_updated_by: email,
@@ -235,7 +236,7 @@ async fn code_to_response(
     // TODO: look into doing session management that stores a dynamic key into the cookie
     let cookie = Cookie::build(COOKIE_NAME, content)
         .same_site(SameSite::Strict)
-        .expires(time::OffsetDateTime::now_utc() + time::Duration::days(1))
+        .max_age(time::Duration::days(1))
         .domain(&CONFIG.bridge_url)
         .path("/")
         .http_only(true)

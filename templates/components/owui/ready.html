@@ -1,0 +1,22 @@
+<p class="pt-2">You currently have an instance running.</p>
+<div class="flex flex-col flex-grow pt-2 text-center justify-center items-center">
+	<a id="owui_open_button"
+		class="lg:w-[300px] w-[220px] h-[50px] py-2 flex justify-center items-center cb_button cursor-pointer"
+		href="//{{ owui_url }}"
+		target="_blank" _="on click
+          call window.open(me.href, '_blank')" tabindex="0">
+		Open Open Web UI
+	</a>
+	<a id="owui_terminate_button"
+		class="lg:w-[300px] w-[220px] h-[50px] py-2 mt-4 flex justify-center items-center cb_button cursor-pointer"
+		hx-delete="/owui_manage/hx/delete" hx-target="#owui_panel" hx-swap="innerhtml settle:5s"
+		hx-confirm="Are you sure you want to terminate: {{ owui_subject }}?" tabindex="0">
+		Terminate Open Web UI
+	</a>
+	<a id="owui_terminate_save_button"
+		class="lg:w-[300px] w-[220px] h-[50px] py-2 mt-4 flex justify-center items-center cb_button cursor-pointer"
+		hx-delete="/owui_manage/hx/delete?save=true" hx-target="#owui_panel" hx-swap="innerhtml settle:5s"
+		hx-confirm="Are you sure you want to terminate: {{ owui_subject }}?" tabindex="0">
+		Terminate Open Web UI Save Work
+	</a>
+</div>

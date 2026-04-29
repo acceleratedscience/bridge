@@ -4,7 +4,6 @@ LIFECYCLE_DEFAULT := "false"
 OBSERVE_DEFAULT := "false"
 MCP_DEFAULT := "false"
 OWUI_DEFFAULT := "false"
-CHEMCHAT_DEFAULT := "false"
 
 # Consolidated build recipe that accepts a comma-separated string of features
 # Usage examples:
@@ -23,7 +22,6 @@ build-features features_string="":
     current_observe={{OBSERVE_DEFAULT}}
     current_mcp={{MCP_DEFAULT}}
     current_owui={{OWUI_DEFFAULT}}
-    current_chemchat={{CHEMCHAT_DEFAULT}}
 
     # If features_string is not empty, parse it
     if [[ -n "{{features_string}}" ]]; then
@@ -44,8 +42,6 @@ build-features features_string="":
                 current_mcp="true"
             elif [[ "$trimmed_feature" == "openwebui" ]]; then
                 current_owui="true"
-            elif [[ "$trimmed_feature" == "chemchat" ]]; then
-                current_chemchat="true"
             elif [[ -n "$trimmed_feature" ]]; then # Check if trimmed_feature is not empty
                 echo "Warning: Unknown feature '$trimmed_feature' in '{{features_string}}'"
             fi
@@ -58,7 +54,6 @@ build-features features_string="":
     cmd="$cmd --build-arg OBSERVE=${current_observe}"
     cmd="$cmd --build-arg MCP=${current_mcp}"
     cmd="$cmd --build-arg OWUI=${current_owui}"
-    cmd="$cmd --build-arg CHEMCHAT=${current_chemchat}"
     cmd="$cmd ."
 
     echo "Executing: $cmd"
@@ -74,7 +69,7 @@ build-notebook-lifecycle-observe: (build-features "notebook,lifecycle,observe")
 
 build-notebook-lifecycle-mcp: (build-features "notebook,lifecycle,mcp")
 
-build-full: (build-features "notebook,lifecycle,observe,mcp,openwebui,chemchat")
+build-full: (build-features "notebook,lifecycle,observe,mcp,openwebui")
 
 # --- Frontend & Minification ---
 mini-js:
@@ -92,6 +87,13 @@ local-mongo:
 	-e MONGO_INITDB_ROOT_PASSWORD="admin123456789" \
 	-e MONGO_INITDB_DATABASE="bridge" \
 	-p 27017:27017 mongodb/mongodb-community-server
+
+local-mongo-linux:
+	podman run -d --rm --name mongodb \
+	-e MONGO_INITDB_ROOT_USERNAME="bridge-user" \
+	-e MONGO_INITDB_ROOT_PASSWORD="admin123456789" \
+	-e MONGO_INITDB_DATABASE="bridge" \
+	-p 27017:27017 mongodb/mongodb-community-server:4.4.0-ubuntu2004-20230514T053846Z
 
 local-keydb:
 	podman run -d --rm --name keydb \

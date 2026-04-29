@@ -1,9 +1,7 @@
 use actix_web::web;
 use base64::{Engine, prelude::BASE64_STANDARD};
-#[cfg(feature = "observe")]
-use mongodb::bson;
 use mongodb::bson::{Bson, to_bson};
-use rand::{Rng, rng};
+use rand::{RngExt as _, rng};
 use serde::Deserialize;
 use tera::Context;
 use tokio_stream::StreamExt;
@@ -186,8 +184,8 @@ pub fn maintenance_watch() -> Result<()> {
 
 #[inline]
 pub fn generate_salt() -> String {
-    let mut rnd = rng();
-    let salt: Vec<u8> = (0..32).map(|_| rnd.random()).collect();
+    let mut rng = rng();
+    let salt: Vec<u8> = (0..32).map(|_| rng.random()).collect();
     BASE64_STANDARD.encode(&salt)
 }
 

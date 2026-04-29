@@ -48,6 +48,12 @@ where
         ))
     }
 
+    pub async fn get_crds(namespace: &str) -> Result<Vec<M>> {
+        let crd = Api::<M>::namespaced(Self::get_kube_client()?.clone(), namespace);
+        let list = crd.list(&Default::default()).await?;
+        Ok(list.items)
+    }
+
     pub async fn create(&self, namespace: &str) -> Result<M> {
         let crd = Api::<M>::namespaced(Self::get_kube_client()?.clone(), namespace);
         let pp = PostParams::default();

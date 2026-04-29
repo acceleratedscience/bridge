@@ -50,6 +50,8 @@ pub struct User {
     pub user_type: UserType,
     pub token: Option<String>,
     pub notebook: Option<NotebookInfo>,
+    #[cfg_attr(feature = "openwebui", serde(skip_serializing_if = "Option::is_none"))]
+    pub owui: Option<OwuiInfo>,
     pub created_at: time::OffsetDateTime,
     pub updated_at: time::OffsetDateTime,
     pub last_updated_by: String,
@@ -89,6 +91,19 @@ pub struct NotebookInfo {
     pub max_idle_time: Option<u64>,
     pub start_up_url: Option<String>,
     pub persist_pvc: bool,
+}
+
+#[derive(Debug, Default, Deserialize, Serialize)]
+pub struct OwuiInfo {
+    pub start_time: Option<time::OffsetDateTime>,
+    pub last_active: Option<time::OffsetDateTime>,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct UserOwui {
+    pub name: String,
+    pub start_time: String,
+    pub status: String,
 }
 
 #[derive(Debug, Deserialize, Serialize)]

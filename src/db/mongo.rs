@@ -442,6 +442,7 @@ mod tests {
                     user_type: UserType::SystemAdmin,
                     token: None,
                     notebook: None,
+                    owui: None,
                     created_at: time,
                     updated_at: time,
                     last_updated_by: "choi.mina@gmail.com".to_string(),

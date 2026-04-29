@@ -39,19 +39,28 @@ pub struct Configuration {
     pub company: String,
     pub oidc: HashMap<String, OIDC>,
     pub observability_cred: Option<(String, String)>,
-    #[cfg(feature = "chemchat")]
-    pub chemchat_url: String,
-    #[cfg(feature = "chemchat")]
-    pub chemchat_internal_url: String,
     #[cfg(feature = "openwebui")]
-    pub owui_namespace: String,
-    #[cfg(feature = "openwebui")]
-    pub openweb_url: String,
+    pub owui: OwuiConfig,
     #[cfg(feature = "openwebui")]
     pub moleviewer_url: String,
     #[cfg(feature = "openwebui")]
     pub moleviewer_internal_url: String,
     pub bridge_url: String,
+    pub custom_resource_csp: HashMap<String, String>,
+}
+
+#[cfg(feature = "openwebui")]
+pub struct OwuiConfig {
+    pub namespace: String,
+    pub service_port: u16,
+    pub url: String,
+    pub registry: String,
+    pub repository: String,
+    pub tag: String,
+    pub pull_policy: String,
+    pub env: Vec<(String, String)>,
+    pub persistence_size: String,
+    pub persistence_storage_class: String,
 }
 
 pub struct Database {
@@ -169,6 +178,12 @@ pub fn init_once() -> Configuration {
         toml::from_str(&read_to_string(PathBuf::from_str(database_location_str).unwrap()).unwrap())
             .unwrap();
 
+    #[cfg(feature = "openwebui")]
+    let owui_table: toml::Table = toml::from_str(
+        &read_to_string(PathBuf::from_str("config/openwebui.toml").unwrap()).unwrap(),
+    )
+    .unwrap();
+
     let mongo_table = db_table["mongodb"].as_table().unwrap();
     let db = Database {
         url: if cfg!(debug_assertions) {
@@ -236,11 +251,11 @@ pub fn init_once() -> Configuration {
     )
     .unwrap();
 
+    let bridge_url = app_conf["bridge_url"].as_str().unwrap().to_string();
+
     #[cfg(feature = "openwebui")]
-    let (owui_namespace, openweb_url, moleviewer_url, moleviewer_internal_url) = {
+    let (moleviewer_url, moleviewer_internal_url) = {
         (
-            app_conf["owui_namespace"].as_str().unwrap().to_string(),
-            app_conf["openweb_url"].as_str().unwrap().to_string(),
             app_conf["moleviewer_url"].as_str().unwrap().to_string(),
             app_conf["moleviewer_internal_url"]
                 .as_str()
@@ -249,18 +264,46 @@ pub fn init_once() -> Configuration {
         )
     };
 
-    #[cfg(feature = "chemchat")]
-    let (chemchat_url, chemchat_internal_url) = {
-        (
-            app_conf["chemchat_url"].as_str().unwrap().to_string(),
-            app_conf["chemchat_internal_url"]
+    #[cfg(feature = "openwebui")]
+    let owui = {
+        let owui_config = owui_table["openwebui"].as_table().unwrap();
+        let image = owui_config["image"].as_table();
+        let persistence = owui_config["persistence"].as_table();
+        let env: Vec<_> = owui_config["env"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|item| {
+                let item = item.as_table().unwrap();
+                let name = item.keys().next().unwrap();
+                let value = item.values().next().unwrap();
+                (name.to_string(), value.to_string())
+            })
+            .collect();
+
+        OwuiConfig {
+            namespace: owui_config["namespace"].as_str().unwrap().to_string(),
+            service_port: owui_config["service_port"].as_integer().unwrap() as u16,
+            url: owui_config["url"].as_str().unwrap().to_string(),
+            registry: image.unwrap()["registry"].as_str().unwrap().to_string(),
+            repository: image.unwrap()["repository"].as_str().unwrap().to_string(),
+            tag: image.unwrap()["tag"].as_str().unwrap().to_string(),
+            pull_policy: image.unwrap()["pull_policy"].as_str().unwrap().to_string(),
+            env,
+            persistence_size: persistence.unwrap()["size"].as_str().unwrap().to_string(),
+            persistence_storage_class: persistence.unwrap()["storage_class"]
                 .as_str()
                 .unwrap()
                 .to_string(),
-        )
+        }
     };
 
-    let bridge_url = app_conf["bridge_url"].as_str().unwrap().to_string();
+    let custom_resource_csp = conf_table["custom_resource_csp"]
+        .as_table()
+        .unwrap()
+        .into_iter()
+        .map(|s| (s.0.clone(), s.1.as_str().unwrap().into()))
+        .collect();
 
     Configuration {
         encoder,
@@ -280,19 +323,14 @@ pub fn init_once() -> Configuration {
         company,
         oidc: oidc_map,
         observability_cred,
-        #[cfg(feature = "chemchat")]
-        chemchat_url,
-        #[cfg(feature = "chemchat")]
-        chemchat_internal_url,
         #[cfg(feature = "openwebui")]
-        owui_namespace,
-        #[cfg(feature = "openwebui")]
-        openweb_url,
+        owui,
         #[cfg(feature = "openwebui")]
         moleviewer_url,
         #[cfg(feature = "openwebui")]
         moleviewer_internal_url,
         bridge_url,
+        custom_resource_csp,
     }
 }
 
@@ -351,5 +389,17 @@ mod tests {
         let cred = config.observability_cred.as_ref().unwrap();
         assert!(!cred.1.is_empty());
         assert!(cred.1.len() > 10);
+    }
+
+    #[test]
+    fn test_skip_csp_path() {
+        let config = init_once();
+        let map = &config.custom_resource_csp;
+
+        let scp = map.get("foo").unwrap();
+        assert_eq!(scp, "bar");
+
+        let scp = map.get("baz").unwrap();
+        assert_eq!(scp, "zap");
     }
 }

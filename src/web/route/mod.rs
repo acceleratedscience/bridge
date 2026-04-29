@@ -20,8 +20,6 @@ pub mod mcp;
 pub mod notebook;
 #[cfg(feature = "openwebui")]
 pub mod openwebui;
-#[cfg(feature = "chemchat")]
-pub mod chemchat;
 pub mod portal;
 pub mod proxy;
 pub mod resource;
