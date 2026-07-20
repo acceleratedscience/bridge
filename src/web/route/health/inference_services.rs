@@ -1,7 +1,6 @@
 use std::time::{Duration, Instant};
 
 use futures::{Stream, StreamExt, stream};
-use num_bigint::BigUint;
 use redis::AsyncCommands;
 use reqwest::Client;
 use tokio::time::timeout;
@@ -73,9 +72,12 @@ impl<'a> InferenceServicesHealth<'a> {
                 let elapsed = now.elapsed();
 
                 if let Some(mut conn) = cache {
-                    let big_uint = BigUint::from(elapsed.as_millis());
-                    conn.set_ex::<'_, _, _, ()>(String::from("health:") + name, big_uint, 60 * 30)
-                        .await?;
+                    conn.set_ex::<'_, _, _, ()>(
+                        String::from("health:") + name,
+                        elapsed.as_millis(),
+                        60 * 30,
+                    )
+                    .await?;
                 }
 
                 Ok((response.status().is_success(), name, elapsed.as_millis()))

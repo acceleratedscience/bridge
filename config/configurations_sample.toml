@@ -48,5 +48,5 @@ honeycomb_api_key = ""
 observability_access_token = "make-believe-token"
 observability_endpoint = "https://postman-echo.com/post"
 [custom_resource_csp]
-foo = "bar"
+# foo = "bar"
 baz = "zap"

@@ -1,5 +1,5 @@
-use actix_web::web;
-use base64::{Engine, prelude::BASE64_STANDARD};
+use actix_web::{cookie::Cookie, web};
+use base64ct::{Base64, Encoding};
 use mongodb::bson::{Bson, to_bson};
 use rand::{RngExt as _, rng};
 use serde::Deserialize;
@@ -186,184 +186,14 @@ pub fn maintenance_watch() -> Result<()> {
 pub fn generate_salt() -> String {
     let mut rng = rng();
     let salt: Vec<u8> = (0..32).map(|_| rng.random()).collect();
-    BASE64_STANDARD.encode(&salt)
+    Base64::encode_string(&salt)
 }
 
-/// http proxying utilities
-pub mod forwarding {
-    use std::str::FromStr;
-
-    use actix_web::{
-        HttpRequest, HttpResponse,
-        cookie::Cookie,
-        dev::PeerAddr,
-        http::{
-            Method,
-            header::{HeaderName, HeaderValue},
-        },
-        web,
-    };
-    use futures::StreamExt;
-    use reqwest::header::{
-        HeaderMap, HeaderName as ReqwestHeaderName, HeaderValue as ReqwestHeaderValue,
-    };
-    use tokio::sync::mpsc;
-    // use tokio_stream::wrappers::UnboundedReceiverStream;
-    use tokio_stream::wrappers::ReceiverStream;
-    use tracing::error;
-
-    use actix_web::http::StatusCode;
-
-    use crate::errors::{BridgeError, Result};
-
-    /// Configuration that is passed to the forward function takes the following parameters.
-    /// inference filters out Auth specific headers to the proxy forward
-    /// pack_cookies packs cookies to be compatible for http protocol older than 2
-    /// updated_cookie will forward back to client any updated cookies
-    #[derive(Default)]
-    pub struct Config<'a> {
-        pub inference: bool,
-        pub pack_cookies: bool,
-        pub updated_cookie: Option<Cookie<'a>>,
-    }
-
-    // No inline needed... generic are inherently inlined
-    pub async fn forward<T>(
-        req: HttpRequest,
-        mut payload: web::Payload,
-        method: Method,
-        peer_addr: Option<PeerAddr>,
-        client: web::Data<reqwest::Client>,
-        new_url: T,
-        config: Config<'_>,
-    ) -> Result<HttpResponse>
-    where
-        T: AsRef<str> + Send + Sync,
-    {
-        let inference = config.inference;
-        let pack_cookies = config.pack_cookies;
-        let updated_cookie = config.updated_cookie;
-
-        let (tx, rx) = mpsc::channel(128);
-
-        actix_web::rt::spawn(async move {
-            while let Some(chunk) = payload.next().await {
-                if let Err(e) = tx.send(chunk).await {
-                    error!("{:?}", e);
-                    return;
-                }
-            }
-        });
-
-        // sigh... this is a workaround due to reqwest and actix-web use different versions of the
-        // http crate. At least we can use two versios of the http crate and not get stuck with
-        // dependency hell like python.
-        // Discussion on this can be found here: https://github.com/actix/actix-web/issues/3384
-        let method = match method.as_str() {
-            "OPTIONS" => reqwest::Method::OPTIONS,
-            "GET" => reqwest::Method::GET,
-            "POST" => reqwest::Method::POST,
-            "PUT" => reqwest::Method::PUT,
-            "DELETE" => reqwest::Method::DELETE,
-            "HEAD" => reqwest::Method::HEAD,
-            "TRACE" => reqwest::Method::TRACE,
-            "CONNECT" => reqwest::Method::CONNECT,
-            "PATCH" => reqwest::Method::PATCH,
-            _ => {
-                return Err(BridgeError::GeneralError(
-                    "Unsupported HTTP method".to_string(),
-                ));
-            }
-        };
-
-        let forwarded_req = client
-            .request(method, new_url.as_ref())
-            .body(reqwest::Body::wrap_stream(ReceiverStream::new(rx)));
-
-        // TODO: This forwarded implementation is incomplete as it only handles the unofficial
-        // X-Forwarded-For header but not the official Forwarded one.
-        let mut headers = HeaderMap::new();
-        if let Some(PeerAddr(addr)) = peer_addr
-            && let Ok(ip) = addr.ip().to_string().parse()
-        {
-            headers.insert("X-Forwarded-For", ip);
-        }
-        headers.insert(
-            "X-Forwarded-Proto",
-            ReqwestHeaderValue::from_static("https"),
-        );
-
-        for (header_name, header_value) in req.headers().iter() {
-            if inference && (header_name == "authorization" || header_name == "inference-service") {
-                continue;
-            }
-            headers.insert(
-                ReqwestHeaderName::from_str(header_name.as_ref()).unwrap(),
-                ReqwestHeaderValue::from_str(header_value.to_str().unwrap()).unwrap(),
-            );
-        }
-
-        // find all the cookie header and pack them delimited by ";"
-        if pack_cookies {
-            let mut cookies = String::new();
-            for (header_name, header_value) in req.headers().iter() {
-                if header_name.as_str().to_lowercase() == "cookie"
-                    && let Ok(value) = header_value.to_str()
-                {
-                    if !cookies.is_empty() {
-                        cookies.push(';');
-                    }
-                    cookies.push_str(value);
-                }
-            }
-            if !cookies.is_empty() {
-                headers.insert(
-                    ReqwestHeaderName::from_static("cookie"),
-                    ReqwestHeaderValue::from_str(&cookies).unwrap(),
-                );
-            }
-        }
-
-        let forwarded_req = forwarded_req.headers(headers);
-
-        let res = forwarded_req.send().await.map_err(|e| {
-            error!("{:?}", e);
-            BridgeError::GeneralError(e.to_string())
-        })?;
-
-        let status = res.status().as_u16();
-        let status =
-            StatusCode::from_u16(status).map_err(|e| BridgeError::GeneralError(e.to_string()))?;
-
-        let mut client_resp = HttpResponse::build(status);
-
-        if let Some(cookie) = updated_cookie {
-            client_resp.cookie(cookie);
-        };
-
-        // Removing `Connection` and 'keep-alive' as per
-        // https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Connection#Directives
-        // Also removing "content-length" since we are streaming the response, and content-length
-        // is not necessarily needed.
-        for (header_name, header_value) in res.headers().iter().filter(|(h, _)| {
-            h.as_str().to_lowercase() != "connection"
-                && h.as_str().to_lowercase() != "keep-alive"
-                && h.as_str().to_lowercase() != "content-length"
-        }) {
-            // Again copy over seem incredibly inefficient. It sure is, but like before, we do this
-            // because actix-web and reqwest use different versions of http. Once Actix-web
-            // updates their http version, we can remove this.
-            let name = header_name.to_string();
-            let value = header_value.to_str().unwrap();
-
-            let name = HeaderName::from_str(&name).unwrap();
-            let value = HeaderValue::from_str(value).unwrap();
-
-            client_resp.insert_header((name, value));
-        }
-
-        Ok(client_resp.streaming(res.bytes_stream()))
-    }
+#[derive(Default)]
+pub struct Config<'a> {
+    pub inference: bool,
+    pub pack_cookies: bool,
+    pub updated_cookie: Option<Cookie<'a>>,
 }
 
 #[cfg(feature = "notebook")]

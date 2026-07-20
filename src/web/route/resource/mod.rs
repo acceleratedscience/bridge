@@ -21,7 +21,8 @@ use crate::{
     errors::{BridgeError, Result},
     web::{
         bridge_middleware::ResourceCookieCheck,
-        helper::{self, forwarding::Config},
+        helper::{self, Config},
+        proxy_client::{self, ProxyClient},
         services::CATALOG,
     },
 };
@@ -36,7 +37,7 @@ pub async fn resource_http(
     resource: ReqData<(BridgeCookie, String)>,
     method: Method,
     peer_addr: Option<PeerAddr>,
-    client: Data<reqwest::Client>,
+    client: Data<ProxyClient>,
 ) -> Result<HttpResponse> {
     let (mut bridge_cookie, resource) = resource.into_inner();
     let prefix = format!("/resource/{}", &resource);
@@ -86,7 +87,7 @@ pub async fn resource_http(
     new_url.set_path(path);
     new_url.set_query(req.uri().query());
 
-    helper::forwarding::forward(
+    proxy_client::forward(
         req,
         payload,
         method,

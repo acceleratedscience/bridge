@@ -13,7 +13,10 @@ use crate::{
     config::CONFIG,
     db::models::BridgeCookie,
     errors::{BridgeError, Result},
-    web::helper::{self, forwarding},
+    web::{
+        helper::Config,
+        proxy_client::{self, ProxyClient},
+    },
 };
 
 #[instrument(skip(payload))]
@@ -23,7 +26,7 @@ async fn moleviewer_forward(
     method: Method,
     peer_addr: Option<PeerAddr>,
     bridge_cookie: Option<ReqData<BridgeCookie>>,
-    client: web::Data<reqwest::Client>,
+    client: web::Data<ProxyClient>,
 ) -> Result<HttpResponse> {
     if bridge_cookie.is_none() {
         return Err(BridgeError::Unauthorized(
@@ -36,14 +39,14 @@ async fn moleviewer_forward(
     url.set_path(path);
     url.set_query(req.uri().query());
 
-    helper::forwarding::forward(
+    proxy_client::forward(
         req,
         payload,
         method,
         peer_addr,
         client,
         url,
-        forwarding::Config {
+        Config {
             ..Default::default()
         },
     )

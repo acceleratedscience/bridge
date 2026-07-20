@@ -4,6 +4,7 @@ LIFECYCLE_DEFAULT := "false"
 OBSERVE_DEFAULT := "false"
 MCP_DEFAULT := "false"
 OWUI_DEFFAULT := "false"
+PPV2_DEFAULT := "false"
 
 # Consolidated build recipe that accepts a comma-separated string of features
 # Usage examples:
@@ -22,6 +23,7 @@ build-features features_string="":
     current_observe={{OBSERVE_DEFAULT}}
     current_mcp={{MCP_DEFAULT}}
     current_owui={{OWUI_DEFFAULT}}
+    current_ppv2={{PPV2_DEFAULT}}
 
     # If features_string is not empty, parse it
     if [[ -n "{{features_string}}" ]]; then
@@ -42,6 +44,8 @@ build-features features_string="":
                 current_mcp="true"
             elif [[ "$trimmed_feature" == "openwebui" ]]; then
                 current_owui="true"
+            elif [[ "$trimmed_feature" == "ppv2" ]]; then
+                current_ppv2="true"
             elif [[ -n "$trimmed_feature" ]]; then # Check if trimmed_feature is not empty
                 echo "Warning: Unknown feature '$trimmed_feature' in '{{features_string}}'"
             fi
@@ -54,6 +58,7 @@ build-features features_string="":
     cmd="$cmd --build-arg OBSERVE=${current_observe}"
     cmd="$cmd --build-arg MCP=${current_mcp}"
     cmd="$cmd --build-arg OWUI=${current_owui}"
+    cmd="$cmd --build-arg PPV2=${current_ppv2}"
     cmd="$cmd ."
 
     echo "Executing: $cmd"
@@ -69,7 +74,7 @@ build-notebook-lifecycle-observe: (build-features "notebook,lifecycle,observe")
 
 build-notebook-lifecycle-mcp: (build-features "notebook,lifecycle,mcp")
 
-build-full: (build-features "notebook,lifecycle,observe,mcp,openwebui")
+build-full: (build-features "notebook,lifecycle,observe,mcp,openwebui,ppv2")
 
 # --- Frontend & Minification ---
 mini-js:

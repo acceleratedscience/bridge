@@ -1,0 +1,9 @@
+@import "tailwindcss";
+
+@layer base {
+  body {
+    @apply flex flex-col min-h-screen bg-[#ffffff] dark:bg-[#21272a] text-slate-900 dark:text-slate-200
+  }
+}
+
+@custom-variant dark (&:where(.dark, .dark *));

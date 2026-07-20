@@ -1,11 +1,12 @@
 use std::{
     future::Future,
     pin::Pin,
-    sync::{Arc, Mutex},
+    sync::Arc,
     task::{Context, Poll},
     time::Duration,
 };
 
+use parking_lot::Mutex;
 use pin_project::pin_project;
 use tokio::{
     sync::{broadcast::error::RecvError, mpsc::Receiver},
@@ -13,10 +14,9 @@ use tokio::{
 };
 
 static MAX_CAP: usize = 100;
-static WAIT: u64 = 60 * 60;
 
 #[pin_project]
-pub struct FutureRace<T, F> {
+pub struct FutureBatch<T, F> {
     fut: Arc<Mutex<Receiver<T>>>,
     #[pin]
     timer: Sleep,
@@ -25,10 +25,10 @@ pub struct FutureRace<T, F> {
     term: F,
 }
 
-impl<T, F> FutureRace<T, F> {
-    pub fn new(fut: Arc<Mutex<Receiver<T>>>, term: F) -> Self {
+impl<T, F> FutureBatch<T, F> {
+    pub fn new(fut: Arc<Mutex<Receiver<T>>>, term: F, timer: Duration) -> Self {
         // Create a timer that will sleep for 60 minutes
-        let sleep = sleep(Duration::from_secs(WAIT));
+        let sleep = sleep(timer);
         let events = Vec::with_capacity(MAX_CAP);
         Self {
             fut,
@@ -39,7 +39,7 @@ impl<T, F> FutureRace<T, F> {
     }
 }
 
-impl<T, F> Future for FutureRace<T, F>
+impl<T, F> Future for FutureBatch<T, F>
 where
     F: Future<Output = Result<(), RecvError>>,
 {
@@ -58,7 +58,8 @@ where
                 return Poll::Ready(this.events.take());
             }
 
-            match this.fut.lock().unwrap().poll_recv(cx) {
+            // TODO: replace this with poll_recv_many
+            match this.fut.lock().poll_recv(cx) {
                 Poll::Ready(Some(event)) => {
                     if let Some(events) = this.events.as_mut() {
                         events.push(event);

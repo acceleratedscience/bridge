@@ -83,14 +83,14 @@ where
                 warn!(
                     "User not allowed to access resource {} from ip {:?}",
                     req.uri().path(),
-                    req.connection_info().realip_remote_addr()
+                    req.connection_info().peer_addr()
                 );
             }
             None => {
                 // Make sure "X-Forwarded-For" is present in the header
                 warn!(
                     "Bridge cookie not found from ip {:?}",
-                    req.connection_info().realip_remote_addr()
+                    req.connection_info().peer_addr()
                 );
             }
         }

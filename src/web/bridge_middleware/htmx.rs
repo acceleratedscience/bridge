@@ -56,7 +56,7 @@ where
             _ => {
                 warn!(
                     "Request is not an htmx request from {:?}",
-                    req.connection_info().realip_remote_addr()
+                    req.connection_info().peer_addr()
                 );
                 let res = HttpResponse::BadRequest().finish().map_into_right_body();
                 Box::pin(async { Ok(req.into_response(res)) })

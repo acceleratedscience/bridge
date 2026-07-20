@@ -4,18 +4,14 @@ use actix_web::{
     web::{self, Data},
 };
 use tera::{Context, Tera};
-use tracing::instrument;
 
-use crate::{
-    errors::{BridgeError, Result},
-    web::helper,
+use crate::errors::Result;
+
+static FRONTEND_PATH: &str = if cfg!(debug_assertions) {
+    "target/dx/frontend/debug/web/public"
+} else {
+    "frontend/public"
 };
-
-#[get("")]
-#[instrument]
-async fn foo(data: Data<Tera>) -> Result<HttpResponse> {
-    helper::log_with_level!(Err(BridgeError::GeneralError("Foo!".to_string())), error)?
-}
 
 #[get("/bar")]
 async fn bar(data: Data<Tera>) -> Result<HttpResponse> {
@@ -28,5 +24,9 @@ async fn bar(data: Data<Tera>) -> Result<HttpResponse> {
 }
 
 pub fn config_foo(cfg: &mut web::ServiceConfig) {
-    cfg.service(web::scope("/foo").service(foo).service(bar));
+    cfg.service(
+        web::scope("/foo")
+            .service(bar)
+            .service(actix_files::Files::new("", FRONTEND_PATH).index_file("index.html")),
+    );
 }

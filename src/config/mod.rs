@@ -6,9 +6,9 @@ use std::{
     sync::LazyLock,
 };
 
-use base64::{Engine, prelude::BASE64_URL_SAFE_NO_PAD};
+use base64ct::{Base64UrlUnpadded, Encoding};
 use jsonwebtoken::{Algorithm, DecodingKey, EncodingKey, Validation};
-use p256::{NistP256, elliptic_curve::JwkEcKey, pkcs8::DecodePublicKey};
+use p256::{PublicKey, elliptic_curve::sec1::ToSec1Point, pkcs8::DecodePublicKey};
 use serde::{Deserialize, Serialize};
 use sha2::Digest;
 
@@ -47,6 +47,8 @@ pub struct Configuration {
     pub moleviewer_internal_url: String,
     pub bridge_url: String,
     pub custom_resource_csp: HashMap<String, String>,
+    #[cfg(feature = "observe")]
+    pub log_group: String,
 }
 
 #[cfg(feature = "openwebui")]
@@ -118,10 +120,11 @@ pub struct JWK {
 }
 
 impl JWK {
-    fn new(key: JwkEcKey, kid: String) -> Self {
-        let encode = key.to_encoded_point::<NistP256>().unwrap();
-        let x = BASE64_URL_SAFE_NO_PAD.encode(encode.x().unwrap());
-        let y = BASE64_URL_SAFE_NO_PAD.encode(encode.y().unwrap());
+    fn new(key: PublicKey, kid: String) -> Self {
+        // uncompressed because need both x and y coordinates
+        let encode = key.to_sec1_point(false);
+        let x = Base64UrlUnpadded::encode_string(encode.x().expect("Failed to get x coordinate"));
+        let y = Base64UrlUnpadded::encode_string(encode.y().expect("Failed to get y coordinate"));
 
         Self {
             kty: "EC",
@@ -153,19 +156,16 @@ pub fn init_once() -> Configuration {
     // JWK
     let mut hasher = sha2::Sha256::new();
     hasher.update(&public_key);
-    let kid = BASE64_URL_SAFE_NO_PAD.encode(hasher.finalize());
+    let kid = Base64UrlUnpadded::encode_string(hasher.finalize().as_slice());
     let key = p256::PublicKey::from_public_key_pem(&String::from_utf8_lossy(&public_key)).unwrap();
-    let jwk = JWK::new(key.to_jwk(), kid.clone());
+    let jwk = JWK::new(key, kid.clone());
 
     let mut validation = Validation::new(Algorithm::ES256);
     validation.set_audience(&AUD);
     validation.leeway = 0;
 
     let (config_location_str, database_location_str) = if cfg!(debug_assertions) {
-        (
-            "config/configurations_sample.toml",
-            "config/database_sample.toml",
-        )
+        ("config/configurations.toml", "config/database_sample.toml")
     } else {
         ("config/configurations.toml", "config/database.toml")
     };
@@ -305,6 +305,8 @@ pub fn init_once() -> Configuration {
         .map(|s| (s.0.clone(), s.1.as_str().unwrap().into()))
         .collect();
 
+    let log_group = app_conf["log_group"].as_str().unwrap().to_string();
+
     Configuration {
         encoder,
         decoder,
@@ -331,6 +333,7 @@ pub fn init_once() -> Configuration {
         moleviewer_internal_url,
         bridge_url,
         custom_resource_csp,
+        log_group,
     }
 }
 

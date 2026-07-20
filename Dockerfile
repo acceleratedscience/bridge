@@ -1,5 +1,5 @@
 # Stage 1 build
-FROM rust:1.95.0 AS builder
+FROM rust:1.96.0 AS builder
 
 WORKDIR /app
 
@@ -10,9 +10,15 @@ ARG LIFECYCLE=false
 ARG OBSERVE=false
 ARG MCP=false
 ARG OWUI=false
+ARG PPV2=false
 
 RUN <<EOF
 #!/bin/bash
+
+# install dx using cargo
+cargo install dioxus-cli --locked
+dx build -p frontend --release
+
 flags=()
 if [ "$NOTEBOOK" = "true" ]; then
 	flags+=("notebook")
@@ -28,6 +34,9 @@ if [ "$MCP" = "true" ]; then
 fi
 if [ "$OWUI" = "true" ]; then
 	flags+=("openwebui")
+fi
+if [ "$PPV2" = "true" ]; then
+	flags+=("ppv2")
 fi
 if [ ${#flags[@]} -eq 0 ]; then
 	echo "Building with no features..."
@@ -51,6 +60,8 @@ COPY ./certs ./certs
 COPY ./config ./config
 COPY ./templates ./templates
 COPY ./static ./static
+COPY ./frontend ./frontend
+COPY --from=builder /app/target/dx/frontend/release/web/public ./frontend/public
 
 RUN chgrp -R 0 /app && \
 	chmod -R g=u /app

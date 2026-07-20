@@ -1,8 +1,10 @@
 use std::{
     io::{self, Write},
-    sync::{Arc, Mutex},
+    sync::Arc,
+    time::Duration,
 };
 
+use parking_lot::Mutex;
 use reqwest::{Client, header::CONTENT_TYPE};
 use serde_json::json;
 use tokio::{
@@ -12,12 +14,8 @@ use tokio::{
     },
     task::JoinHandle,
 };
-use tracing::{Subscriber, error, field::Visit, level_filters::LevelFilter, warn};
-use tracing_subscriber::{
-    Layer, Registry, filter,
-    fmt::{self, MakeWriter, format},
-    layer,
-};
+use tracing::{Subscriber, error, field::Visit, warn};
+use tracing_subscriber::{Layer, fmt::MakeWriter, layer};
 use url::Url;
 
 use crate::{
@@ -29,47 +27,50 @@ use crate::{
     errors::{BridgeError, Result},
 };
 
-use super::futures::FutureRace;
+use super::futures::FutureBatch;
 
 pub const MESSAGE_DELIMITER: &str = "*~*~*";
 pub const PERSIST_META: &str = "persist_to_db";
 // 6 months
 pub const PERSIST_TIME: i64 = 15778463;
 
+/// Observe is responsible for sending messages to the observability endpoint, whether it be slack,
+/// discord, or any other endpoint. Observe is a MakeWriter
 pub struct Observe {
     sender: Sender<String>,
     handler: Option<JoinHandle<()>>,
 }
 
+/// ObserveEvents is responsible for sending events to the database. It is a Layer and not a MakeWriter
 pub struct ObserveEvents {
     sender: Sender<ObserveEventEntry>,
     handler: Option<JoinHandle<()>>,
 }
 
-type LayerAlias = filter::Filtered<
-    fmt::Layer<
-        layer::Layered<
-            filter::Filtered<
-                fmt::Layer<Registry, format::DefaultFields, format::Format<format::Compact>>,
-                LevelFilter,
-                Registry,
-            >,
-            Registry,
-        >,
-        format::DefaultFields,
-        format::Format<format::Compact>,
-        Observe,
-    >,
-    LevelFilter,
-    layer::Layered<
-        filter::Filtered<
-            fmt::Layer<Registry, format::DefaultFields, format::Format<format::Compact>>,
-            LevelFilter,
-            Registry,
-        >,
-        Registry,
-    >,
->;
+// type LayerAlias = filter::Filtered<
+//     fmt::Layer<
+//         layer::Layered<
+//             filter::Filtered<
+//                 fmt::Layer<Registry, format::DefaultFields, format::Format<format::Compact>>,
+//                 LevelFilter,
+//                 Registry,
+//             >,
+//             Registry,
+//         >,
+//         format::DefaultFields,
+//         format::Format<format::Compact>,
+//         Observe,
+//     >,
+//     LevelFilter,
+//     layer::Layered<
+//         filter::Filtered<
+//             fmt::Layer<Registry, format::DefaultFields, format::Format<format::Compact>>,
+//             LevelFilter,
+//             Registry,
+//         >,
+//         Registry,
+//     >,
+// >;
 
 const CHANNEL_SIZE: usize = 150;
 
@@ -115,14 +116,14 @@ impl Observe {
         })
     }
 
-    pub fn wrap_layer(self, level: LevelFilter) -> LayerAlias {
-        fmt::layer()
-            .compact()
-            .with_file(true)
-            .with_line_number(true)
-            .with_writer(self)
-            .with_filter(level)
-    }
+    // pub fn wrap_layer(self, level: LevelFilter) -> LayerAlias {
+    //     fmt::layer()
+    //         .compact()
+    //         .with_file(true)
+    //         .with_line_number(true)
+    //         .with_writer(self)
+    //         .with_filter(level)
+    // }
 
     pub fn send_message<T: ToString>(&self, msg: T) {
         if let Err(e) = self.sender.try_send(msg.to_string()) {
@@ -155,7 +156,8 @@ impl ObserveEvents {
             let mut term_outer = tx.subscribe();
             loop {
                 let mut term_inner = tx.subscribe();
-                let get_events = FutureRace::new(recv.clone(), term_inner.recv());
+                let get_events =
+                    FutureBatch::new(recv.clone(), term_inner.recv(), Duration::from_hours(1));
                 if let Some(events) = get_events.await {
                     if events.is_empty() {
                         continue;
@@ -178,7 +180,7 @@ impl ObserveEvents {
     }
 
     pub fn send_message(&self, event: ObserveEventEntry) {
-        let message = format!("{:?}", &event);
+        let message = format!("{:?}", event);
         if let Err(e) = self.sender.try_send(event) {
             match e {
                 tokio::sync::mpsc::error::TrySendError::Full(_) => warn!(
@@ -203,7 +205,7 @@ impl ObserveEvents {
 
 impl Write for &Observe {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-        let message = String::from_utf8(buf.to_vec()).unwrap_or_default();
+        let message = String::from_utf8_lossy(buf);
         if let Some(message) = message.split(MESSAGE_DELIMITER).nth(1)
             && !message.is_empty()
         {

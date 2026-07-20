@@ -1,18 +1,17 @@
 use proc_macro::TokenStream;
 use quote::quote;
-use syn::{parse_macro_input, Attribute, Data, DeriveInput, Expr, Lit, Meta};
+use syn::{Attribute, Data, DeriveInput, Expr, Lit, Meta, parse_macro_input};
 
 fn get_rename_value(attrs: &[Attribute]) -> Option<String> {
     attrs
         .iter()
         .filter(|&attr| attr.path().is_ident("rename_variant"))
         .find_map(|attr| {
-            if let Meta::NameValue(x) = &attr.meta {
-                if let Expr::Lit(ref y) = x.value {
-                    if let Lit::Str(ref z) = y.lit {
-                        return Some(z.value());
-                    }
-                }
+            if let Meta::NameValue(x) = &attr.meta
+                && let Expr::Lit(ref y) = x.value
+                && let Lit::Str(ref z) = y.lit
+            {
+                return Some(z.value());
             }
             None
         })

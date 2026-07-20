@@ -6,7 +6,8 @@ use crate::{
     errors::{BridgeError, Result},
     web::{
         bridge_middleware::validator,
-        helper::{self, forwarding::Config},
+        helper::{self, Config},
+        proxy_client::{self, ProxyClient},
     },
 };
 
@@ -23,7 +24,7 @@ async fn forward(
     payload: web::Payload,
     method: Method,
     peer_addr: Option<PeerAddr>,
-    client: web::Data<reqwest::Client>,
+    client: web::Data<ProxyClient>,
 ) -> Result<HttpResponse> {
     let path = req
         .uri()
@@ -50,7 +51,7 @@ async fn forward(
     new_url.set_path(path);
     new_url.set_query(req.uri().query());
 
-    helper::forwarding::forward(
+    proxy_client::forward(
         req,
         payload,
         method,

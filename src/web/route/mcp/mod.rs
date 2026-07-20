@@ -11,7 +11,8 @@ use crate::{
     config::CONFIG,
     errors::{BridgeError, Result},
     web::{
-        helper::{self, forwarding::Config},
+        helper::{self, Config},
+        proxy_client::{self, ProxyClient},
         services::CATALOG,
     },
 };
@@ -26,7 +27,7 @@ async fn forward(
     credentials: BearerAuth,
     method: Method,
     peer_addr: Option<PeerAddr>,
-    client: web::Data<reqwest::Client>,
+    client: web::Data<ProxyClient>,
 ) -> Result<HttpResponse> {
     let token = credentials.token();
     let path = req
@@ -53,8 +54,7 @@ async fn forward(
             #[cfg(feature = "observe")]
             {
                 let now = time::OffsetDateTime::now_utc().unix_timestamp();
-                info!(target: PERSIST_META, 
-                sub=claims.get_sub(), property=mcp, request_date=now, expire_soon_after=now+PERSIST_TIME);
+                info!(target: PERSIST_META, sub=claims.get_sub(), property=mcp, request_date=now, expire_soon_after=now+PERSIST_TIME);
             }
         } else {
             return Err(BridgeError::Unauthorized(
@@ -71,7 +71,7 @@ async fn forward(
         }
         new_url.set_query(req.uri().query());
 
-        helper::forwarding::forward(
+        proxy_client::forward(
             req,
             payload,
             method,

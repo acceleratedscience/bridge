@@ -97,14 +97,14 @@ where
                                             warn!(
                                                 "Session id does not match cache for user: {:?} ip: {:?}",
                                                 gcs.subject,
-                                                req.connection_info().realip_remote_addr()
+                                                req.connection_info().peer_addr()
                                             );
                                         }
                                         Err(e) => {
                                             warn!(
                                                 "Session id not found in cache for user: {:?} ip: {:?} error: {:?}", 
                                                 gcs.subject,
-                                                req.connection_info().realip_remote_addr(),
+                                                req.connection_info().peer_addr(),
                                                 e
                                             );
                                         }
@@ -113,7 +113,7 @@ where
                                     warn!(
                                         "Session id not found in bridge cookie for user: {:?} ip: {:?}",
                                         gcs.subject,
-                                        req.connection_info().realip_remote_addr()
+                                        req.connection_info().peer_addr()
                                     );
                                 }
                                 return Ok(req.into_response(
@@ -138,7 +138,7 @@ where
                 // Make sure "X-Forwarded-For" is present in the header
                 warn!(
                     "Bridge cookie not found from ip {:?}",
-                    req.connection_info().realip_remote_addr()
+                    req.connection_info().peer_addr()
                 );
                 let res = HttpResponse::Unauthorized().finish().map_into_right_body();
                 Box::pin(async { Ok(req.into_response(res)) })

@@ -11,13 +11,13 @@ interface menuLabels {
 }
 
 class Menu {
-	menu_button: HTMLElement;
-	menu_big: NodeListOf<ChildNode>;
-	menu: HTMLElement;
-	menu_mobile: NodeListOf<ChildNode>;
-	menu_open: HTMLElement;
-	menu_close: HTMLElement;
-	main: NodeListOf<ChildNode>;
+	menu_button: HTMLElement | null;
+	menu_big: NodeListOf<ChildNode> | null;
+	menu: HTMLElement | null;
+	menu_mobile: NodeListOf<ChildNode> | null;
+	menu_open: HTMLElement | null;
+	menu_close: HTMLElement | null;
+	main: NodeListOf<ChildNode> | null;
 
 	constructor(menu_labels: menuLabels, main: string) {
 		this.menu_button = document.getElementById(menu_labels.button);

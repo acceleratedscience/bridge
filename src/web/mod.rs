@@ -1,7 +1,22 @@
 use std::{io::Result, process::exit, time::Duration};
 
+#[cfg(feature = "ppv2")]
+use actix_http::{HttpService, Protocol};
+#[cfg(feature = "ppv2")]
+use actix_server::Server;
+#[cfg(feature = "ppv2")]
+use actix_service::{IntoServiceFactory, ServiceFactoryExt, fn_service, map_config};
+#[cfg(feature = "ppv2")]
+use actix_tls::accept::{
+    TlsError,
+    rustls_0_23::{Acceptor, TlsStream},
+};
+#[cfg(feature = "ppv2")]
+use actix_web::dev::AppConfig;
+
 #[cfg(feature = "openwebui")]
 use actix_web::guard;
+
 use actix_web::{
     App, HttpServer,
     middleware::{self},
@@ -10,6 +25,9 @@ use actix_web::{
 use tera::Context;
 use tokio::sync::broadcast::channel;
 use tracing::level_filters::LevelFilter;
+
+#[cfg(feature = "ppv2")]
+use self::proxy_protocol::ProxiedStream;
 
 #[cfg(feature = "notebook")]
 use crate::kube::{self};
@@ -28,6 +46,9 @@ use crate::{
 
 mod bridge_middleware;
 mod helper;
+mod proxy_client;
+#[cfg(feature = "ppv2")]
+mod proxy_protocol;
 mod route;
 mod tls;
 
@@ -73,6 +94,8 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
         .install_default()
         .expect("Cannot install default provider with ring");
 
+    let hclient = proxy_client::ProxyClient::new();
+
     // Singletons
     openid::init_once().await;
     if let Err(e) = DB::init_once(&DBNAME).await {
@@ -115,7 +138,7 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
         Medium::new(LIFECYCLE_TIME, SIGTERM_FREQ, db, stream, recv.recv()).await;
     });
 
-    let server = HttpServer::new(move || {
+    let app_factory = move || {
         let tera_data = Data::new(templating::start_template_eng());
         let mut context = Context::new();
         context.insert("application", "Bridge");
@@ -127,6 +150,7 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
 
         // clone needed due to HttpServer::new impl Fn trait and not FnOnce
         let client_data = Data::new(client.clone());
+        let hclient_data = Data::new(hclient.clone());
         let db = Data::new(db);
         let cache = Data::new(CACHEDB.get());
 
@@ -135,6 +159,7 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
             .app_data(tera_data.clone())
             .app_data(context.clone())
             .app_data(client_data)
+            .app_data(hclient_data)
             .app_data(db)
             .app_data(cache)
             .wrap(middleware::NormalizePath::trim())
@@ -185,7 +210,7 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
             let scope = scope.configure(route::openwebui::config_openwebui_manage);
             scope
         })
-    });
+    };
 
     let ip_addr = if cfg!(debug_assertions) {
         "127.255.255.254"
@@ -196,23 +221,89 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
     if with_tls {
         // Application level https redirect, but only in release mode
         let redirect_handle = if cfg!(not(debug_assertions)) {
-            Some(tokio::spawn(
-                HttpServer::new(move || App::new().wrap(HttpRedirect))
-                    .workers(1)
-                    .bind((ip_addr, 8000))?
-                    .run(),
-            ))
+            #[cfg(feature = "ppv2")]
+            {
+                Some(tokio::spawn(
+                    Server::build()
+                        .bind("bridge-redirect", (ip_addr, 8000), move || {
+                            let http = HttpService::build().finish(map_config(
+                                App::new().wrap(HttpRedirect).into_factory(),
+                                |_| AppConfig::default(),
+                            ));
+
+                            fn_service(|tcp: tokio::net::TcpStream| async move {
+                                proxy_protocol::accept(tcp).await
+                            })
+                            .and_then(|io: ProxiedStream<tokio::net::TcpStream>| async move {
+                                let peer = io.peer();
+                                Ok::<_, std::io::Error>((io, Protocol::Http1, peer))
+                            })
+                            .and_then(http.map_err(|e| {
+                                std::io::Error::other(format!("HTTP service error: {e}"))
+                            }))
+                        })?
+                        .workers(1)
+                        .run(),
+                ))
+            }
+            #[cfg(not(feature = "ppv2"))]
+            {
+                Some(tokio::spawn(
+                    HttpServer::new(move || App::new().wrap(HttpRedirect))
+                        .workers(1)
+                        .bind((ip_addr, 8000))?
+                        .run(),
+                ))
+            }
         } else {
             None
         };
 
-        server
-            .bind_rustls_0_23(
-                (ip_addr, 8080),
-                tls::load_certs("certs/fullchain.cer", "certs/open.accelerate.science.key"),
-            )?
-            .run()
-            .await?;
+        let mut tls_config =
+            tls::load_certs("certs/fullchain.cer", "certs/open.accelerate.science.key");
+        tls_config.alpn_protocols = vec![b"h2".to_vec(), b"http/1.1".to_vec()];
+
+        #[cfg(feature = "ppv2")]
+        {
+            Server::build()
+                .bind("bridge", (ip_addr, 8080), move || {
+                    let acceptor = Acceptor::new(tls_config.clone());
+
+                    let http = HttpService::build()
+                        .keep_alive(actix_http::KeepAlive::Os)
+                        .finish(map_config((app_factory.clone())().into_factory(), |_| {
+                            AppConfig::default()
+                        }));
+
+                    fn_service(|tcp: tokio::net::TcpStream| async move {
+                        proxy_protocol::accept(tcp).await.map_err(TlsError::Tls)
+                    })
+                    .and_then(acceptor.map_err(TlsError::into_service_error))
+                    .and_then(
+                        |io: TlsStream<ProxiedStream<tokio::net::TcpStream>>| async move {
+                            let proto = if io.get_ref().1.alpn_protocol() == Some(b"h2".as_ref()) {
+                                Protocol::Http2
+                            } else {
+                                Protocol::Http1
+                            };
+                            let peer = io.get_ref().0.peer();
+                            Ok::<_, TlsError<std::io::Error, actix_http::error::DispatchError>>((
+                                io, proto, peer,
+                            ))
+                        },
+                    )
+                    .and_then(http.map_err(TlsError::Service))
+                })?
+                .run()
+                .await?;
+        }
+        #[cfg(not(feature = "ppv2"))]
+        {
+            HttpServer::new(app_factory)
+                .bind_rustls_0_23((ip_addr, 8080), tls_config)?
+                .run()
+                .await?;
+        }
 
         if let Some(handler) = redirect_handle
             && handler.await?.is_err()
@@ -221,7 +312,10 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
             tracing::error!("HTTPS redirect server shutdown failed");
         };
     } else {
-        server.bind((ip_addr, 8080))?.run().await?;
+        HttpServer::new(app_factory)
+            .bind((ip_addr, 8080))?
+            .run()
+            .await?;
     }
 
     // shutdown signal

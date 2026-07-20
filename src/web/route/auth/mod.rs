@@ -13,6 +13,9 @@ use tera::{Context, Tera};
 use tracing::info;
 use tracing::instrument;
 
+use crate::config::CONFIG;
+#[cfg(feature = "observe")]
+use crate::logger::MESSAGE_DELIMITER;
 use crate::{
     auth::{
         COOKIE_NAME,
@@ -30,8 +33,6 @@ use crate::{
         helper::{self},
     },
 };
-#[cfg(feature = "observe")]
-use crate::{config::CONFIG, logger::MESSAGE_DELIMITER};
 
 pub use self::oauth::generate_token_with_cookie;
 use self::{

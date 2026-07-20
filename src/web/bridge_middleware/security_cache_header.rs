@@ -58,7 +58,9 @@ where
 
             let csp = match custom_csp {
                 Some(m) => m.1,
-                None => "default-src 'self'; img-src *; style-src 'self'; script-src 'self';",
+                None => {
+                    "default-src 'self'; img-src *; style-src 'self'; script-src 'self' 'wasm-unsafe-eval'; connect-src 'self'; object-src 'none';"
+                }
             };
 
             header.insert(header::CONTENT_SECURITY_POLICY, HeaderValue::from_str(csp)?);

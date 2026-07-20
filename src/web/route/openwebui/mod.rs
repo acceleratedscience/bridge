@@ -1,4 +1,7 @@
-use std::{borrow::Cow, collections::HashSet, marker::PhantomData, str::FromStr, sync::LazyLock, time::Duration};
+use std::{
+    borrow::Cow, collections::HashSet, marker::PhantomData, str::FromStr, sync::LazyLock,
+    time::Duration,
+};
 
 use actix_web::{
     HttpRequest, HttpResponse, delete,
@@ -27,7 +30,8 @@ use crate::{
     web::{
         bridge_middleware::{CookieCheck, Htmx},
         bson,
-        helper::{self, forwarding, observability_post},
+        helper::{self, Config, observability_post},
+        proxy_client::{self, ProxyClient},
     },
 };
 
@@ -81,7 +85,7 @@ async fn openwebui_forward(
     method: Method,
     peer_addr: Option<PeerAddr>,
     owui_cookie: Option<ReqData<OWUICookie>>,
-    client: web::Data<reqwest::Client>,
+    client: web::Data<ProxyClient>,
 ) -> Result<HttpResponse> {
     let owui_cookie = match owui_cookie {
         Some(cookie) => cookie.into_inner(),
@@ -104,14 +108,14 @@ async fn openwebui_forward(
 
     url.set_query(req.uri().query());
 
-    helper::forwarding::forward(
+    proxy_client::forward(
         req,
         payload,
         method,
         peer_addr,
         client,
         url,
-        forwarding::Config {
+        Config {
             ..Default::default()
         },
     )
