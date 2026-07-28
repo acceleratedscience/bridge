@@ -4,7 +4,6 @@ use actix_web::{
     HttpRequest, HttpResponse,
     cookie::{Cookie, SameSite},
     dev::PeerAddr,
-    get,
     http::Method,
     web::{self, Data, ReqData},
 };
@@ -40,7 +39,7 @@ pub async fn resource_http(
     client: Data<ProxyClient>,
 ) -> Result<HttpResponse> {
     let (mut bridge_cookie, resource) = resource.into_inner();
-    let prefix = format!("/resource/{}", &resource);
+    let prefix = format!("/resource/{}", resource);
     let path = req
         .uri()
         .path()
@@ -103,62 +102,10 @@ pub async fn resource_http(
     .await
 }
 
-#[instrument(skip(pl))]
-#[get("{resource_name}/ws/{path:.*}")]
-async fn resource_ws(
-    req: HttpRequest,
-    pl: web::Payload,
-    resource: ReqData<(BridgeCookie, String)>,
-    webpath: web::Path<(String, String)>,
-) -> Result<HttpResponse> {
-    let (_, resource) = resource.into_inner();
-    let (_, path) = webpath.into_inner();
-
-    let mut new_url = helper::log_with_level!(CATALOG.get_resource(&resource), error)?;
-
-    helper::log_with_level!(
-        new_url
-            .set_scheme("ws")
-            .map_err(|_| BridgeError::GeneralError("Could not set scheme to ws".to_string())),
-        error
-    )?;
-
-    new_url.set_path(&path);
-    new_url.set_query(req.uri().query());
-
-    helper::ws::manage_connection(req, pl, new_url).await
-}
-
-#[instrument(skip(pl))]
-#[get("{resource_name}/wss")]
-async fn resource_wss(
-    req: HttpRequest,
-    pl: web::Payload,
-    resource: ReqData<(BridgeCookie, String)>,
-    webpath: web::Path<String>,
-) -> Result<HttpResponse> {
-    let (_, resource) = resource.into_inner();
-
-    let mut new_url = helper::log_with_level!(CATALOG.get_resource(&resource), error)?;
-
-    helper::log_with_level!(
-        new_url
-            .set_scheme("wss")
-            .map_err(|_| BridgeError::GeneralError("Could not set scheme to ws".to_string())),
-        error
-    )?;
-
-    new_url.set_query(req.uri().query());
-
-    helper::ws::manage_connection(req, pl, new_url).await
-}
-
 pub fn config_resource(cfg: &mut web::ServiceConfig) {
     cfg.service(
         web::scope("/resource")
             .wrap(ResourceCookieCheck)
-            .service(resource_wss)
-            .service(resource_ws)
             .default_service(web::to(resource_http)),
     );
 }

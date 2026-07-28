@@ -102,7 +102,7 @@ pub fn Nav() -> Element {
     rsx! {
 
         // TOP BAR
-        header { class: "bg-[#f4f4f4] dark:bg-[#121619] flex items-center justify-between h-14 px-4 border-b border-gray-200 shadow-sm",
+        header { class: "bg-[#f4f4f4] dark:bg-[#121619] flex items-center justify-between h-14 px-4 shadow-lg",
 
             div { class: "flex items-center space-x-4",
                 button {

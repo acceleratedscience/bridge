@@ -62,6 +62,7 @@ pub fn start_logger(level: LevelFilter, _client: Client, tx: Sender<()>) {
                 .with(
                     tracing_subscriber::fmt::layer()
                         .compact()
+                        .with_ansi(false)
                         .with_file(true)
                         .with_line_number(true)
                         .with_thread_ids(true)

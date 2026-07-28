@@ -56,28 +56,6 @@ static WHITELIST_ENDPOINTS: LazyLock<HashSet<&str>> = LazyLock::new(|| {
     ])
 });
 
-#[get("ws/socket.io")]
-async fn openwebui_ws(
-    req: HttpRequest,
-    pl: web::Payload,
-    owiu_cookie: Option<ReqData<OWUICookie>>,
-) -> Result<HttpResponse> {
-    let owui_cookie = match owiu_cookie {
-        Some(cookie) => cookie.into_inner(),
-        None => {
-            return Err(BridgeError::Unauthorized(
-                "OWUI cookie not found".to_string(),
-            ));
-        }
-    };
-
-    let mut url = Url::from_str(&make_forward_url("ws", &owui_cookie.subject))?;
-    url.set_path("ws/socket.io/");
-    url.set_query(req.uri().query());
-
-    helper::ws::manage_connection(req, pl, url).await
-}
-
 #[instrument(skip(payload))]
 async fn openwebui_forward(
     req: HttpRequest,
@@ -415,8 +393,7 @@ pub(crate) fn make_forward_url(protocol: &str, subject: &str) -> String {
 }
 
 pub fn config_openwebui(cfg: &mut web::ServiceConfig) {
-    cfg.service(openwebui_ws)
-        .default_service(web::to(openwebui_forward));
+    cfg.default_service(web::to(openwebui_forward));
 }
 
 pub fn config_openwebui_manage(cfg: &mut web::ServiceConfig) {

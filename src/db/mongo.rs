@@ -81,7 +81,7 @@ impl DB {
 
         Self::create_index::<User, _>(&dbs, USER, "email", 1, unique).await?;
 
-        Self::create_index::<Group, _>(&dbs, GROUP, "name", "text", unique).await?;
+        Self::create_index::<Group, _>(&dbs, GROUP, "name", 1, unique).await?;
 
         Self::create_index::<Locks, _>(&dbs, LOCKS, "expireSoonAfter", 1, |f: &str| {
             IndexOptions::builder()

@@ -6,7 +6,6 @@ use std::{
 
 use aws_config::BehaviorVersion;
 use aws_sdk_cloudwatchlogs::Client;
-use crossbeam::channel::{Receiver, bounded};
 use parking_lot::Mutex;
 use tokio::{
     sync::{
@@ -20,20 +19,47 @@ use tracing_subscriber::fmt::MakeWriter;
 use super::futures::FutureBatch;
 use crate::config::CONFIG;
 
+static LOG_STREAM_NAME: &str = "bridge";
+
 pub struct CloudWatch {
-    sender: Sender<(i64, Option<Vec<u8>>)>,
-    pool_recv: Receiver<Vec<u8>>,
+    sender: Sender<(i64, String)>,
     handler: Option<JoinHandle<()>>,
 }
 
 impl CloudWatch {
     pub fn new(tx: BSender<()>) -> Self {
         let (sender, recv) = channel(100);
-        let (pool_sender, pool_recv) = bounded(100);
 
         let handler = tokio::spawn(async move {
             let config = aws_config::load_defaults(BehaviorVersion::latest()).await;
             let client = aws_sdk_cloudwatchlogs::Client::new(&config);
+
+            // try to create log group if it doesn't exist
+            if let Err(e) = client
+                .create_log_group()
+                .log_group_name(&CONFIG.log_group)
+                .send()
+                .await
+                && !e
+                    .as_service_error()
+                    .is_some_and(|se| se.is_resource_already_exists_exception())
+            {
+                eprintln!("Failed to create log group: {:?}", e);
+            }
+
+            // try to create log stream if it doesn't exist
+            if let Err(e) = client
+                .create_log_stream()
+                .log_group_name(&CONFIG.log_group)
+                .log_stream_name(LOG_STREAM_NAME)
+                .send()
+                .await
+                && !e
+                    .as_service_error()
+                    .is_some_and(|se| se.is_resource_already_exists_exception())
+            {
+                eprintln!("Failed to create log stream: {:?}", e);
+            }
 
             let recv = Arc::new(Mutex::new(recv));
             let mut term_outer = tx.subscribe();
@@ -48,21 +74,13 @@ impl CloudWatch {
                         continue;
                     }
 
-                    if let Err(e) = CloudWatch::send_batch(&client, &events).await {
-                        eprintln!("Failed to send log events: {}", e);
+                    if let Err(e) = CloudWatch::send_batch(&client, events).await {
+                        eprintln!("Failed to send log events: {:?}", e);
                     }
 
                     // shutdown stop
                     if term_inner.try_recv().is_ok() {
                         break;
-                    }
-
-                    // prune and send pre-allocated events back to pool
-                    for mut event in events {
-                        let mut inner_event = event.1.take().unwrap_or(Vec::with_capacity(1024));
-                        inner_event.clear();
-                        // if the send fails or w/e reason, we just deallocate
-                        let _ = pool_sender.try_send(inner_event);
                     }
                 }
             }
@@ -71,29 +89,22 @@ impl CloudWatch {
         Self {
             sender,
             handler: Some(handler),
-            pool_recv,
         }
     }
 
-    async fn send_batch(
-        client: &Client,
-        batch: &[(i64, Option<Vec<u8>>)],
-    ) -> Result<(), String> {
+    async fn send_batch(client: &Client, batch: Vec<(i64, String)>) -> Result<(), String> {
         client
             .put_log_events()
             .log_group_name(&CONFIG.log_group)
-            .log_stream_name("bridge")
+            .log_stream_name(LOG_STREAM_NAME)
             .set_log_events(Some(
                 batch
-                    .iter()
+                    .into_iter()
                     .filter_map(|v| {
                         // packaging
                         aws_sdk_cloudwatchlogs::types::InputLogEvent::builder()
                             .timestamp(v.0)
-                            .message(String::from_utf8_lossy(
-                                // This should always be full of data
-                                v.1.as_ref().expect("No slice of bytes"),
-                            ))
+                            .message(v.1)
                             .build()
                             .ok()
                     })
@@ -104,6 +115,13 @@ impl CloudWatch {
             .map_err(|e| e.to_string())?;
 
         Ok(())
+    }
+
+    #[allow(dead_code)]
+    async fn close(mut self) -> crate::errors::Result<()> {
+        let handler = self.handler.take();
+        drop(self);
+        Ok(handler.unwrap().await?)
     }
 }
 
@@ -126,13 +144,10 @@ impl Write for &CloudWatch {
             .try_into()
             .unwrap_or(i64::MAX);
 
-        let mut payload = self
-            .pool_recv
-            .try_recv()
-            .unwrap_or_else(|_| Vec::with_capacity(buf.len()));
-
-        payload.extend_from_slice(buf);
-        if let Err(e) = self.sender.try_send((timestamp, Some(payload))) {
+        if let Err(e) = self
+            .sender
+            .try_send((timestamp, String::from_utf8_lossy(buf).to_string()))
+        {
             eprintln!("Failed to send log event: {}", e);
         }
 

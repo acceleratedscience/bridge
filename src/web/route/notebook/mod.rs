@@ -6,7 +6,6 @@ use std::{marker::PhantomData, str::FromStr, time::Duration};
 
 use k8s_openapi::api::core::v1::{PersistentVolumeClaim, Pod};
 use mongodb::bson::doc;
-// use serde::Deserialize;
 
 use actix_web::{
     HttpRequest, HttpResponse,
@@ -49,73 +48,6 @@ const NOTEBOOK_CFG_NAME_ALT: &str = "datascience_notebook";
 const NOTEBOOK_PORT: &str = "8888";
 const NOTEBOOK_TOKEN_LIFETIME: usize = const { 60 * 60 * 24 * 30 };
 const PVC_DELETE_ATTEMPT: u8 = 9;
-
-// TODO: name is not needed... look into removing them if possible
-// #[get("{name}/api/events/subscribe")]
-// async fn notebook_ws_subscribe(
-//     req: HttpRequest,
-//     pl: web::Payload,
-//     notebook_cookie: Option<ReqData<NotebookCookie>>,
-// ) -> Result<HttpResponse> {
-//     let notebook_cookie = match notebook_cookie {
-//         Some(cookie) => cookie.into_inner(),
-//         None => {
-//             return helper::log_with_level!(
-//                 Err(BridgeError::NotebookAccessError(
-//                     "Notebook cookie not found".to_string(),
-//                 )),
-//                 error
-//             );
-//         }
-//     };
-//     let url = notebook_helper::make_forward_url(
-//         &notebook_cookie.ip,
-//         &notebook_helper::make_notebook_name(&notebook_cookie.subject),
-//         "ws",
-//         Some("api/events/subscribe"),
-//     );
-//
-//     helper::ws::manage_connection(req, pl, url).await
-// }
-//
-// #[derive(Deserialize)]
-// struct Info {
-//     session_id: String,
-// }
-//
-// #[get("{name}/api/kernels/{kernel_id}/channels")]
-// async fn notebook_ws_session(
-//     req: HttpRequest,
-//     pl: web::Payload,
-//     kernel: web::Path<(String, String)>,
-//     session_id: web::Query<Info>,
-//     notebook_cookie: Option<ReqData<NotebookCookie>>,
-// ) -> Result<HttpResponse> {
-//     let notebook_cookie = match notebook_cookie {
-//         Some(cookie) => cookie.into_inner(),
-//         None => {
-//             return helper::log_with_level!(
-//                 Err(BridgeError::NotebookAccessError(
-//                     "Notebook cookie not found".to_string(),
-//                 )),
-//                 error
-//             );
-//         }
-//     };
-//
-//     let kernel_id = kernel.into_inner().1;
-//     let session_id = session_id.session_id.clone();
-//
-//     let path = format!("api/kernels/{kernel_id}/channels?session_id={session_id}");
-//     let url = notebook_helper::make_forward_url(
-//         &notebook_cookie.ip,
-//         &notebook_helper::make_notebook_name(&notebook_cookie.subject),
-//         "ws",
-//         Some(&path),
-//     );
-//
-//     helper::ws::manage_connection(req, pl, url).await
-// }
 
 #[post("/create")]
 async fn notebook_create(
@@ -826,8 +758,6 @@ pub fn config_notebook(cfg: &mut web::ServiceConfig) {
     cfg.service(
         web::scope(&("/notebook/".to_string() + *NOTEBOOK_NAMESPACE))
             .wrap(NotebookCookieCheck)
-            // .service(notebook_ws_subscribe)
-            // .service(notebook_ws_session)
             .default_service(web::to(notebook_forward)),
     )
     .service(

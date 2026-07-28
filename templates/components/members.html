@@ -16,7 +16,7 @@
 					<ul>
 						{% for sub in subscriptions %}
 						<li class="{% if loop.index is odd %}bg-white dark:bg-[#42484e]{% endif %} p-1 rounded-md">
-							{{ sub }}
+							{{ sub.name }}
 						</li>
 						{% endfor %}
 					</ul>

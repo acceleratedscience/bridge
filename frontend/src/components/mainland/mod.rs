@@ -7,9 +7,9 @@ use crate::components::nav::Route;
 pub fn Home() -> Element {
     rsx! {
         main { class: "p-6",
-            div { class: "max-w-4xl mx-auto p-6 bg-white rounded-xl shadow-sm border border-gray-200",
-                h1 { class: "text-2xl font-bold mb-2", "Main Content Area" }
-                p { class: "text-gray-600", "Hello World!" }
+            div { class: "max-w-4xl mx-auto p-6 bg-[#f4f4f4] dark:bg-[#121619] rounded-sm shadow-lg",
+                h1 { class: "text-gray-300 text-2xl font-bold mb-2", "Main Content Area" }
+                p { class: "text-gray-300", "Hello World!" }
             }
         }
     }
@@ -38,17 +38,15 @@ pub fn NotFound(segments: Vec<String>) -> Element {
     });
 
     rsx! {
-        document::Title { "404 - Page Not Found" }
-        div { style: "text-align: center; font-family: sans-serif; padding: 100px 20px; background-color: #f9fafb; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center;",
+        document::Title { "Page Not Found" }
+        div { class: "flex h-screen",
 
-            div { style: "max-width: 400px; background: white; padding: 40px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05);",
+            div { class: "m-auto text-center p-5 rounded-b-sm shadow-lg bg-[#f4f4f4] dark:bg-[#121619] max-w-[400px]",
 
                 h1 { style: "color: #ef4444; font-size: 4em; margin: 0; font-weight: 800;",
                     "404"
                 }
-                h2 { style: "color: #111827; margin-top: 10px; font-size: 1.5em;",
-                    "Page Not Found"
-                }
+                h2 { style: "margin-top: 10px; font-size: 1.5em;", "Page Not Found" }
 
                 p { style: "color: #6b7280; font-size: 0.95em; margin: 15px 0 25px 0; line-height: 1.6;",
                     "We couldn't find anything matching "
@@ -60,7 +58,7 @@ pub fn NotFound(segments: Vec<String>) -> Element {
 
                 Link {
                     to: Route::Home {},
-                    style: "display: inline-block; padding: 12px 24px; background-color: #4f46e5; color: white; border-radius: 6px; text-decoration: none; font-weight: bold; font-size: 0.95em; transition: background 0.2s;",
+                    class: "bg-blue-700 p-3 rounded-b-sm",
                     "Return to Homepage"
                 }
             }

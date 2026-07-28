@@ -3,8 +3,9 @@ use actix_ws::AggregatedMessage;
 use bytestring::ByteString;
 use futures::{SinkExt, StreamExt};
 use http::{HeaderName, HeaderValue, StatusCode, Uri};
+use tokio_tungstenite::tungstenite::client::IntoClientRequest;
 use tokio_tungstenite::tungstenite::{
-    self, Utf8Bytes, handshake::client::Request, protocol::WebSocketConfig,
+    self, Utf8Bytes, protocol::WebSocketConfig,
 };
 use url::Url;
 
@@ -62,10 +63,11 @@ pub async fn forward_ws(
         .parse()
         .map_err(|e: http::uri::InvalidUri| BridgeError::GeneralError(e.to_string()))?;
 
-    let mut request = Request::builder().uri(uri);
-    let header = request.headers_mut().ok_or_else(|| {
-        BridgeError::GeneralError("Failed to get headers from request".to_string())
-    })?;
+    let mut upstream_req = uri
+        .into_client_request()
+        .map_err(|e| BridgeError::GeneralError(e.to_string()))?;
+
+    let header = upstream_req.headers_mut();
 
     for (name, value) in req.headers() {
         if WS_STRIP_REQ.contains(&name.as_str()) {
@@ -96,9 +98,6 @@ pub async fn forward_ws(
     }
     header.insert("x-forwarded-proto", HeaderValue::from_static("https"));
 
-    let upstream_req = request
-        .body(())
-        .map_err(|e| BridgeError::GeneralError(e.to_string()))?;
     let (stream, res) = tokio_tungstenite::connect_async_with_config(
         upstream_req,
         Some(WebSocketConfig::default().accept_unmasked_frames(true)),
