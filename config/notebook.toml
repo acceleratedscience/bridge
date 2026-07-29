@@ -27,7 +27,7 @@ PROXY_URL = "https://open.accelerate.science/proxy"
 
 [datascience_notebook]
 name = "CC Science Notebook"
-url = "image-registry.openshift-image-registry.svc:5000/notebook-openad/biomed-discovery-nb:latest"
+url = "image-registry.openshift-image-registry.svc:5000/notebook-openad/comparator-notebook:latest"
 pull_policy = "Always"
 working_dir = "/workspace"
 volume_mnt_path = "/workspace"
@@ -44,7 +44,7 @@ notebook_env = [
 	# base-url is taken care by bridge
 ]
 secret = "default-dockercfg-nk8f9"
-start_up_url = "lab/tree/biomed-discovery-agentic-workflow/Evidence_Agents.ipynb"
+start_up_url = "lab/tree/comparator_wb.ipynb"
 max_idle_time = 86400
 [datascience_notebook.scheduling]
 cpu_heavy = "1"
