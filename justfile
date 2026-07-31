@@ -69,6 +69,8 @@ build-notebook-lifecycle-observe: (build-features "notebook,lifecycle,observe")
 
 build-notebook-lifecycle-mcp: (build-features "notebook,lifecycle,mcp")
 
+build-no-observe: (build-features "notebook,lifecycle,mcp,openwebui")
+
 build-full: (build-features "notebook,lifecycle,observe,mcp,openwebui")
 
 # --- Frontend & Minification ---
