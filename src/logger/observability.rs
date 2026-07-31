@@ -178,7 +178,7 @@ impl ObserveEvents {
     }
 
     pub fn send_message(&self, event: ObserveEventEntry) {
-        let message = format!("{:?}", &event);
+        let message = format!("{:?}", event);
         if let Err(e) = self.sender.try_send(event) {
             match e {
                 tokio::sync::mpsc::error::TrySendError::Full(_) => warn!(

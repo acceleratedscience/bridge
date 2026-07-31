@@ -30,8 +30,9 @@ use crate::{
         helper::{self},
     },
 };
+use crate::config::CONFIG;
 #[cfg(feature = "observe")]
-use crate::{config::CONFIG, logger::MESSAGE_DELIMITER};
+use crate::logger::MESSAGE_DELIMITER;
 
 pub use self::oauth::generate_token_with_cookie;
 use self::{

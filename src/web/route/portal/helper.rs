@@ -91,7 +91,7 @@ where
 #[cfg(feature = "openwebui")]
 pub(super) async fn owui_bookkeeping(user: &User) -> (Option<UserOwui>, bool) {
     let id = user._id.to_string();
-    let name = format!("u{}-openwebui", &id);
+    let name = format!("u{}-openwebui", id);
     let pod_name = format!("u{}-openwebui-0", id);
     let pvc_name = format!("owui1-u{}-openwebui-0", id);
 

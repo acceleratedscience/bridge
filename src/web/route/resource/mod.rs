@@ -39,7 +39,7 @@ pub async fn resource_http(
     client: Data<reqwest::Client>,
 ) -> Result<HttpResponse> {
     let (mut bridge_cookie, resource) = resource.into_inner();
-    let prefix = format!("/resource/{}", &resource);
+    let prefix = format!("/resource/{}", resource);
     let path = req
         .uri()
         .path()

@@ -1,4 +1,7 @@
-use std::{borrow::Cow, collections::HashSet, marker::PhantomData, str::FromStr, sync::LazyLock, time::Duration};
+use std::{
+    borrow::Cow, collections::HashSet, marker::PhantomData, str::FromStr, sync::LazyLock,
+    time::Duration,
+};
 
 use actix_web::{
     HttpRequest, HttpResponse, delete,
@@ -15,6 +18,8 @@ use tera::{Context, Tera};
 use tracing::{instrument, warn};
 use url::Url;
 
+#[cfg(feature = "observe")]
+use crate::web::helper::observability_post;
 use crate::{
     config::CONFIG,
     db::{
@@ -27,7 +32,7 @@ use crate::{
     web::{
         bridge_middleware::{CookieCheck, Htmx},
         bson,
-        helper::{self, forwarding, observability_post},
+        helper::{self, forwarding},
     },
 };
 
@@ -258,6 +263,7 @@ async fn create_owui(
             )
             .await?;
 
+        #[cfg(feature = "observe")]
         if let Some(bc) = bcookie {
             observability_post("owui instance has been created", &bc);
         }
@@ -331,6 +337,7 @@ async fn delete_owui(
             )
             .await?;
 
+        #[cfg(feature = "observe")]
         if let Some(bc) = bcookie {
             observability_post("owui instance has been deleted", &bc);
         }
