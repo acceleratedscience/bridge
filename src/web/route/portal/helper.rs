@@ -24,10 +24,11 @@ use crate::{
 use crate::{
     auth::{NOTEBOOK_COOKIE_NAME, NOTEBOOK_STATUS_COOKIE_NAME},
     db::models::{NotebookCookie, NotebookStatusCookie, UserNotebook},
-    kube::KubeAPI,
     web::{notebook_helper, route::notebook::NOTEBOOK_SUB_NAME},
 };
-#[cfg(feature = "notebook")]
+#[cfg(any(feature = "notebook", feature = "openwebui"))]
+use crate::kube::KubeAPI;
+#[cfg(any(feature = "notebook", feature = "openwebui"))]
 use k8s_openapi::api::core::v1::Pod;
 
 #[cfg(feature = "notebook")]

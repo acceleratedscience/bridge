@@ -33,7 +33,7 @@ use crate::{
         mongo::{DB, ObjectID},
     },
     errors::{BridgeError, Result},
-    kube::{KubeAPI, NOTEBOOK_NAMESPACE, Notebook, NotebookSpec, PVCSpec, Toleration},
+    kube::{KubeAPI, NOTEBOOK_NAMESPACE, Notebook, NotebookSpec, PVCSpec},
     web::{
         bridge_middleware::{CookieCheck, Htmx, NotebookCookieCheck},
         helper::{self, bson},
@@ -42,9 +42,10 @@ use crate::{
 };
 
 pub const NOTEBOOK_SUB_NAME: &str = "notebook";
+pub const NOTEBOOK_SUB_NAME_ALT: &str = "notebook_alt";
 pub const NOTEBOOK_SUB_HEAVY_NAME: &str = "notebook_heavy";
-const NOTEBOOK_CFG_NAME: &str = "open_ad_workbench";
-const NOTEBOOK_CFG_NAME_ALT: &str = "datascience_notebook";
+
+const NOTEBOOK_CFG_NAME: &str = "workbench";
 const NOTEBOOK_PORT: &str = "8888";
 const NOTEBOOK_TOKEN_LIFETIME: usize = const { 60 * 60 * 24 * 30 };
 const PVC_DELETE_ATTEMPT: u8 = 9;
@@ -53,7 +54,6 @@ const PVC_DELETE_ATTEMPT: u8 = 9;
 async fn notebook_create(
     req: HttpRequest,
     subject: Option<ReqData<BridgeCookie>>,
-    // payload: web::Payload,
     db: Data<&DB>,
     data: Data<Tera>,
 ) -> Result<HttpResponse> {
@@ -98,7 +98,11 @@ async fn notebook_create(
             error
         )?;
 
-        if !group.subscriptions.contains(&NOTEBOOK_SUB_NAME.to_string()) {
+        if !group
+            .subscriptions
+            .iter()
+            .any(|sub| sub.as_str() == NOTEBOOK_SUB_NAME)
+        {
             warn!(
                 "User {} does not have permission to create a notebook",
                 bridge_cookie.subject
@@ -108,33 +112,29 @@ async fn notebook_create(
             ));
         }
 
-        let notebook_name;
-        let proxy_key_name;
+        // check if we need to use an alternative notebook image...
+        let alt_notebook = group
+            .subscriptions
+            .iter()
+            .any(|sub| sub.as_str() == NOTEBOOK_SUB_NAME_ALT);
+
+        let notebook = CONFIG.notebooks.get(NOTEBOOK_CFG_NAME).unwrap();
+
+        // Everything group with a request for alternative goes to the same imago repo, but
+        // use the tag to find the group speciifc image
+        let notebook_image_name = if alt_notebook {
+            // reason for the same image repo is so we don't have to add a configure for each group
+            &format!("{}:{}", notebook.alt.url, group.name)
+        } else {
+            &notebook.url // default image
+        };
+
+        let proxy_key_name = "PROXY_KEY";
 
         // check for heavy notebook add-on
-        let tolerations = if group
+        let tolerations = group
             .subscriptions
-            .contains(&NOTEBOOK_SUB_HEAVY_NAME.to_string())
-        {
-            notebook_name = NOTEBOOK_CFG_NAME_ALT;
-            proxy_key_name = "OPEN_AD_BEARER_TOKEN";
-            let notebook_image = CONFIG
-                .notebooks
-                .get(NOTEBOOK_CFG_NAME)
-                .and_then(|v| v.scheduling.as_ref())
-                .map(|v| (&v.toleration_key, &v.toleration_value));
-
-            if let Some(kv) = notebook_image {
-                let (key, value) = (kv.0.to_string(), kv.1.to_string());
-                Some(vec![Toleration::new(key, value)])
-            } else {
-                None
-            }
-        } else {
-            notebook_name = NOTEBOOK_CFG_NAME;
-            proxy_key_name = "PROXY_KEY";
-            None
-        };
+            .contains(&NOTEBOOK_SUB_HEAVY_NAME.to_string());
 
         let scp = if user.groups.is_empty() {
             vec!["".to_string()]
@@ -179,8 +179,8 @@ async fn notebook_create(
             )?;
 
             // PVC takes time to delete... loop and check it is gone
+            let mut loop_cnt = 0;
             loop {
-                let mut loop_cnt = 0;
                 if KubeAPI::<PersistentVolumeClaim>::check_pvc_exists(
                     &pvc_name,
                     *NOTEBOOK_NAMESPACE,
@@ -224,7 +224,7 @@ async fn notebook_create(
             &name,
             NotebookSpec::new(
                 name.clone(),
-                notebook_name,
+                notebook_image_name,
                 pvc_name,
                 tolerations,
                 &mut start_up_url,

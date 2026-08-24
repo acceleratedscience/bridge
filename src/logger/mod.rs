@@ -20,7 +20,7 @@ pub use observability::{MESSAGE_DELIMITER, PERSIST_META, PERSIST_TIME};
 // shut down, the WorkerGuard will be dropped and the logging will stop.
 static LOG_GUARD: OnceLock<WorkerGuard> = OnceLock::new();
 
-pub fn start_logger(level: LevelFilter, _client: Client, tx: Sender<()>) {
+pub fn start_logger(level: LevelFilter, _client: Client, _tx: Sender<()>) {
     // let file = std::fs::File::create("./log").unwrap();
 
     let (stdout, guard) = tracing_appender::non_blocking::NonBlockingBuilder::default()
@@ -54,9 +54,9 @@ pub fn start_logger(level: LevelFilter, _client: Client, tx: Sender<()>) {
                 .expect("Failed to create observability for logger");
             let observe_layer = observability::ObserveEvents::new(
                 DBCONN.get().expect("DB connection not initialized"),
-                tx.clone(),
+                _tx.clone(),
             );
-            let cloudwatch = cloudwatch::CloudWatch::new(tx);
+            let cloudwatch = cloudwatch::CloudWatch::new(_tx);
 
             tracing_subscriber::registry()
                 .with(

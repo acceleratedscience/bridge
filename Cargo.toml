@@ -23,8 +23,8 @@ ppv2 = []
 mimalloc = "~0.1"
 
 # --- Core Web / Actix Framework ---
-actix-files = "~0.6.6"
-actix-web = { version = "~4.14", features = ["rustls-0_23", "cookies"] }
+actix-files = "~0.7.0"
+actix-web = { version = "~4.15", features = ["rustls-0_23", "cookies"] }
 actix-web-httpauth = "~0.8"
 actix-ws = "~0.4.0"
 actix-rt = "2.11.0"
@@ -51,11 +51,11 @@ toml = "~1.1"
 
 # --- Databases & Caching ---
 mongodb = "=3.8"
-redis = { version = "=1.4.1", features = ["tokio-comp", "num-bigint"] }
+redis = { version = "=1.6.0", features = ["tokio-comp", "num-bigint"] }
 
 # --- Cryptography, Auth & Security ---
 base64ct = "=1.8.3"
-jsonwebtoken = { version = "=10.4.0", features = ["use_pem", "rust_crypto"] }
+jsonwebtoken = { version = "=11.0.0", features = ["use_pem", "rust_crypto"] }
 openidconnect = "~4.0"
 openssl = "~0.10"
 p256 = "=0.14.0"
@@ -75,9 +75,9 @@ tracing-subscriber = "~0.3"
 tracing-appender = "0.2.5"
 url = "2.5.0"
 urlencoding = "2.1.3"
-uuid = { version = "~1.24", features = ["v4"] }
+uuid = { version = "~1.25", features = ["v4"] }
 aws-config = { version = "1.1.7", features = ["behavior-version-latest"] }
-aws-sdk-cloudwatchlogs = "=1.143"
+aws-sdk-cloudwatchlogs = "=1.147"
 
 # --- Network & Workspace Dependencies ---
 reqwest = { workspace = true, features = ["stream", "json"] }
@@ -98,6 +98,9 @@ schemars = { version = "1.0", optional = true }
 
 [dev-dependencies]
 jsonwebkey = { version = "~0.4", features = ["jwt-convert"] }
+
+[build-dependencies]
+rcgen = "=0.14.9"
 
 [workspace]
 members = ["frontend", "utils"]

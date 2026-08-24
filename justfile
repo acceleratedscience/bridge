@@ -86,19 +86,15 @@ build-front:
 	uglifyjs ./static/js/main.js -o ./static/js/main.js -c -m
 
 # --- Local Development Services ---
+# --- bug has been fixed since Kernel 7.0.14 ---
 local-mongo:
 	podman run -d --rm --name mongodb \
+	--env GLIBC_TUNABLES=glibc.pthread.rseq=0 \
 	-e MONGO_INITDB_ROOT_USERNAME="bridge-user" \
 	-e MONGO_INITDB_ROOT_PASSWORD="admin123456789" \
 	-e MONGO_INITDB_DATABASE="bridge" \
-	-p 27017:27017 mongodb/mongodb-community-server
-
-local-mongo-linux:
-	podman run -d --rm --name mongodb \
-	-e MONGO_INITDB_ROOT_USERNAME="bridge-user" \
-	-e MONGO_INITDB_ROOT_PASSWORD="admin123456789" \
-	-e MONGO_INITDB_DATABASE="bridge" \
-	-p 27017:27017 mongodb/mongodb-community-server:4.4.0-ubuntu2004-20230514T053846Z
+	-p 27017:27017 \
+	mongo:latest
 
 local-keydb:
 	podman run -d --rm --name keydb \
@@ -133,10 +129,7 @@ stop-port-forward:
 	sudo iptables -t nat -D OUTPUT -p tcp -d 127.255.255.254 --dport 443 -j DNAT --to-destination 127.255.255.254:8080
 
 # --- Certificates ---
-certs:
-	mkdir certs
-	@openssl req -x509 -newkey rsa:2048 -nodes -keyout certs/key.pem -out certs/cert.pem -days 365 -subj '/CN=open.accelerator.cafe'
-
 gen_curve:
+	mkdir certs
 	@openssl ecparam -name prime256v1 -genkey -noout -out certs/private.ec.key
 	@openssl ec -in certs/private.ec.key -pubout -out certs/public-key.pem

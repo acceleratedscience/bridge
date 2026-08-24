@@ -1,5 +1,5 @@
-[open_ad_workbench]
-name = "OpenAD Workbench"
+[workbench]
+name = "Default Workbench"
 url = "quay.io/ibmdpdev/openad_workbench_prod:latest"
 pull_policy = "Always"
 working_dir = "/opt/app-root/src"
@@ -17,69 +17,18 @@ notebook_env = [
 secret = "ibmdpdev-openad-pull-secret"
 start_up_url = "lab/tree/start_menu.ipynb"
 max_idle_time = 86400
-[open_ad_workbench.scheduling]
+
+# This is used for custom scheduling
+[workbench.scheduling]
 cpu_heavy = "4"
 mem_heavy = "32Gi"
 toleration_key = "worker/cpu"
 toleration_value = "large"
-[open_ad_workbench.env]
-PROXY_URL = "https://open.accelerate.science/proxy"
 
-[datascience_notebook]
-name = "CC Science Notebook"
-url = "image-registry.openshift-image-registry.svc:5000/notebook-openad/demo-notebook:latest"
-pull_policy = "Always"
-working_dir = "/workspace"
-volume_mnt_path = "/workspace"
-notebook_env = [
-	"--ServerApp.token=''",
-	"--ServerApp.password=''",
-	"--ServerApp.quit_button=False",
-	"--ServerApp.disable_check_xsrf=True",
-	"--ServerApp.allow_origin='*'",
-	"--ServerApp.trust_xheaders=True",
-	"--ServerApp.ip=0.0.0.0",
-	# "--LabApp.default_url='/lab'",
-	# "--ServerApp.default_url='/lab'",
-	# base-url is taken care by bridge
-]
-secret = "default-dockercfg-nk8f9"
-start_up_url = ""
-max_idle_time = 86400
-[datascience_notebook.scheduling]
-cpu_heavy = "1"
-mem_heavy = "4Gi"
-toleration_key = "worker/cpu"
-toleration_value = "large"
-[datascience_notebook.env]
-PROXY_URL = "https://open.accelerate.science/proxy"
-DEEPSEARCH_USERNAME="jbettencourt@ie.ibm.com"
-DEEPSEARCH_API_KEY="6rO7skLh3h_j39Slngpl7HtHm4o4xZGuhi7SDfE3J1w"
-WATSONX_KEY = "DnehC6gGXZLgR4-5-p-c3EFLoP36YLwYNKB-b8IIj2Ld"
-WATSONX_PROJECTID = "dde2fa17-10ae-481e-be7a-2e76313a2748"
-WATSONX_API = "https://eu-de.ml.cloud.ibm.com"
-HOME = "/tmp"
+[workbench.alt]
+# Tag is the group name
+url = "866335085214.dkr.ecr.us-east-1.amazonaws.com/notebooks"
+secret = "ibmdpdev-openad-pull-secret"
 
-# [datascience_notebook]
-# name = "Data Science Notebook"
-# url = "jupyter/base-notebook:latest"
-# pull_policy = "IfNotPresent"
-# working_dir = "/home/jovyan"
-# volume_mnt_path = "/home/jovyan/"
-# notebook_env = [
-# 	"--ServerApp.token=''",
-# 	"--ServerApp.password=''",
-# 	"--ServerApp.notebook_dir='/home/jovyan'",
-# 	"--ServerApp.quit_button=False",
-# 	"--ServerApp.disable_check_xsrf=True",
-# 	"--ServerApp.allow_origin='*'",
-# 	# base-url is taken care by bridge
-# ]
-# max_idle_time = 86400
-# [datascience_notebook.scheduling]
-# cpu_heavy = "4"
-# mem_heavy = "8Gi"
-# toleration_key = "worker/cpu"
-# toleration_value = ""
-# [datascience_notebook.env]
-# PROXY_URL = ""
+[workbench.env]
+PROXY_URL = "https://open.accelerate.science/proxy"

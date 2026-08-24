@@ -43,8 +43,8 @@ pub static USER: &str = "users";
 #[derive(Debug, Deserialize, Serialize)]
 pub struct User {
     pub _id: ObjectId,
-    pub sub: String,
-    pub user_name: String,
+    pub sub: Option<String>,
+    pub user_name: Option<String>,
     pub email: String,
     pub groups: Vec<String>,
     pub user_type: UserType,
@@ -52,9 +52,9 @@ pub struct User {
     pub notebook: Option<NotebookInfo>,
     #[cfg_attr(feature = "openwebui", serde(skip_serializing_if = "Option::is_none"))]
     pub owui: Option<OwuiInfo>,
-    pub created_at: time::OffsetDateTime,
-    pub updated_at: time::OffsetDateTime,
-    pub last_updated_by: String,
+    pub created_at: Option<time::OffsetDateTime>,
+    pub updated_at: Option<time::OffsetDateTime>,
+    pub last_updated_by: Option<String>,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -71,15 +71,16 @@ pub struct UserPortalRep {
 
 impl From<User> for UserPortalRep {
     fn from(user: User) -> Self {
+        let now = time::OffsetDateTime::now_utc();
         UserPortalRep {
             _id: user._id.to_string(),
-            sub: user.sub,
-            user_name: user.user_name,
+            sub: user.sub.unwrap_or_default(),
+            user_name: user.user_name.unwrap_or_default(),
             email: user.email,
             user_type: user.user_type.into(),
-            created_at: user.created_at.to_string(),
-            updated_at: user.updated_at.to_string(),
-            last_updated_by: user.last_updated_by,
+            created_at: user.created_at.unwrap_or(now).to_string(),
+            updated_at: user.updated_at.unwrap_or(now).to_string(),
+            last_updated_by: user.last_updated_by.unwrap_or_default(),
         }
     }
 }

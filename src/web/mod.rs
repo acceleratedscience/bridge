@@ -1,18 +1,16 @@
 use std::{io::Result, process::exit, time::Duration};
 
 #[cfg(feature = "ppv2")]
-use actix_http::{HttpService, Protocol};
-#[cfg(feature = "ppv2")]
-use actix_server::Server;
-#[cfg(feature = "ppv2")]
-use actix_service::{IntoServiceFactory, ServiceFactoryExt, fn_service, map_config};
-#[cfg(feature = "ppv2")]
-use actix_tls::accept::{
-    TlsError,
-    rustls_0_23::{Acceptor, TlsStream},
+use {
+    actix_http::{HttpService, Protocol},
+    actix_server::Server,
+    actix_service::{IntoServiceFactory, ServiceFactoryExt, fn_service, map_config},
+    actix_tls::accept::{
+        TlsError,
+        rustls_0_23::{Acceptor, TlsStream},
+    },
+    actix_web::dev::AppConfig,
 };
-#[cfg(feature = "ppv2")]
-use actix_web::dev::AppConfig;
 
 #[cfg(feature = "openwebui")]
 use actix_web::guard;
@@ -54,10 +52,8 @@ mod tls;
 
 pub use helper::bson;
 #[cfg(feature = "notebook")]
-pub use helper::utils;
+pub use {helper::utils, route::notebook::notebook_helper};
 
-#[cfg(feature = "notebook")]
-pub use route::notebook::notebook_helper;
 pub use route::proxy::services;
 
 use self::{bridge_middleware::HttpRedirect, helper::maintenance_watch};
@@ -138,30 +134,31 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
         Medium::new(LIFECYCLE_TIME, SIGTERM_FREQ, db, stream, recv.recv()).await;
     });
 
-    let app_factory = move || {
-        let tera_data = Data::new(templating::start_template_eng());
-        let mut context = Context::new();
-        context.insert("application", "Bridge");
-        context.insert("application_version", "v0.1.0");
-        context.insert("app_name", &CONFIG.app_name);
-        context.insert("company", &CONFIG.company);
-        context.insert("description", &CONFIG.app_discription);
-        let context = Data::new(context);
+    let tera_data = Data::new(templating::start_template_eng());
+    let mut context = Context::new();
+    context.insert("application", "Bridge");
+    context.insert("application_version", "v0.1.0");
+    context.insert("app_name", &CONFIG.app_name);
+    context.insert("company", &CONFIG.company);
+    context.insert("description", &CONFIG.app_discription);
+    let context = Data::new(context);
 
+    let client_data = Data::new(client);
+    let hclient_data = Data::new(hclient);
+    let db = Data::new(db);
+    let cache = Data::new(CACHEDB.get());
+
+    let app_factory = move || {
         // clone needed due to HttpServer::new impl Fn trait and not FnOnce
-        let client_data = Data::new(client.clone());
-        let hclient_data = Data::new(hclient.clone());
-        let db = Data::new(db);
-        let cache = Data::new(CACHEDB.get());
 
         let app = App::new()
             // .wrap(bridge_middleware::HttpRedirect)
             .app_data(tera_data.clone())
             .app_data(context.clone())
-            .app_data(client_data)
-            .app_data(hclient_data)
-            .app_data(db)
-            .app_data(cache)
+            .app_data(client_data.clone())
+            .app_data(hclient_data.clone())
+            .app_data(db.clone())
+            .app_data(cache.clone())
             .wrap(middleware::NormalizePath::trim())
             .wrap(middleware::Compress::default())
             .wrap(bridge_middleware::Maintainence);
@@ -196,13 +193,17 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
         app.service({
             let scope = web::scope("")
                 .wrap(bridge_middleware::SecurityCacheHeader)
-                .wrap(bridge_middleware::custom_code_handle(tera_data, context))
+                .wrap(bridge_middleware::custom_code_handle(
+                    tera_data.clone(),
+                    context.clone(),
+                ))
                 .configure(route::auth::config_auth)
                 .configure(route::health::config_status)
                 .configure(route::proxy::config_proxy)
                 .configure(route::config_index)
                 .configure(route::portal::config_portal)
                 .configure(route::resource::config_resource)
+                .configure(route::api::config_api)
                 .configure(route::foo::config_foo);
             #[cfg(feature = "mcp")]
             let scope = scope.configure(route::mcp::config_mcp);
@@ -259,8 +260,7 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
             None
         };
 
-        let mut tls_config =
-            tls::load_certs("certs/fullchain.cer", "certs/open.accelerate.science.key");
+        let mut tls_config = tls::load_certs("certs/fullchain.cer", "certs/private.key");
         tls_config.alpn_protocols = vec![b"h2".to_vec(), b"http/1.1".to_vec()];
 
         #[cfg(feature = "ppv2")]
@@ -271,9 +271,7 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
 
                     let http = HttpService::build()
                         .keep_alive(actix_http::KeepAlive::Os)
-                        .finish(map_config((app_factory.clone())().into_factory(), |_| {
-                            AppConfig::default()
-                        }));
+                        .finish(map_config(app_factory(), |_| AppConfig::default()));
 
                     fn_service(|tcp: tokio::net::TcpStream| async move {
                         proxy_protocol::accept(tcp).await.map_err(TlsError::Tls)

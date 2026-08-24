@@ -9,6 +9,10 @@ repository = "ibmdpdev/open-webui-spati"
 tag = "latest"
 pull_policy = "Always"
 
+[openwebui.alt_image]
+registry = "quay.io"
+repository = "ibmdpdev/open-webui-spati"
+
 [openwebui.persistence]
 size = "2Gi"
 storage_class = "gp3"

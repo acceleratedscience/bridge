@@ -18,11 +18,13 @@ use tera::{Context, Tera};
 use tracing::{instrument, warn};
 use url::Url;
 
+#[cfg(feature = "observe")]
+use crate::web::helper::observability_post;
 use crate::{
     config::CONFIG,
     db::{
         Database,
-        models::{BridgeCookie, OWUICookie, OwuiInfo, USER, User, UserOwui},
+        models::{BridgeCookie, GROUP, Group, OWUICookie, OwuiInfo, USER, User, UserOwui},
         mongo::{DB, ObjectID},
     },
     errors::{BridgeError, Result},
@@ -30,13 +32,14 @@ use crate::{
     web::{
         bridge_middleware::{CookieCheck, Htmx},
         bson,
-        helper::{self, Config, observability_post},
+        helper::{self, Config},
         proxy_client::{self, ProxyClient},
     },
 };
 
 const OWUI_PORT: &str = "8080";
 const PVC_DELETE_ATTEMPT: u8 = 9;
+pub const OWUI_SUB_NAME_ALT: &str = "owui_alt"; // owui subscription var leaves in the kube models
 
 pub static OWUI_NAMESPACE: LazyLock<&str> = LazyLock::new(|| &CONFIG.owui.namespace);
 static WHITELIST_ENDPOINTS: LazyLock<HashSet<&str>> = LazyLock::new(|| {
@@ -104,7 +107,7 @@ async fn openwebui_forward(
 async fn create_owui(
     req: HttpRequest,
     owui_cookie: Option<ReqData<OWUICookie>>,
-    bcookie: Option<ReqData<BridgeCookie>>,
+    _bcookie: Option<ReqData<BridgeCookie>>,
     db: web::Data<&DB>,
     data: web::Data<Tera>,
     ctx: web::Data<Context>,
@@ -124,6 +127,34 @@ async fn create_owui(
             .await,
             error
         )?;
+        let group: Group = helper::log_with_level!(
+            db.find(
+                doc! {
+                    "name": &user.groups[0]
+                },
+                GROUP,
+            )
+            .await,
+            error
+        )?;
+
+        let (tag, registry, repository) = if group
+            .subscriptions
+            .iter()
+            .any(|sub| sub.as_str() == OWUI_SUB_NAME_ALT)
+        {
+            (
+                Cow::from(group.name),
+                Cow::from(&CONFIG.owui.alt_image.registry),
+                Cow::from(&CONFIG.owui.alt_image.repository),
+            )
+        } else {
+            (
+                Cow::from(&CONFIG.owui.tag),
+                Cow::from(&CONFIG.owui.registry),
+                Cow::from(&CONFIG.owui.repository),
+            )
+        };
 
         // check if an instance alreadu exists
         let list_owui = KubeAPI::<Owui>::get_crds(&CONFIG.owui.namespace).await?;
@@ -189,9 +220,9 @@ async fn create_owui(
                 retain_pvc: true,
                 service_port: CONFIG.owui.service_port,
                 image: Image {
-                    registry: Cow::from(&CONFIG.owui.registry),
-                    repository: Cow::from(&CONFIG.owui.repository),
-                    tag: Cow::from(&CONFIG.owui.tag),
+                    registry,
+                    repository,
+                    tag,
                     pull_policy: Cow::from(&CONFIG.owui.pull_policy),
                 },
                 persistence: Persistence {
@@ -240,7 +271,8 @@ async fn create_owui(
             )
             .await?;
 
-        if let Some(bc) = bcookie {
+        #[cfg(feature = "observe")]
+        if let Some(bc) = _bcookie {
             observability_post("owui instance has been created", &bc);
         }
 
@@ -265,7 +297,7 @@ async fn delete_owui(
     // method: Method,
     // peer_addr: Option<PeerAddr>,
     owui_cookie: Option<ReqData<OWUICookie>>,
-    bcookie: Option<ReqData<BridgeCookie>>,
+    _bcookie: Option<ReqData<BridgeCookie>>,
     db: web::Data<&DB>,
     data: web::Data<Tera>,
     ctx: web::Data<Context>,
@@ -313,7 +345,8 @@ async fn delete_owui(
             )
             .await?;
 
-        if let Some(bc) = bcookie {
+        #[cfg(feature = "observe")]
+        if let Some(bc) = _bcookie {
             observability_post("owui instance has been deleted", &bc);
         }
 
@@ -376,7 +409,7 @@ impl From<&User> for UserOwui {
                 .map(|v| v.start_time.unwrap_or(time::OffsetDateTime::now_utc()))
                 .map(|v| v.to_string())
                 .unwrap_or_default(),
-            name: value.sub.to_owned(),
+            name: value.sub.to_owned().unwrap_or_default(),
             status: "Pending".to_string(),
         }
     }

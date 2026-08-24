@@ -1,19 +1,13 @@
 use dioxus::{document::eval, prelude::*};
 
-use crate::components::mainland::{Home, NotFound};
-
-#[derive(Clone, Copy, PartialEq, Debug)]
-enum Theme {
-    Light,
-    Dark,
-    System,
-}
+use crate::components::{Theme, mainland::Home, notfound::NotFound};
 
 #[derive(Debug, Clone, Routable, PartialEq)]
 pub enum Route {
     #[layout(Nav)]
     #[route("/")]
     Home {},
+    #[end_layout]
     #[route("/:..segments")]
     NotFound { segments: Vec<String> },
 }
@@ -21,52 +15,18 @@ pub enum Route {
 #[component]
 pub fn Nav() -> Element {
     let mut is_open = use_signal(|| false);
-    let mut theme = use_signal(|| Theme::System);
-    // Add the OS tracking signal
-    let mut os_is_dark = use_signal(|| false);
 
-    // For active link styling
+    // Consume the global theme state instead of creating a local one
+    let mut theme = use_context::<Signal<Theme>>();
+
     let current_route = use_route::<Route>();
-
     let sidebar_transform = if is_open() {
         "translate-x-0"
     } else {
         "-translate-x-full"
     };
 
-    // Run once to set up the OS theme event listener
-    use_effect(move || {
-        spawn(async move {
-            let mut os_theme_eval = eval(
-                r#"
-                const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-                dioxus.send(mediaQuery.matches);
-                mediaQuery.addEventListener('change', (e) => {
-                    dioxus.send(e.matches);
-                });
-                "#,
-            );
-
-            while let Ok(is_dark) = os_theme_eval.recv::<bool>().await {
-                os_is_dark.set(is_dark);
-            }
-        });
-    });
-
-    use_effect(move || {
-        let should_be_dark = match theme() {
-            Theme::Dark => true,
-            Theme::Light => false,
-            Theme::System => os_is_dark(),
-        };
-
-        if should_be_dark {
-            let _ = eval("document.documentElement.classList.add('dark');");
-        } else {
-            let _ = eval("document.documentElement.classList.remove('dark');");
-        }
-    });
-
+    // The theme button logic remains identical!
     let theme_btn_class = |btn_theme: Theme| {
         let base = "flex-1 py-1.5 text-center rounded-sm transition-all focus:outline-none text-sm";
         if theme() == btn_theme {
@@ -85,9 +45,9 @@ pub fn Nav() -> Element {
     let nav_link_class = |target_route: Route| {
         let base = "flex items-center px-6 py-2.5 dark:hover:bg-[#4d5358] hover:bg-[#c6c6c6] transition-colors border-l-4";
         if current_route == target_route {
-            format!("{} border-[#4589ff]", base) // Active link
+            format!("{} border-[#4589ff]", base)
         } else {
-            format!("{} border-transparent", base) // Inactive link (transparent border prevents layout jump)
+            format!("{} border-transparent", base)
         }
     };
 

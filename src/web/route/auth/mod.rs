@@ -1,3 +1,5 @@
+use std::marker::PhantomData;
+
 use actix_web::{
     HttpRequest, HttpResponse,
     cookie::{Cookie, SameSite, time},
@@ -13,7 +15,6 @@ use tera::{Context, Tera};
 use tracing::info;
 use tracing::instrument;
 
-use crate::config::CONFIG;
 #[cfg(feature = "observe")]
 use crate::logger::MESSAGE_DELIMITER;
 use crate::{
@@ -33,6 +34,7 @@ use crate::{
         helper::{self},
     },
 };
+use crate::{config::CONFIG, web::bson};
 
 pub use self::oauth::generate_token_with_cookie;
 use self::{
@@ -154,18 +156,55 @@ async fn code_to_response(
         error
     )?;
 
-    // look up user in database
-    let r: Result<User> = db
-        .find(
+    // look up user in database... unlike previously, we now look up by email and not subject. This
+    // is to enable pre-registration by email and group
+    let r: Result<User> = helper::log_with_level!(
+        db.find(
             doc! {
-                "sub": &subject
+                "email": &email
             },
             USER,
         )
-        .await;
+        .await,
+        error
+    );
 
     let (id, user_type) = match r {
-        Ok(user) => (user._id.to_string(), user.user_type),
+        Ok(user) => {
+            // if there is email, group, and user_type but subject is None, they were pre-registered
+            // in any other case, they should be fully registered. For pre-register update their
+            // record to include subject, updated_at, last_updated_by, and the rest of the User set
+            // to None
+
+            if user.sub.is_none() {
+                let time = time::OffsetDateTime::now_utc();
+                helper::log_with_level!(
+                    db.update(
+                        doc! {
+                            "_id": &user._id
+                        },
+                        doc! {
+                            "$set": {
+                                "sub": subject,
+                                "user_name": name.clone(),
+                                "updated_at": bson(time)?,
+                                "created_at": bson(time)?,
+                                "last_updated_by": email.clone(),
+                                "token": None::<String>,
+                                "notebook": None::<String>,
+                                "owui": None::<String>,
+                            }
+                        },
+                        USER,
+                        PhantomData::<User>,
+                    )
+                    .await,
+                    error
+                )?;
+            }
+
+            (user._id.to_string(), user.user_type)
+        }
         // user not found, create user
         Err(_) => {
             // get current time in time after unix epoch
@@ -175,17 +214,17 @@ async fn code_to_response(
                 db.insert(
                     User {
                         _id: ObjectId::new(),
-                        sub: subject,
-                        user_name: name.clone(),
+                        sub: Some(subject),
+                        user_name: Some(name.clone()),
                         email: email.clone(),
                         groups: Vec::new(),
                         user_type: UserType::User,
                         token: None,
                         notebook: None,
                         owui: None,
-                        created_at: time,
-                        updated_at: time,
-                        last_updated_by: email,
+                        created_at: Some(time),
+                        updated_at: Some(time),
+                        last_updated_by: Some(email),
                     },
                     USER,
                 )

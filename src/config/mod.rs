@@ -63,6 +63,13 @@ pub struct OwuiConfig {
     pub env: Vec<(String, String)>,
     pub persistence_size: String,
     pub persistence_storage_class: String,
+    pub alt_image: AltOwuiImage,
+}
+
+#[cfg(feature = "openwebui")]
+pub struct AltOwuiImage {
+    pub registry: String,
+    pub repository: String,
 }
 
 pub struct Database {
@@ -89,6 +96,13 @@ pub struct Notebook {
     pub start_up_url: Option<String>,
     pub max_idle_time: Option<u64>,
     pub scheduling: Option<Scheduling>,
+    pub alt: AltImage,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct AltImage {
+    pub url: String,
+    pub secret: Option<String>,
 }
 
 #[derive(Deserialize, Debug)]
@@ -295,6 +309,16 @@ pub fn init_once() -> Configuration {
                 .as_str()
                 .unwrap()
                 .to_string(),
+            alt_image: AltOwuiImage {
+                registry: owui_config["alt_image"]["registry"]
+                    .as_str()
+                    .unwrap()
+                    .to_string(),
+                repository: owui_config["alt_image"]["repository"]
+                    .as_str()
+                    .unwrap()
+                    .to_string(),
+            },
         }
     };
 
@@ -305,6 +329,7 @@ pub fn init_once() -> Configuration {
         .map(|s| (s.0.clone(), s.1.as_str().unwrap().into()))
         .collect();
 
+    #[cfg(feature = "observe")]
     let log_group = app_conf["log_group"].as_str().unwrap().to_string();
 
     Configuration {
@@ -333,6 +358,7 @@ pub fn init_once() -> Configuration {
         moleviewer_internal_url,
         bridge_url,
         custom_resource_csp,
+        #[cfg(feature = "observe")]
         log_group,
     }
 }

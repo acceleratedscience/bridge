@@ -25,6 +25,7 @@ pub mod openwebui;
 pub mod portal;
 pub mod proxy;
 pub mod resource;
+pub mod api;
 
 #[get("")]
 async fn index(data: Data<Tera>, ctx: Data<Context>, req: HttpRequest) -> Result<HttpResponse> {

@@ -1,0 +1,18 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "Federated": "arn:aws:iam::866335085214:oidc-provider/oidc.op1.openshiftapps.com/2gjdag3oilth3ij958v2bqae6oltd0ud"
+      },
+      "Action": "sts:AssumeRoleWithWebIdentity",
+      "Condition": {
+        "StringEquals": {
+          "oidc.op1.openshiftapps.com/2gjdag3oilth3ij958v2bqae6oltd0ud:sub": "system:serviceaccount:openbridge:bridge-sa",
+          "oidc.op1.openshiftapps.com/2gjdag3oilth3ij958v2bqae6oltd0ud:aud": "sts.amazonaws.com"
+        }
+      }
+    }
+  ]
+}

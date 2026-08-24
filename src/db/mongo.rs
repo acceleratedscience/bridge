@@ -435,17 +435,17 @@ mod tests {
             .insert(
                 User {
                     _id: ObjectId::new(),
-                    sub: "choi.mina@gmail.com".to_string(),
-                    user_name: "Daniel".to_string(),
+                    sub: Some("choi.mina@gmail.com".to_string()),
+                    user_name: Some("Daniel".to_string()),
                     email: "choi.mina@gmail.com".to_string(),
                     groups: vec!["ibm".to_string()],
                     user_type: UserType::SystemAdmin,
                     token: None,
                     notebook: None,
                     owui: None,
-                    created_at: time,
-                    updated_at: time,
-                    last_updated_by: "choi.mina@gmail.com".to_string(),
+                    created_at: Some(time),
+                    updated_at: Some(time),
+                    last_updated_by: Some("choi.mina@gmail.com".to_string()),
                 },
                 USER,
             )
@@ -486,7 +486,7 @@ mod tests {
             .await
             .unwrap();
         assert_eq!(result.email, "someone@gmail.com");
-        assert_eq!(result.updated_at, new_time);
+        assert_eq!(result.updated_at, Some(new_time));
 
         let pipeline = vec![
             doc! { "$match": { "email": "someone@gmail.com" } },

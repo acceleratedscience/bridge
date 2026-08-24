@@ -30,32 +30,57 @@ impl NotebookSpec {
         name: String,
         notebook_image_name: &str,
         volume_name: String,
-        tolerations: Option<Vec<Toleration>>,
+        tolerations: bool,
         notebook_start_url: &mut Option<String>,
         max_idle_time: &mut Option<u64>,
         env_to_add: Vec<(String, String)>,
     ) -> Self {
-        let notebook_image = CONFIG.notebooks.get(notebook_image_name).unwrap();
+        let notebook_config = CONFIG
+            .notebooks
+            .get("workbench")
+            .expect("workbench config missing");
         // TODO: remove these clones if possible
-        let mut notebook_env = notebook_image.notebook_env.clone().unwrap_or_default();
+        let mut notebook_env = notebook_config.notebook_env.clone().unwrap_or_default();
 
+        // {
+        //     let notebook_tolerations = CONFIG
+        //         .notebooks
+        //         .get(NOTEBOOK_CFG_NAME)
+        //         .and_then(|v| v.scheduling.as_ref())
+        //         .map(|v| (&v.toleration_key, &v.toleration_value));
+        //
+        //     if let Some(kv) = notebook_tolerations {
+        //         let (key, value) = (kv.0.to_string(), kv.1.to_string());
+        //         Some(vec![Toleration::new(key, value)])
+        //     } else {
+        //         None
+        //     }
+        // } else {
+        //     None
+        // };
         // get resource limit from notebook config
-        let (cpu, mem) = {
-            if tolerations.is_some() {
+        let (cpu, mem, tol) = {
+            if tolerations {
                 (
-                    notebook_image
+                    notebook_config
                         .scheduling
                         .as_ref()
                         .map(|v| v.cpu_heavy.as_ref())
                         .unwrap_or(CPU_HEAVY_DEFAULT),
-                    notebook_image
+                    notebook_config
                         .scheduling
                         .as_ref()
                         .map(|v| v.mem_heavy.as_ref())
                         .unwrap_or(MEM_HEAVY_DEFAULT),
+                    notebook_config.scheduling.as_ref().map(|v| {
+                        vec![Toleration::new(
+                            v.toleration_key.to_string(),
+                            v.toleration_value.to_string(),
+                        )]
+                    }),
                 )
             } else {
-                ("2", "4Gi")
+                ("2", "4Gi", None)
             }
         };
 
@@ -76,21 +101,21 @@ impl NotebookSpec {
         }
 
         // TODO: look into removing this clone
-        if let Some(envs) = notebook_image.env.clone() {
+        if let Some(envs) = notebook_config.env.clone() {
             envs.into_iter().for_each(|(name, value)| {
                 env.push(EnvVar { name, value });
             });
         }
 
-        *notebook_start_url = notebook_image.start_up_url.clone();
-        *max_idle_time = notebook_image.max_idle_time;
+        *notebook_start_url = notebook_config.start_up_url.clone();
+        *max_idle_time = notebook_config.max_idle_time;
 
         NotebookSpec {
             template: NotebookTemplateSpec {
                 spec: PodSpec {
                     containers: vec![ContainerSpec {
                         name,
-                        image: notebook_image.url.clone(),
+                        image: notebook_image_name.to_string(),
                         resources: Some(ResourceRequirements {
                             requests: BTreeMap::from([
                                 ("cpu".to_string(), cpu.to_string()),
@@ -101,18 +126,18 @@ impl NotebookSpec {
                                 ("memory".to_string(), mem.to_string()),
                             ]),
                         }),
-                        image_pull_policy: notebook_image.pull_policy.clone(),
+                        image_pull_policy: notebook_config.pull_policy.clone(),
                         volume_mounts: Some(vec![VolumeMount {
                             name: volume_name.clone(),
-                            mount_path: notebook_image.volume_mnt_path.clone().unwrap_or_default(),
+                            mount_path: notebook_config.volume_mnt_path.clone().unwrap_or_default(),
                         }]),
-                        command: notebook_image.command.clone(),
-                        args: notebook_image.args.clone(),
-                        workingdir: notebook_image.working_dir.clone(),
+                        command: notebook_config.command.clone(),
+                        args: notebook_config.args.clone(),
+                        workingdir: notebook_config.working_dir.clone(),
                         env: Some(env),
                     }],
-                    tolerations,
-                    image_pull_secrets: notebook_image
+                    tolerations: tol,
+                    image_pull_secrets: notebook_config
                         .secret
                         .clone()
                         .map(|secret| vec![ImagePullSecret { name: secret }]),
@@ -276,7 +301,7 @@ mod test {
             name,
             "open_ad_workbench",
             volume_name,
-            None,
+            false,
             &mut start_url,
             &mut max_idle_time,
             vec![],
