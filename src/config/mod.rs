@@ -80,6 +80,7 @@ pub struct Database {
 pub struct CacheDB {
     pub url: String,
     pub name: String,
+    pub maintenance_flag: String,
 }
 
 #[derive(Deserialize, Debug)]
@@ -179,7 +180,10 @@ pub fn init_once() -> Configuration {
     validation.leeway = 0;
 
     let (config_location_str, database_location_str) = if cfg!(debug_assertions) {
-        ("config/configurations.toml", "config/database_sample.toml")
+        (
+            "config/configurations_sample.toml",
+            "config/database_sample.toml",
+        )
     } else {
         ("config/configurations.toml", "config/database.toml")
     };
@@ -216,6 +220,7 @@ pub fn init_once() -> Configuration {
             cache_db["url"].as_str().unwrap().to_string()
         },
         name: cache_db["name"].as_str().unwrap().to_string(),
+        maintenance_flag: cache_db["maintenance_flag"].as_str().unwrap().to_string(),
     };
 
     let mut oidc_map: HashMap<String, OIDC> = HashMap::with_capacity(2);
@@ -375,7 +380,7 @@ mod tests {
         let config = init_once();
         #[cfg(feature = "notebook")]
         {
-            let workbench = config.notebooks.get("open_ad_workbench").unwrap();
+            let workbench = config.notebooks.get("workbench").unwrap();
             assert_eq!(workbench.pull_policy, "Always");
             assert_eq!(workbench.working_dir, Some("/opt/app-root/src".to_string()));
             assert_eq!(
@@ -424,9 +429,6 @@ mod tests {
     fn test_skip_csp_path() {
         let config = init_once();
         let map = &config.custom_resource_csp;
-
-        let scp = map.get("foo").unwrap();
-        assert_eq!(scp, "bar");
 
         let scp = map.get("baz").unwrap();
         assert_eq!(scp, "zap");

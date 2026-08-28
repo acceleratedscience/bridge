@@ -1,13 +1,12 @@
 [mongodb]
 	url = "mongodb://bridge-user:admin123456789@127.0.0.1:27017"
 	url_local = "mongodb://bridge-user:admin123456789@127.0.0.1:27017"
-	url_prod = "mongodb://bridge-user:admin123456789@127.0.0.1:27017"
 	name = "bridge"
 
 [keydb]
 	url = "redis://:admin123456789@127.0.0.1:6379/0"
 	url_local = "redis://:admin123456789@127.0.0.1:6379/0"
-	url_prod = "redis://:admin123456789@127.0.0.1:6379/0"
+	maintenance_flag = "maintenance-local"
 	name = ""
 
 [user]

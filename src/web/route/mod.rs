@@ -3,6 +3,7 @@ use actix_web::{
     http::header,
     web::{self, Data},
 };
+use serde_json::json;
 use tera::{Context, Tera};
 
 use crate::{
@@ -11,6 +12,7 @@ use crate::{
     web::helper::{self},
 };
 
+pub mod api;
 pub mod auth;
 pub mod foo;
 pub mod health;
@@ -25,7 +27,6 @@ pub mod openwebui;
 pub mod portal;
 pub mod proxy;
 pub mod resource;
-pub mod api;
 
 #[get("")]
 async fn index(data: Data<Tera>, ctx: Data<Context>, req: HttpRequest) -> Result<HttpResponse> {
@@ -43,12 +44,14 @@ async fn index(data: Data<Tera>, ctx: Data<Context>, req: HttpRequest) -> Result
 }
 
 #[get("")]
-async fn maintenance(data: Data<Tera>) -> Result<HttpResponse> {
-    let rendered = helper::log_with_level!(
-        data.render("pages/maintenance.html", &Context::new()),
-        error
-    )?;
-    Ok(HttpResponse::ServiceUnavailable().body(rendered))
+async fn maintenance(_req: HttpRequest) -> Result<HttpResponse> {
+    let payload = json!(
+        {
+            "title": "Bridge Unavailable",
+            "message": "The Bridge is currently unavailable. Please check back later or contact the system administrator.",
+        }
+    );
+    Ok(HttpResponse::ServiceUnavailable().json(payload))
 }
 
 // TODO: protect this endpoint with basic auth... and add db ping

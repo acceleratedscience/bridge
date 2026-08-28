@@ -1,4 +1,4 @@
-use std::sync::OnceLock;
+use std::{borrow::Cow, sync::OnceLock};
 
 use actix_web::web::Bytes;
 use redis::{
@@ -13,15 +13,25 @@ pub static CACHEDB: OnceLock<CacheDB> = OnceLock::new();
 pub struct CacheDB {
     client: Client,
     conn: MultiplexedConnection,
+    maintenance_flag: Cow<'static, str>,
 }
 
 impl CacheDB {
     pub async fn init_once() -> Result<()> {
         let url = &CONFIG.cache.url;
+        let maintenance_flag = CONFIG.cache.maintenance_flag.as_str();
         let client = Client::open(url.clone()).expect("Failed to connect to cache");
         let conn = client.get_multiplexed_async_connection().await?;
-        CACHEDB.get_or_init(|| CacheDB { client, conn });
+        CACHEDB.get_or_init(|| CacheDB {
+            client,
+            conn,
+            maintenance_flag: Cow::Borrowed(maintenance_flag),
+        });
         Ok(())
+    }
+
+    pub fn get_maintenance_flag(&self) -> impl AsRef<str> {
+        self.maintenance_flag.as_ref()
     }
 
     pub fn get_connection(&self) -> MultiplexedConnection {

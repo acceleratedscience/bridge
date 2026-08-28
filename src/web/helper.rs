@@ -154,7 +154,7 @@ pub fn maintenance_watch() -> Result<()> {
     };
 
     tokio::spawn(async move {
-        let mut stream = match cache.get_async_sub("maintenance").await {
+        let mut stream = match cache.get_async_sub(cache.get_maintenance_flag()).await {
             Ok(stream) => stream,
             Err(e) => {
                 error!("{:?}", e);

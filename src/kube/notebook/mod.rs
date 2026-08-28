@@ -42,22 +42,6 @@ impl NotebookSpec {
         // TODO: remove these clones if possible
         let mut notebook_env = notebook_config.notebook_env.clone().unwrap_or_default();
 
-        // {
-        //     let notebook_tolerations = CONFIG
-        //         .notebooks
-        //         .get(NOTEBOOK_CFG_NAME)
-        //         .and_then(|v| v.scheduling.as_ref())
-        //         .map(|v| (&v.toleration_key, &v.toleration_value));
-        //
-        //     if let Some(kv) = notebook_tolerations {
-        //         let (key, value) = (kv.0.to_string(), kv.1.to_string());
-        //         Some(vec![Toleration::new(key, value)])
-        //     } else {
-        //         None
-        //     }
-        // } else {
-        //     None
-        // };
         // get resource limit from notebook config
         let (cpu, mem, tol) = {
             if tolerations {
@@ -314,7 +298,7 @@ mod test {
                 "spec": {
                     "containers": [{
                         "name": "notebook",
-                        "image": "quay.io/ibmdpdev/openad_workbench_prod:latest",
+                        "image": "open_ad_workbench",
                         "resources": {
                             "requests": {
                                 "cpu": "2",
@@ -338,7 +322,7 @@ mod test {
                         "env": [
                             {
                                 "name": "NOTEBOOK_ARGS",
-                                "value": "--ServerApp.token='' --ServerApp.password='' --ServerApp.notebook_dir='/opt/app-root/src' --ServerApp.quit_button=False --LabApp.default_url='/lab/tree/start_menu.ipynb' --ServerApp.default_url='/lab/tree/start_menu.ipynb' --ServerApp.trust_xheaders=True --ServerApp.base_url='notebook/notebook/notebook'"
+                                "value": "--ServerApp.token='' --ServerApp.password='' --ServerApp.notebook_dir='/opt/app-root/src' --ServerApp.quit_button=False --LabApp.default_url='/lab/tree/start_menu.ipynb' --ServerApp.default_url='/lab/tree/start_menu.ipynb' --ServerApp.trust_xheaders=True --ServerApp.base_url='notebook/notebook-openad/notebook'"
                             },
                             {
 
