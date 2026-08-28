@@ -28,7 +28,7 @@ use crate::{
         mongo::{DB, ObjectID},
     },
     errors::{BridgeError, Result},
-    kube::{Env, Image, KubeAPI, OpenWebUI, Owui, Persistence},
+    kube::{Env, Image, ImagePullSecret, KubeAPI, OpenWebUI, Owui, Persistence, VolumeSnapshot},
     web::{
         bridge_middleware::{CookieCheck, Htmx},
         bson,
@@ -138,21 +138,23 @@ async fn create_owui(
             error
         )?;
 
-        let (tag, registry, repository) = if group
+        let (tag, registry, repository, secrets) = if group
             .subscriptions
             .iter()
             .any(|sub| sub.as_str() == OWUI_SUB_NAME_ALT)
         {
             (
-                Cow::from(group.name),
+                Cow::from(group.name.clone()),
                 Cow::from(&CONFIG.owui.alt_image.registry),
                 Cow::from(&CONFIG.owui.alt_image.repository),
+                Cow::from(&CONFIG.owui.alt_image.secret),
             )
         } else {
             (
                 Cow::from(&CONFIG.owui.tag),
                 Cow::from(&CONFIG.owui.registry),
                 Cow::from(&CONFIG.owui.repository),
+                Cow::from(&CONFIG.owui.secret),
             )
         };
 
@@ -208,6 +210,13 @@ async fn create_owui(
         //     .map(|q| q.contains("persist=true"))
         //     .unwrap_or(false);
 
+        // check if a snapshot exists
+        let snap = KubeAPI::<VolumeSnapshot>::get_crds(&OWUI_NAMESPACE).await?;
+        let usesnapshot = snap
+            .into_iter()
+            .filter_map(|snap| snap.metadata.name)
+            .any(|v| v.as_str() == group.name);
+
         // create instance
         let owui = Owui {
             metadata: ObjectMeta {
@@ -219,6 +228,7 @@ async fn create_owui(
                 replica: 1, // TODO: this needs to be removed from the operator.., for now set to 1
                 retain_pvc: true,
                 service_port: CONFIG.owui.service_port,
+                image_pull_secrets: vec![ImagePullSecret { name: secrets }],
                 image: Image {
                     registry,
                     repository,
@@ -228,6 +238,11 @@ async fn create_owui(
                 persistence: Persistence {
                     size: Cow::from(&CONFIG.owui.persistence_size),
                     storage_class: Cow::from(&CONFIG.owui.persistence_storage_class),
+                    restore_snapshot: if usesnapshot {
+                        Some(Cow::from(group.name))
+                    } else {
+                        None
+                    },
                 },
                 env: CONFIG
                     .owui

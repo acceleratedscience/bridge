@@ -22,6 +22,13 @@ pub struct OpenWebUI {
     pub image: Image,
     pub persistence: Persistence,
     pub env: Vec<Env>,
+    #[serde(rename = "imagePullSecrets")]
+    pub image_pull_secrets: Vec<ImagePullSecret>,
+}
+
+#[derive(Clone, Deserialize, Serialize, Debug, JsonSchema)]
+pub struct ImagePullSecret {
+    pub name: Cow<'static, str>,
 }
 
 #[derive(Clone, Deserialize, Serialize, Debug, JsonSchema)]
@@ -38,6 +45,8 @@ pub struct Persistence {
     pub size: Cow<'static, str>,
     #[serde(rename = "storageClass")]
     pub storage_class: Cow<'static, str>,
+    #[serde(rename = "restoreSnapshot")]
+    pub restore_snapshot: Option<Cow<'static, str>>,
 }
 
 #[derive(Clone, Deserialize, Serialize, Debug, JsonSchema)]
@@ -59,6 +68,9 @@ mod test {
                 replica: 1,
                 retain_pvc: false,
                 service_port: 8080,
+                image_pull_secrets: vec![super::ImagePullSecret {
+                    name: Cow::from("regcred"),
+                }],
                 image: super::Image {
                     registry: Cow::from("quay.io"),
                     repository: Cow::from("ibmdpdev/open-webui-spati"),
@@ -78,6 +90,7 @@ mod test {
                 persistence: super::Persistence {
                     size: Cow::from("2Gi"),
                     storage_class: Cow::from("gp3"),
+                    restore_snapshot: None,
                 },
             },
             metadata: kube::api::ObjectMeta {

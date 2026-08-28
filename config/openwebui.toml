@@ -8,13 +8,15 @@ registry = "quay.io"
 repository = "ibmdpdev/open-webui-spati"
 tag = "latest"
 pull_policy = "Always"
+image_pull_secret = "ecr-registry-secret"
 
 [openwebui.alt_image]
-registry = "quay.io"
-repository = "ibmdpdev/open-webui-spati"
+registry = "866335085214.dkr.ecr.us-east-1.amazonaws.com"
+repository = "openwebuis"
+image_pull_secret = "ecr-registry-secret"
 
 [openwebui.persistence]
-size = "2Gi"
+size = "10Gi"
 storage_class = "gp3"
 
 [[openwebui.env]]

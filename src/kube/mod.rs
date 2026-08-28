@@ -12,4 +12,7 @@ pub use notebook::{
 #[cfg(feature = "openwebui")]
 mod openwebui;
 #[cfg(feature = "openwebui")]
-pub use openwebui::{Env, Image, OWUI, OpenWebUI, Owui, Persistence};
+pub use openwebui::{Env, Image, ImagePullSecret, OWUI, OpenWebUI, Owui, Persistence};
+
+mod snapshots;
+pub use snapshots::VolumeSnapshot;

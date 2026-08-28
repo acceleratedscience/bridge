@@ -60,6 +60,7 @@ pub struct OwuiConfig {
     pub repository: String,
     pub tag: String,
     pub pull_policy: String,
+    pub secret: String,
     pub env: Vec<(String, String)>,
     pub persistence_size: String,
     pub persistence_storage_class: String,
@@ -70,6 +71,7 @@ pub struct OwuiConfig {
 pub struct AltOwuiImage {
     pub registry: String,
     pub repository: String,
+    pub secret: String,
 }
 
 pub struct Database {
@@ -308,6 +310,10 @@ pub fn init_once() -> Configuration {
             repository: image.unwrap()["repository"].as_str().unwrap().to_string(),
             tag: image.unwrap()["tag"].as_str().unwrap().to_string(),
             pull_policy: image.unwrap()["pull_policy"].as_str().unwrap().to_string(),
+            secret: image.unwrap()["image_pull_secret"]
+                .as_str()
+                .unwrap()
+                .to_string(),
             env,
             persistence_size: persistence.unwrap()["size"].as_str().unwrap().to_string(),
             persistence_storage_class: persistence.unwrap()["storage_class"]
@@ -320,6 +326,10 @@ pub fn init_once() -> Configuration {
                     .unwrap()
                     .to_string(),
                 repository: owui_config["alt_image"]["repository"]
+                    .as_str()
+                    .unwrap()
+                    .to_string(),
+                secret: owui_config["alt_image"]["image_pull_secret"]
                     .as_str()
                     .unwrap()
                     .to_string(),

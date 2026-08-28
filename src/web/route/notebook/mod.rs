@@ -637,18 +637,21 @@ async fn notebook_forward(
     new_url.set_path(path);
     new_url.set_query(req.uri().query());
 
-    proxy_client::forward(
-        req,
-        payload,
-        method,
-        peer_addr,
-        client,
-        new_url,
-        helper::Config {
-            ..Default::default()
-        },
+    helper::log_with_level!(
+        proxy_client::forward(
+            req,
+            payload,
+            method,
+            peer_addr,
+            client,
+            new_url,
+            helper::Config {
+                ..Default::default()
+            },
+        )
+        .await,
+        error
     )
-    .await
 }
 
 pub mod notebook_helper {
