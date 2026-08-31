@@ -228,7 +228,7 @@ async fn create_owui(
                 replica: 1, // TODO: this needs to be removed from the operator.., for now set to 1
                 retain_pvc: true,
                 service_port: CONFIG.owui.service_port,
-                image_pull_secrets: vec![ImagePullSecret { name: secrets }],
+                image_pull_secrets: Some(vec![ImagePullSecret { name: secrets }]),
                 image: Image {
                     registry,
                     repository,

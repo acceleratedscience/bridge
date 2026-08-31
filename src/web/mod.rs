@@ -147,10 +147,10 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
     let hclient_data = Data::new(hclient);
     let db = Data::new(db);
     let cache = Data::new(CACHEDB.get());
+    let bridge_url: &'static str = CONFIG.bridge_url.as_str();
 
     let app_factory = move || {
         // clone needed due to HttpServer::new impl Fn trait and not FnOnce
-
         let app = App::new()
             // .wrap(bridge_middleware::HttpRedirect)
             .app_data(tera_data.clone())
@@ -159,6 +159,16 @@ pub async fn start_server(with_tls: bool) -> Result<()> {
             .app_data(hclient_data.clone())
             .app_data(db.clone())
             .app_data(cache.clone())
+            .wrap(
+                actix_cors::Cors::default()
+                    .allowed_origin(format!("https://{}", bridge_url).as_str())
+                    .allowed_origin_fn(move |origin, _req_head| {
+                        origin
+                            .as_bytes()
+                            .ends_with(format!(".{}", bridge_url).as_bytes())
+                    })
+                    .max_age(3600),
+            )
             .wrap(middleware::NormalizePath::trim())
             .wrap(middleware::Compress::default())
             .wrap(bridge_middleware::Maintainence);

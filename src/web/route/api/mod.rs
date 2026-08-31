@@ -4,8 +4,7 @@ use actix_web::{
 };
 use tracing::instrument;
 
-use crate::db::models::BridgeCookie;
-use crate::{config::CacheDB, errors::Result};
+use crate::{config::CacheDB, db::models::BridgeCookie, errors::Result};
 
 #[get("/me")]
 #[instrument(skip(_cache))]

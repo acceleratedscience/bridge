@@ -11,6 +11,11 @@ asset_dir = "assets"
 # include `assets` in web platform
 [web.resource]
 
+[web.https]
+enabled = true
+key_path = "../certs/private.key"
+cert_path = "../certs/fullchain.cer"
+
 # Additional CSS style files
 style = []
 

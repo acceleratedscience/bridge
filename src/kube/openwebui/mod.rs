@@ -22,8 +22,8 @@ pub struct OpenWebUI {
     pub image: Image,
     pub persistence: Persistence,
     pub env: Vec<Env>,
-    #[serde(rename = "imagePullSecrets")]
-    pub image_pull_secrets: Vec<ImagePullSecret>,
+    #[serde(rename = "imagePullSecrets", skip_serializing_if = "Option::is_none")]
+    pub image_pull_secrets: Option<Vec<ImagePullSecret>>,
 }
 
 #[derive(Clone, Deserialize, Serialize, Debug, JsonSchema)]
@@ -68,9 +68,9 @@ mod test {
                 replica: 1,
                 retain_pvc: false,
                 service_port: 8080,
-                image_pull_secrets: vec![super::ImagePullSecret {
+                image_pull_secrets: Some(vec![super::ImagePullSecret {
                     name: Cow::from("regcred"),
-                }],
+                }]),
                 image: super::Image {
                     registry: Cow::from("quay.io"),
                     repository: Cow::from("ibmdpdev/open-webui-spati"),

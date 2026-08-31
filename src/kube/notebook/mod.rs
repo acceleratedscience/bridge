@@ -1,4 +1,4 @@
-use std::{collections::BTreeMap, sync::LazyLock};
+use std::{borrow::Cow, collections::BTreeMap, sync::LazyLock};
 
 use k8s_openapi::{
     api::core::v1::{PersistentVolumeClaim, VolumeResourceRequirements},
@@ -25,10 +25,12 @@ pub struct NotebookSpec {
 static CPU_HEAVY_DEFAULT: &str = "4";
 static MEM_HEAVY_DEFAULT: &str = "8Gi";
 
+#[allow(clippy::too_many_arguments)]
 impl NotebookSpec {
     pub fn new(
         name: String,
         notebook_image_name: &str,
+        secret: Option<Cow<'static, str>>,
         volume_name: String,
         tolerations: bool,
         notebook_start_url: &mut Option<String>,
@@ -121,10 +123,7 @@ impl NotebookSpec {
                         env: Some(env),
                     }],
                     tolerations: tol,
-                    image_pull_secrets: notebook_config
-                        .secret
-                        .clone()
-                        .map(|secret| vec![ImagePullSecret { name: secret }]),
+                    image_pull_secrets: secret.map(|secret| vec![ImagePullSecret { name: secret }]),
                     volumes: Some(vec![VolumeSpec {
                         name: volume_name.clone(),
                         persistent_volume_claim: Some(PersistentVolumeClaimSpec {
@@ -176,7 +175,7 @@ impl Toleration {
 
 #[derive(Deserialize, Serialize, Clone, Debug, JsonSchema)]
 pub struct ImagePullSecret {
-    name: String,
+    name: Cow<'static, str>,
 }
 
 #[derive(Deserialize, Serialize, Clone, Debug, JsonSchema)]
@@ -284,6 +283,7 @@ mod test {
         let spec = NotebookSpec::new(
             name,
             "open_ad_workbench",
+            Some(Cow::Borrowed("ibmdpdev-openad-pull-secret")),
             volume_name,
             false,
             &mut start_url,

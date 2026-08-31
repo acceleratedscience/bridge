@@ -2,7 +2,7 @@
 //! notebook, we use the forward function from the helper module. But we also introduce to
 //! websocket endpoints.
 
-use std::{marker::PhantomData, str::FromStr, time::Duration};
+use std::{borrow::Cow, marker::PhantomData, str::FromStr, time::Duration};
 
 use k8s_openapi::api::core::v1::{PersistentVolumeClaim, Pod};
 use mongodb::bson::doc;
@@ -122,11 +122,18 @@ async fn notebook_create(
 
         // Everything group with a request for alternative goes to the same imago repo, but
         // use the tag to find the group speciifc image
-        let notebook_image_name = if alt_notebook {
+        let (notebook_image_name, secret) = if alt_notebook {
             // reason for the same image repo is so we don't have to add a configure for each group
-            &format!("{}:{}", notebook.alt.url, group.name)
+            (
+                &format!("{}:{}", notebook.alt.url, group.name),
+                notebook.alt.secret.as_ref().map(|v| Cow::Borrowed(v.as_str())),
+            )
         } else {
-            &notebook.url // default image
+            // default
+            (
+                &notebook.url,
+                notebook.secret.as_ref().map(|v| Cow::Borrowed(v.as_str())),
+            )
         };
 
         let proxy_key_name = "PROXY_KEY";
@@ -225,6 +232,7 @@ async fn notebook_create(
             NotebookSpec::new(
                 name.clone(),
                 notebook_image_name,
+                secret,
                 pvc_name,
                 tolerations,
                 &mut start_up_url,
