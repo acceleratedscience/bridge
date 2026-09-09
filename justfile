@@ -89,12 +89,10 @@ build-front:
 # --- bug has been fixed since Kernel 7.0.14 ---
 local-mongo:
 	podman run -d --rm --name mongodb \
-	--env GLIBC_TUNABLES=glibc.pthread.rseq=0 \
 	-e MONGO_INITDB_ROOT_USERNAME="bridge-user" \
 	-e MONGO_INITDB_ROOT_PASSWORD="admin123456789" \
 	-e MONGO_INITDB_DATABASE="bridge" \
-	-p 27017:27017 \
-	mongo:latest
+	-p 27017:27017 docker.io/library/mongo:7.0
 
 local-keydb:
 	podman run -d --rm --name keydb \

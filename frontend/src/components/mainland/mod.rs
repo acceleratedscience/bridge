@@ -1,8 +1,5 @@
-use std::ops::Deref;
 
-use dioxus::{document::eval, prelude::*};
-
-use crate::components::nav::Route;
+use dioxus::prelude::*;
 
 /// Home page
 #[component]

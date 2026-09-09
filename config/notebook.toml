@@ -28,7 +28,7 @@ toleration_value = "large"
 [workbench.alt]
 # Tag is the group name
 url = "866335085214.dkr.ecr.us-east-1.amazonaws.com/notebooks"
-secret = "ibmdpdev-openad-pull-secret"
+secret = "ecr-registry-secret"
 
 [workbench.env]
 PROXY_URL = "https://open.accelerate.science/proxy"
