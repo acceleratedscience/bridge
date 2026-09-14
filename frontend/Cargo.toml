@@ -4,14 +4,21 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-dioxus = { version = "=0.7.10", features = ["router"] }
-dioxus-icons = { version = "0.1.0", default-features = false }
-dioxus-primitives = { git = "https://github.com/DioxusLabs/components", version = "0.0.1", default-features = false }
+leptos = { version = "0.8", features = ["csr"] }
+leptos_router = { version = "0.8" }
+leptos_meta = { version = "0.8" }
 reqwest = { workspace = true, features = ["json"] }
 serde_json = { workspace = true }
+wasm-bindgen = "0.2"
+console_error_panic_hook = "0.1"
 
-[features]
-default = ["web"]
-web = ["dioxus/web"]
-desktop = ["dioxus/desktop"]
-mobile = ["dioxus/mobile"]
+[dependencies.web-sys]
+version = "0.3"
+features = [
+  "Window",
+  "Document",
+  "Element",
+  "DomTokenList",
+  "MediaQueryList",
+  "MediaQueryListEvent",
+]

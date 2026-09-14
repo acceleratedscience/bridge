@@ -1,7 +1,9 @@
-/target
+/frontend/assets/output.css
+/frontend/dist
 /certs
 /config/configurations.toml
 /config/database.toml
 /config/services.toml
+/target
 node_modules
 http-client.private.env.json

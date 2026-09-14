@@ -1,72 +1,51 @@
-/* App-wide styling */
-body {
-    background-color: #0f1116;
-    color: #ffffff;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    margin: 20px;
+@import "tailwindcss";
+
+@source "../src/**/*.rs";
+@source "../index.html";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@layer base {
+	body {
+		@apply flex flex-col min-h-screen bg-[#ffffff] dark:bg-[#21272a] text-slate-900 dark:text-slate-200;
+	}
 }
 
-#hero {
-    margin: 0;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
+.menu_selected {
+	border-left-style: var(--tw-border-style);
+	border-left-width: 2px;
+	border-color: #4589ff;
+	background-color: #c6c6c6;
+	&:where(.dark, .dark *) {
+		background-color: #4d5358;
+	}
 }
 
-#links {
-    width: 400px;
-    text-align: left;
-    font-size: x-large;
-    color: white;
-    display: flex;
-    flex-direction: column;
+.mobile_menu_selected {
+	border-left-style: var(--tw-border-style);
+	border-left-width: 4px;
+	border-color: #4589ff;
 }
 
-#links a {
-    color: white;
-    text-decoration: none;
-    margin-top: 20px;
-    margin: 10px 0px;
-    border: white 1px solid;
-    border-radius: 5px;
-    padding: 10px;
+.cb_button {
+	background-color: #0050e6;
+	color: var(--color-slate-200);
+	&:hover {
+		@media (hover: hover) {
+			background-color: var(--color-blue-700);
+		}
+	}
+	&:focus {
+		--tw-ring-shadow: var(--tw-ring-inset,) 0 0 0 calc(3px + var(--tw-ring-offset-width)) var(--tw-ring-color, currentcolor);
+		box-shadow: var(--tw-inset-shadow), var(--tw-inset-ring-shadow), var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);
+		--tw-ring-color: #0050e6;
+	}
+	&:active {
+		background-color: #002d9c;
+	}
+	&:where(.dark, .dark *):focus {
+		--tw-ring-color: var(--color-white);
+		--tw-outline-style: none;
+		outline-style: none;
+	}
 }
-
-#links a:hover {
-    background-color: #1f1f1f;
-    cursor: pointer;
-}
-
-#header {
-    max-width: 1200px;
-}
-
-/* Navbar */
-#navbar {
-    display: flex;
-    flex-direction: row;
-  }
-  
-#navbar a {
-    color: #ffffff;
-    margin-right: 20px;
-    text-decoration: none;
-    transition: color 0.2s ease;
-}
-
-#navbar a:hover {
-    cursor: pointer;
-    color: #91a4d2;
-}
-
-/* Blog page */
-#blog {
-    margin-top: 50px;
-  }
-  
-#blog a {
-    color: #ffffff;
-    margin-top: 50px;
-}
-

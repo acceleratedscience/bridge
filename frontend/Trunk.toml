@@ -1,0 +1,19 @@
+[build]
+target = "index.html"
+minify = "on_release"
+
+[watch]
+ignore = ["assets/output.css"]
+
+[[hooks]]
+stage = "pre_build"
+command = "tailwindcss"
+command_arguments = ["-i", "assets/main.css", "-o", "assets/output.css"]
+
+[[hooks]]
+stage = "post_build"
+command = "sh"
+command_arguments = [
+    "-c", 
+    "esbuild $TRUNK_STAGING_DIR/*.js --minify --allow-overwrite --outdir=$TRUNK_STAGING_DIR"
+]

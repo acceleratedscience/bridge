@@ -104,7 +104,7 @@ jsonwebkey = { version = "~0.4", features = ["jwt-convert"] }
 rcgen = "=0.14.10"
 
 [workspace]
-members = ["frontend", "utils"]
+members = ["frontend","utils"]
 
 [workspace.dependencies]
 quote = "~1.0"

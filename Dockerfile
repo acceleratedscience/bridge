@@ -1,5 +1,5 @@
 # Stage 1 build
-FROM rust:1.98.0 AS builder
+FROM rust:1.98.1 AS builder
 
 WORKDIR /app
 
@@ -16,8 +16,8 @@ RUN <<EOF
 #!/bin/bash
 
 # install dx using cargo
-cargo install dioxus-cli --locked
-dx build -p frontend --release
+# cargo install dioxus-cli --locked
+# dx build -p frontend --release
 
 flags=()
 if [ "$NOTEBOOK" = "true" ]; then
@@ -61,7 +61,7 @@ COPY ./config ./config
 COPY ./templates ./templates
 COPY ./static ./static
 COPY ./frontend ./frontend
-COPY --from=builder /app/target/dx/frontend/release/web/public ./frontend/public
+# COPY --from=builder /app/target/dx/frontend/release/web/public ./frontend/public
 
 RUN chgrp -R 0 /app && \
 	chmod -R g=u /app
